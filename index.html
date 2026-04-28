@@ -600,6 +600,8 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
   const [bulkMode, setBulkMode] = useState(false);
   const [selected, setSelected] = useState(new Set());
   const [bulkQty, setBulkQty] = useState('');
+  const [groupBy, setGroupBy] = useState('category'); // 'category' | 'store'
+
   const filtered = items.filter((i) => {
     if (search && !i.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (catF !== 'All' && i.category !== catF) return false;
@@ -607,7 +609,11 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
     if (lowOnly && i.current_qty >= i.par_level) return false;
     return true;
   });
-  const grouped = filtered.reduce((a, i) => {(a[i.category] = a[i.category] || []).push(i);return a;}, {});
+  const grouped = filtered.reduce((a, i) => {
+    const key = groupBy === 'store' ? (i.store || 'Other') : i.category;
+    (a[key] = a[key] || []).push(i);
+    return a;
+  }, {});
   const toggleSel = (id) => setSelected((prev) => {const n = new Set(prev);n.has(id) ? n.delete(id) : n.add(id);return n;});
   const applyBulk = async () => {
     if (!bulkQty || !selected.size) return;
@@ -635,7 +641,7 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
         </div>
       }
       <input className="inp" type="text" placeholder="Search items..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 8 }} />
-      <div className="filter-row">
+      <div className="filter-row" style={{ flexWrap: 'wrap', gap: 6 }}>
         <select className="filter-sel" value={catF} onChange={(e) => setCatF(e.target.value)}>
           <option value="All">All Categories</option>
           {CATS.map((c) => <option key={c}>{c}</option>)}
@@ -644,12 +650,45 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
           <option value="All">All Stores</option>
           {STORES.map((s) => <option key={s}>{s}</option>)}
         </select>
-        <button className={`f-tog ${lowOnly ? 'on' : ''}`} onClick={() => setLowOnly(!lowOnly)}>Low Stock Only</button>
+        <button className={`f-tog ${lowOnly ? 'on' : ''}`} onClick={() => setLowOnly(!lowOnly)}>Low Only</button>
+        <div style={{ display: 'flex', gap: 3, background: 'var(--bg)', padding: 3, borderRadius: 8, marginLeft: 'auto' }}>
+          {[['category','By Category'],['store','By Store']].map(([k,l]) => (
+            <button key={k} onClick={() => setGroupBy(k)} style={{
+              padding: '5px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer', border: 'none',
+              background: groupBy === k ? 'var(--card)' : 'transparent',
+              color: groupBy === k ? 'var(--pr)' : 'var(--tx2)',
+              boxShadow: groupBy === k ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
+            }}>{l}</button>
+          ))}
+        </div>
       </div>
-      {Object.keys(grouped).sort().map((cat) =>
-      <div key={cat}>
-          <div className="grp-head">{cat} <span style={{ opacity: .5 }}>({grouped[cat].length})</span></div>
-          {grouped[cat].map((item, idx) =>
+      {groupBy === 'store' && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+          {Object.entries(grouped).sort().map(([store, its]) => {
+            const out = its.filter(i => i.current_qty === 0).length;
+            const low = its.filter(i => i.current_qty > 0 && i.current_qty < i.par_level).length;
+            return (
+              <div key={store} style={{ padding: '6px 12px', background: 'var(--card)', borderRadius: 10, border: '1px solid var(--bd)', fontSize: 11 }}>
+                <span style={{ fontWeight: 700 }}>{store}</span>
+                <span style={{ color: 'var(--mu)', marginLeft: 6 }}>{its.length} items</span>
+                {out > 0 && <span style={{ color: 'var(--er)', marginLeft: 6, fontWeight: 700 }}>{out} out</span>}
+                {low > 0 && <span style={{ color: 'var(--wa)', marginLeft: 4, fontWeight: 700 }}>{low} low</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {Object.keys(grouped).sort().map((grpKey) =>
+      <div key={grpKey}>
+          <div className="grp-head">
+            {grpKey} <span style={{ opacity: .5 }}>({grouped[grpKey].length})</span>
+            {groupBy === 'store' && (() => {
+              const its = grouped[grpKey];
+              const est = its.reduce((s,i) => s + Number(i.price||0) * Math.max(0,i.par_level - i.current_qty), 0);
+              return est > 0 ? <span style={{ fontSize: 11, color: 'var(--pr)', fontWeight: 700, marginLeft: 8 }}>~${est.toFixed(0)} to restock</span> : null;
+            })()}
+          </div>
+          {grouped[grpKey].map((item, idx) =>
         <div key={item.id} style={{ animation: `rowIn .28s ${idx * .03}s both` }}>
               <ItemRow item={item}
           editing={!bulkMode && editingId === item.id}
@@ -673,12 +712,17 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
   const [showEnd, setShowEnd] = useState(false);
   const [startData, setStartData] = useState({ name: userStore.get(), miles: '' });
   const [endMiles, setEndMiles] = useState('');
-  const [priceLoading, setPriceLoading] = useState(null);
-  const [priceData, setPriceData] = useState({});
-  const [routeLoading, setRouteLoading] = useState(false);
-  const [routePlan, setRoutePlan] = useState(null);
   const [elapsed, setElapsed] = useState('');
   const timerRef = useRef(null);
+  // Smart Route / Price Compare state
+  const [showRouteModal, setShowRouteModal] = useState(false);
+  const [routeStep, setRouteStep] = useState('zip'); // zip | loading | results | route
+  const [zipCode, setZipCode] = useState('');
+  const [destination, setDestination] = useState('');
+  const [priceResults, setPriceResults] = useState(null); // { items: [{name, stores:[{store,price,isBest}]}], totalSavings }
+  const [selectedStores, setSelectedStores] = useState({}); // itemId -> storeName
+  const [routeData, setRouteData] = useState(null); // [{store, order, items, subtotal}]
+  const [routeLoading, setRouteLoading] = useState(false);
 
   useEffect(() => {
     if (!session) {clearInterval(timerRef.current);setElapsed('');return;}
@@ -720,54 +764,19 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
     setShowEnd(false);setEndMiles('');setRoutePlan(null);
   };
 
-  const comparePrice = async (item) => {
-    if (priceData[item.id]) {
-      // Toggle close
-      setPriceData((p) => { const n = {...p}; delete n[item.id]; return n; });
-      return;
-    }
-    setPriceLoading(item.id);
-    try {
-      // Fetch purchase history for this item from our DB
-      let history = [];
-      try {
-        const all = await db.getPurchaseLog();
-        history = (all || []).filter(p => p.item_name === item.name).slice(0, 20).map(p => ({
-          store: p.store, price: p.price, date: p.purchased_at?.slice(0, 10),
-        }));
-      } catch {}
-
-      const resp = await fetch('/api/receipt-ocr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'compare',
-          image: 'placeholder', // required by our handler validation
-          context: {
-            itemName: item.name,
-            category: item.category,
-            currentStore: item.store,
-            currentPrice: item.price,
-            history,
-          },
-        }),
-      });
-      if (!resp.ok) throw new Error('API error');
-      const data = await resp.json();
-      setPriceData((p) => ({ ...p, [item.id]: data.recommendation || 'No recommendation.' }));
-    } catch (e) {
-      setPriceData((p) => ({ ...p, [item.id]: 'Price comparison unavailable. Make sure the OCR function is deployed and ANTHROPIC_API_KEY is set in Netlify.' }));
-    }
-    setPriceLoading(null);
+  // ── Smart Route / Price Compare ──
+  const openRouteModal = () => {
+    setShowRouteModal(true);
+    setRouteStep('zip');
+    setPriceResults(null);
+    setSelectedStores({});
+    setRouteData(null);
   };
 
-  const closePricePanel = (itemId) => {
-    setPriceData((p) => { const n = {...p}; delete n[itemId]; return n; });
-  };
-
-  const smartRoute = async () => {
-    setRouteLoading(true);setRoutePlan(null);
-    const list = unchecked.slice(0, 20).map((i) => `${i.name} (tracked at ${i.store}${i.price > 0 ? `, $${i.price}` : ''})`).join(', ');
+  const runPriceCompare = async () => {
+    if (!zipCode.trim()) return;
+    setRouteStep('loading');
+    const itemList = unchecked.map(i => ({ id: i.id, name: i.name, trackedStore: i.store, trackedPrice: i.price || 0, category: i.category }));
     try {
       const resp = await fetch('/api/receipt-ocr', {
         method: 'POST',
@@ -776,18 +785,97 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
           mode: 'compare',
           image: 'placeholder',
           context: {
-            itemName: 'Smart route plan',
+            itemName: 'price_compare_json',
             category: 'planning',
-            currentStore: 'multi-store trip',
+            currentStore: zipCode,
             currentPrice: 0,
-            history: [{ note: `Items needed: ${list}. Stores available: Restaurant Depot, US Chef Store, QFC, Costco, Trader Joe's, Plaza Latina, Imrans, African Store. Suggest the most efficient store visit order and any items that might be cheaper elsewhere. Keep response under 120 words.` }],
+            history: [{
+              note: `ZIP code: ${zipCode}. Shopping list: ${JSON.stringify(itemList.slice(0,20).map(i=>({name:i.name,trackedStore:i.trackedStore,trackedPrice:i.trackedPrice})))}.
+Available stores in WA: Restaurant Depot, US Chef Store, QFC, Costco, Trader Joe's, Plaza Latina, Imrans, African Store, Walmart, Amazon.
+For each item, estimate prices at 2-4 relevant stores based on typical retail prices in WA. Use real knowledge of what each store typically charges.
+Respond ONLY with valid JSON, no markdown:
+{"items":[{"id":"<id>","name":"<name>","stores":[{"store":"<name>","price":<number>,"note":"<optional note>"}]}],"totalCurrentCost":<number>,"totalBestCost":<number>}`
+            }],
           },
         }),
       });
       if (!resp.ok) throw new Error('API error');
       const data = await resp.json();
-      setRoutePlan(data.recommendation || 'No plan generated.');
-    } catch {setRoutePlan('Route planning unavailable. Make sure ANTHROPIC_API_KEY is set in Netlify env vars.');}
+      let raw = data.recommendation || '';
+      raw = raw.replace(/```json|```/g, '').trim();
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch { throw new Error('Could not parse price data'); }
+
+      // Mark best price per item, set default selection to cheapest
+      const defaults = {};
+      parsed.items = (parsed.items || []).map(item => {
+        const sorted = [...(item.stores||[])].sort((a,b) => a.price - b.price);
+        const best = sorted[0];
+        defaults[item.id] = best?.store || item.stores?.[0]?.store;
+        return { ...item, stores: item.stores.map(s => ({ ...s, isBest: s.store === best?.store })) };
+      });
+      setSelectedStores(defaults);
+      const savings = (parsed.totalCurrentCost||0) - (parsed.totalBestCost||0);
+      setPriceResults({ ...parsed, totalSavings: Math.max(0, savings) });
+      setRouteStep('results');
+    } catch (e) {
+      alert('Price compare failed: ' + e.message);
+      setRouteStep('zip');
+    }
+  };
+
+  const buildRoute = async () => {
+    setRouteLoading(true);
+    // Group items by selected store
+    const storeGroups = {};
+    (priceResults?.items || []).forEach(item => {
+      const store = selectedStores[item.id];
+      if (!store) return;
+      const inv = unchecked.find(i => i.id === item.id);
+      if (!storeGroups[store]) storeGroups[store] = [];
+      storeGroups[store].push({ name: item.name, price: item.stores.find(s=>s.store===store)?.price || 0, unit: inv?.unit||'ct', qty: inv ? inv.par_level - inv.current_qty : 1 });
+    });
+    const storeList = Object.keys(storeGroups);
+    try {
+      const resp = await fetch('/api/receipt-ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'compare',
+          image: 'placeholder',
+          context: {
+            itemName: 'route_order_json',
+            category: 'planning',
+            currentStore: zipCode,
+            currentPrice: 0,
+            history: [{
+              note: `ZIP: ${zipCode}. Destination after shopping: ${destination || 'home / back to zip ' + zipCode}.
+Stores to visit: ${storeList.join(', ')}.
+Order these stores for the most efficient driving route starting from ZIP ${zipCode} and ending at ${destination || 'ZIP ' + zipCode}.
+Consider that Restaurant Depot and US Chef Store are typically farther / wholesale, QFC and Walmart are nearby, Costco is mid-distance.
+Respond ONLY with valid JSON, no markdown:
+{"route":[{"store":"<name>","order":<number>,"travelNote":"<short note about this leg>"}],"totalEstimatedMiles":<number>,"routeSummary":"<1 sentence>"}`
+            }],
+          },
+        }),
+      });
+      if (!resp.ok) throw new Error('API error');
+      const data = await resp.json();
+      let raw = data.recommendation || '';
+      raw = raw.replace(/```json|```/g, '').trim();
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch { throw new Error('Could not parse route data'); }
+
+      const route = (parsed.route || []).sort((a,b) => a.order - b.order).map(r => ({
+        ...r,
+        items: storeGroups[r.store] || [],
+        subtotal: (storeGroups[r.store] || []).reduce((s,i) => s + i.price, 0),
+      }));
+      setRouteData({ stops: route, totalMiles: parsed.totalEstimatedMiles, summary: parsed.routeSummary });
+      setRouteStep('route');
+    } catch (e) {
+      alert('Route planning failed: ' + e.message);
+    }
     setRouteLoading(false);
   };
 
@@ -871,15 +959,179 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
         </div>
         {!session && <button className="btn-pr" onClick={() => setShowStart(true)}>Start Trip</button>}
       </div>
-      {/* Smart Route */}
+      {/* Smart Route / Price Compare */}
       {unchecked.length > 0 &&
-      <div style={{ marginBottom: 12 }}>
-          <button className="btn-outline" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={smartRoute} disabled={routeLoading}>
-            {routeLoading ? <><span style={{ width: 14, height: 14, border: '2px solid var(--bd)', borderTopColor: 'var(--pr)', borderRadius: '50%', animation: 'spin .8s linear infinite', display: 'inline-block' }} />Analyzing...</> : 'Smart Route & Price Compare'}
-          </button>
-          {routePlan && <div className="route-panel" style={{ marginTop: 8 }}>{routePlan}</div>}
-        </div>
+        <button className="btn-outline" style={{ width: '100%', marginBottom: 12 }} onClick={openRouteModal}>
+          Smart Route & Price Compare
+        </button>
       }
+
+      {/* Route Modal */}
+      {showRouteModal && (
+        <div className="overlay" onClick={e => { if (e.target === e.currentTarget) setShowRouteModal(false); }}>
+          <div className="modal" style={{ maxWidth: 500, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div className="modal-title" style={{ margin: 0 }}>
+                {routeStep === 'zip' ? 'Smart Route & Price Compare' : routeStep === 'loading' ? 'Finding best prices…' : routeStep === 'results' ? 'Price Comparison' : 'Your Route'}
+              </div>
+              <button className="panel-x" onClick={() => setShowRouteModal(false)}>×</button>
+            </div>
+
+            {/* Step 1: ZIP + destination */}
+            {routeStep === 'zip' && (
+              <div>
+                <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 16 }}>
+                  Enter your zip code to find nearby stores and compare prices for your {unchecked.length} item{unchecked.length !== 1 ? 's' : ''}.
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 11, color: 'var(--tx2)', display: 'block', marginBottom: 4 }}>Your zip code</label>
+                  <input className="inp inp-big" value={zipCode} onChange={e => setZipCode(e.target.value)}
+                    placeholder="e.g. 98052" maxLength={10} autoFocus
+                    onKeyDown={e => e.key === 'Enter' && zipCode.trim() && runPriceCompare()} />
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ fontSize: 11, color: 'var(--tx2)', display: 'block', marginBottom: 4 }}>Destination after shopping (optional)</label>
+                  <input className="inp" value={destination} onChange={e => setDestination(e.target.value)}
+                    placeholder="e.g. Joe's Kitchen, Redmond WA" />
+                </div>
+                <button className="btn-full" onClick={runPriceCompare} disabled={!zipCode.trim()}>
+                  Compare Prices
+                </button>
+              </div>
+            )}
+
+            {/* Step 2: Loading */}
+            {routeStep === 'loading' && (
+              <div style={{ padding: '40px 0', textAlign: 'center' }}>
+                <div className="spinner" style={{ margin: '0 auto 16px' }} />
+                <div style={{ fontSize: 13, fontWeight: 600 }}>Comparing prices across stores…</div>
+                <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 6 }}>Checking {unchecked.length} items near {zipCode}</div>
+              </div>
+            )}
+
+            {/* Step 3: Price results — pick stores */}
+            {routeStep === 'results' && priceResults && (
+              <div>
+                {priceResults.totalSavings > 0 && (
+                  <div style={{ padding: 12, background: 'var(--okl)', borderRadius: 10, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: 12, color: 'var(--ok)' }}>Potential savings with best prices</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ok)' }}>${priceResults.totalSavings.toFixed(2)}</div>
+                  </div>
+                )}
+                <div style={{ fontSize: 11, color: 'var(--tx2)', marginBottom: 12 }}>
+                  Best prices are pre-selected. Tap a store name to switch your preference.
+                </div>
+                <div style={{ maxHeight: '45vh', overflowY: 'auto', marginBottom: 14 }}>
+                  {(priceResults.items || []).map(item => {
+                    const selected = selectedStores[item.id];
+                    const sortedStores = [...item.stores].sort((a,b) => a.price - b.price);
+                    return (
+                      <div key={item.id} style={{ marginBottom: 12, padding: 12, borderRadius: 10, border: '1px solid var(--bd)', background: 'var(--card)' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{item.name}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {sortedStores.map((s, si) => {
+                            const isSelected = selected === s.store;
+                            const isBest = si === 0;
+                            return (
+                              <div key={s.store} onClick={() => setSelectedStores(p => ({...p, [item.id]: s.store}))}
+                                style={{
+                                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                  padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
+                                  border: '1px solid ' + (isSelected ? 'var(--ok)' : 'var(--bd)'),
+                                  background: isSelected ? 'var(--okl)' : 'var(--bg)',
+                                  transition: 'all .15s',
+                                }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <div style={{
+                                    width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                                    border: '2px solid ' + (isSelected ? 'var(--ok)' : 'var(--bd)'),
+                                    background: isSelected ? 'var(--ok)' : 'transparent',
+                                  }} />
+                                  <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 400 }}>{s.store}</span>
+                                  {isBest && <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--ok)', background: 'var(--okl)', padding: '1px 5px', borderRadius: 999 }}>BEST</span>}
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: isBest ? 'var(--ok)' : 'var(--tx)' }}>${s.price.toFixed(2)}</div>
+                                  {s.note && <div style={{ fontSize: 9, color: 'var(--mu)' }}>{s.note}</div>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn-gh" style={{ flex: 1 }} onClick={() => setRouteStep('zip')}>Back</button>
+                  <button className="btn-full" style={{ flex: 2 }} onClick={buildRoute} disabled={routeLoading}>
+                    {routeLoading ? 'Planning route…' : 'Plan My Route'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Animated route */}
+            {routeStep === 'route' && routeData && (
+              <div>
+                {routeData.summary && (
+                  <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 16, padding: 10, background: 'var(--bg)', borderRadius: 8 }}>
+                    {routeData.summary}{routeData.totalMiles ? ` · ~${routeData.totalMiles} miles total` : ''}
+                  </div>
+                )}
+                <div style={{ position: 'relative', paddingLeft: 28 }}>
+                  {/* vertical line */}
+                  <div style={{ position: 'absolute', left: 11, top: 20, bottom: 20, width: 2, background: 'var(--bd)' }} />
+                  {routeData.stops.map((stop, i) => (
+                    <div key={stop.store} style={{ animation: `rowIn .4s ease ${i * 0.12}s both`, marginBottom: 16, position: 'relative' }}>
+                      {/* dot */}
+                      <div style={{
+                        position: 'absolute', left: -28, top: 14,
+                        width: 22, height: 22, borderRadius: '50%',
+                        background: i === 0 ? 'var(--ok)' : i === routeData.stops.length - 1 ? 'var(--pr)' : 'var(--card)',
+                        border: '2px solid ' + (i === 0 ? 'var(--ok)' : i === routeData.stops.length - 1 ? 'var(--pr)' : 'var(--bd)'),
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10, fontWeight: 800, color: (i === 0 || i === routeData.stops.length - 1) ? '#fff' : 'var(--tx2)',
+                        zIndex: 1,
+                      }}>{i + 1}</div>
+                      <div style={{ padding: 12, background: 'var(--card)', borderRadius: 10, border: '1px solid var(--bd)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700 }}>{stop.store}</div>
+                          {stop.subtotal > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pr)' }}>${stop.subtotal.toFixed(2)}</div>}
+                        </div>
+                        {stop.travelNote && <div style={{ fontSize: 11, color: 'var(--tx2)', marginBottom: 6 }}>{stop.travelNote}</div>}
+                        {stop.items.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {stop.items.map(item => (
+                              <span key={item.name} style={{ fontSize: 10, padding: '2px 8px', background: 'var(--bg)', borderRadius: 999, color: 'var(--tx2)' }}>
+                                {item.name} · ${item.price.toFixed(2)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {destination && (
+                    <div style={{ animation: `rowIn .4s ease ${routeData.stops.length * 0.12}s both`, marginBottom: 16, position: 'relative' }}>
+                      <div style={{ position: 'absolute', left: -28, top: 14, width: 22, height: 22, borderRadius: '50%', background: 'var(--tx2)', border: '2px solid var(--tx2)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />
+                      </div>
+                      <div style={{ padding: '10px 12px', background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--bd)', fontSize: 12, color: 'var(--tx2)' }}>
+                        {destination}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <button className="btn-gh" style={{ flex: 1 }} onClick={() => setRouteStep('results')}>Back</button>
+                  <button className="btn-full" style={{ flex: 2 }} onClick={() => setShowRouteModal(false)}>Start Shopping</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {allStores.length > 1 &&
       <div className="chips">
           <button className={`chip ${storeF === 'All' ? 'on' : ''}`} onClick={() => setStoreF('All')}>All Stores</button>
@@ -900,7 +1152,6 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
             {si.map((item, itemIdx) => {
               const nd = item.par_level - item.current_qty;
               const noteOpen = expandNote === item.id;
-              const comparing = priceLoading === item.id;
               return (
                 <div key={item.id} className="sh-item" style={{ animation: `rowIn .25s ${itemIdx * .03}s both` }}>
                   <div className="sh-check" onClick={() => onCheck(item.id)} />
@@ -918,10 +1169,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
                       <span className="sh-pill-icon">✎</span>
                       <span>{item.shopper_note ? 'Note' : 'Add note'}</span>
                     </button>
-                    <button className={`sh-pill ${priceData[item.id] ? 'sh-pill-active' : ''}`} title="Compare prices" disabled={comparing} onClick={(e) => {e.stopPropagation();comparePrice(item);}}>
-                      <span className="sh-pill-icon">{comparing ? '⟳' : '$'}</span>
-                      <span>{comparing ? 'Comparing…' : priceData[item.id] ? 'Hide' : 'Compare'}</span>
-                    </button>
+
                   </div>
                   {noteOpen &&
                   <div className="note-panel" onClick={(e) => e.stopPropagation()}>
@@ -930,12 +1178,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
                       <button className="panel-close" onClick={() => setExpandNote(null)}>Done</button>
                     </div>
                   }
-                  {priceData[item.id] &&
-                  <div className="price-panel" onClick={(e) => e.stopPropagation()}>
-                      <div style={{ flex: 1 }}>{priceData[item.id]}</div>
-                      <button className="panel-x" onClick={() => closePricePanel(item.id)} aria-label="Close">×</button>
-                    </div>
-                  }
+
                 </div>);
 
             })}
@@ -968,7 +1211,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
 function AnalyticsView({ items, sessions }) {
   const [purchases, setPurchases] = useState([]);
   const [pLoading, setPLoading] = useState(true);
-  const [topMode, setTopMode] = useState('cost'); // 'cost' | 'frequency'
+  const [topMode, setTopMode] = useState('cost'); // 'cost' | 'frequency' | 'monthly'
   const [timeRange, setTimeRange] = useState('all'); // 'all' | '30' | '90'
 
   useEffect(() => {
@@ -1188,226 +1431,6 @@ function AnalyticsView({ items, sessions }) {
         <StatCard val={`$${totalDriverPay.toFixed(0)}`} label="Driver Pay" color="var(--wa)" />
       </div>
 
-      {/* ★ FREQUENTLY BOUGHT — main new section */}
-      <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Frequently Bought</div>
-            <div style={{ fontSize: 12, color: 'var(--tx2)' }}>
-              {topMode === 'cost' ? 'Top items by total cost' : 'Top items by purchase frequency'}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 4, background: 'var(--bg)', padding: 3, borderRadius: 8 }}>
-            <button onClick={() => setTopMode('cost')} style={{
-              padding: '6px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-              background: topMode === 'cost' ? 'var(--card)' : 'transparent',
-              color: topMode === 'cost' ? 'var(--pr)' : 'var(--tx2)',
-              boxShadow: topMode === 'cost' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-            }}>By Cost</button>
-            <button onClick={() => setTopMode('frequency')} style={{
-              padding: '6px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
-              background: topMode === 'frequency' ? 'var(--card)' : 'transparent',
-              color: topMode === 'frequency' ? 'var(--pr)' : 'var(--tx2)',
-              boxShadow: topMode === 'frequency' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-            }}>By Frequency</button>
-          </div>
-        </div>
-
-        {pLoading ? <div style={{ padding: 30, textAlign: 'center', color: 'var(--mu)' }}>Loading purchase data...</div> :
-         topItems.length === 0 ? <div className="empty"><p>No purchase data yet. Complete a shopping trip!</p></div> :
-         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {topItems.slice(0, 15).map((m, idx) => {
-            const pct = topMode === 'cost' ? (m.totalSpent / maxValue) * 100 : (m.count / maxValue) * 100;
-            const daysAgo = m.lastBought ? Math.floor((Date.now() - m.lastBought) / 86400000) : null;
-            return (
-              <div key={m.name} style={{ animation: 'rowIn .3s ease ' + (idx * 0.03) + 's both' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
-                    <div style={{
-                      width: 22, height: 22, flexShrink: 0, borderRadius: '50%',
-                      background: idx < 3 ? 'var(--pr)' : 'var(--bg)',
-                      color: idx < 3 ? '#fff' : 'var(--tx2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, fontWeight: 800,
-                    }}>{idx + 1}</div>
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
-                      <div style={{ fontSize: 10, color: 'var(--mu)', display: 'flex', gap: 6, alignItems: 'center', marginTop: 1 }}>
-                        <span>{m.store}</span>
-                        <span>·</span>
-                        <span>{m.category}</span>
-                        {daysAgo !== null && <><span>·</span><span>{daysAgo === 0 ? 'today' : daysAgo + 'd ago'}</span></>}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--pr)' }}>
-                      {topMode === 'cost' ? `$${m.totalSpent.toFixed(2)}` : `${m.count}×`}
-                    </div>
-                    <div style={{ fontSize: 10, color: 'var(--mu)' }}>
-                      {topMode === 'cost' ? `${m.count} purchases` : `$${m.totalSpent.toFixed(0)} total`}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ height: 4, background: 'var(--bg)', borderRadius: 2, overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    width: pct + '%',
-                    background: idx < 3 ? 'linear-gradient(90deg, var(--pr), #E07043)' : 'var(--bd)',
-                    transition: 'width .4s ease',
-                  }} />
-                </div>
-              </div>
-            );
-          })}
-         </div>
-        }
-      </div>
-
-      {/* Spending by category (from purchase log) */}
-      {catSpendData.length > 0 &&
-        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Spending by Category</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Where your money actually goes</div>
-          <BarChartSVG data={catSpendData} color="var(--ok)" fmt="$" />
-        </div>
-      }
-
-      {/* Trip averages */}
-      {completedSessions.length > 0 &&
-        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Trip Averages</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Based on {completedSessions.length} completed trips</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-            <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 10, textAlign: 'center' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>Avg Cost</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--pr)', marginTop: 2 }}>${avgTripCost.toFixed(0)}</div>
-            </div>
-            <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 10, textAlign: 'center' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>Avg Time</div>
-              <div style={{ fontSize: 18, fontWeight: 800, marginTop: 2 }}>{avgTripDuration.toFixed(0)}m</div>
-            </div>
-            <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 10, textAlign: 'center' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>Avg Items</div>
-              <div style={{ fontSize: 18, fontWeight: 800, marginTop: 2 }}>{avgItemsPerTrip.toFixed(0)}</div>
-            </div>
-          </div>
-        </div>
-      }
-
-      {/* Forecasting */}
-      {dailyBurn > 0 &&
-        <div className="card" style={{ padding: 20, marginBottom: 14, background: 'linear-gradient(135deg, #fff7ed 0%, #fff 100%)' }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>📈 Spending Forecast</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Projected based on your current burn rate of ${dailyBurn.toFixed(2)}/day</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div style={{ padding: 14, background: '#fff', borderRadius: 10, border: '1px solid var(--bd)' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>Next 7 Days</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--pr)', marginTop: 2 }}>${projected7.toFixed(0)}</div>
-            </div>
-            <div style={{ padding: 14, background: '#fff', borderRadius: 10, border: '1px solid var(--bd)' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>Next 30 Days</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--pr)', marginTop: 2 }}>${projected30.toFixed(0)}</div>
-            </div>
-          </div>
-        </div>
-      }
-
-      {/* Restock predictions */}
-      {(overdueItems.length > 0 || upcomingRestock.length > 0) &&
-        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>🔄 Restock Predictions</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Based on average days between purchases</div>
-
-          {overdueItems.length > 0 && (
-            <div style={{ marginBottom: upcomingRestock.length > 0 ? 16 : 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--er)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Overdue ({overdueItems.length})</div>
-              {overdueItems.slice(0, 5).map(x => (
-                <div key={x.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.name}</div>
-                    <div style={{ fontSize: 10, color: 'var(--mu)' }}>Usually every {x.avgDays.toFixed(0)} days · {x.buyCount} purchases</div>
-                  </div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--er)', flexShrink: 0 }}>{Math.floor(x.daysSinceLast)}d ago</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {upcomingRestock.length > 0 && (
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ok)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Coming Up</div>
-              {upcomingRestock.slice(0, 5).map(x => (
-                <div key={x.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.name}</div>
-                    <div style={{ fontSize: 10, color: 'var(--mu)' }}>Avg cycle: {x.avgDays.toFixed(0)}d</div>
-                  </div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: x.daysUntilNext < 3 ? 'var(--wa)' : 'var(--tx2)', flexShrink: 0 }}>
-                    {x.daysUntilNext < 1 ? 'today' : `${Math.ceil(x.daysUntilNext)}d`}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      }
-
-      {/* Cheaper alternatives */}
-      {cheaperAlternatives.length > 0 &&
-        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>💰 Cheaper Stores</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Items where you'd save by switching stores</div>
-          {cheaperAlternatives.slice(0, 8).map(x => (
-            <div key={x.itemName} style={{ padding: '10px 0', borderBottom: '1px solid var(--bd)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.itemName}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ok)', flexShrink: 0, marginLeft: 8 }}>save ${x.potentialSavings.toFixed(2)}</div>
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--tx2)' }}>
-                <span style={{ color: 'var(--ok)', fontWeight: 700 }}>{x.cheapestStore}</span> ${x.cheapestPrice.toFixed(2)}
-                {x.others.map(o => <span key={o.store}> · {o.store} ${o.avg.toFixed(2)}</span>)}
-              </div>
-            </div>
-          ))}
-        </div>
-      }
-
-      {/* Price increase flags */}
-      {priceFlags.length > 0 &&
-        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>⚠️ Price Increases</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Last purchase price was 10%+ higher than your historical average</div>
-          {priceFlags.slice(0, 6).map(f => (
-            <div key={f.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
-                <div style={{ fontSize: 10, color: 'var(--mu)' }}>was ${f.priorAvg.toFixed(2)} avg · now ${f.lastPrice.toFixed(2)} at {f.store}</div>
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--er)', flexShrink: 0 }}>+{f.pctIncrease.toFixed(0)}%</div>
-            </div>
-          ))}
-        </div>
-      }
-
-      {/* Spending by store (from purchase log) */}
-      {storeSpendData.length > 0 &&
-        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Spending by Store</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Total spent at each supplier</div>
-          <BarChartSVG data={storeSpendData.slice(0, 8)} color="var(--pr)" fmt="$" />
-        </div>
-      }
-
-      {/* Spending over months */}
-      {monthSpendData.length > 0 &&
-        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Spending by Month</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Monthly grocery spend trend</div>
-          <BarChartSVG data={monthSpendData} color="var(--pr)" fmt="$" />
-        </div>
-      }
-
       {/* Inventory Turnover */}
       {Object.keys(itemHistory).length > 0 && (() => {
         const turnoverItems = Object.entries(itemHistory).map(([name, hist]) => {
@@ -1595,12 +1618,14 @@ function AnalyticsView({ items, sessions }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Frequently Bought</div>
-            <div style={{ fontSize: 12, color: 'var(--tx2)' }}>{topMode === 'cost' ? 'Top items by total cost' : 'Top items by purchase frequency'}</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)' }}>
+              {topMode === 'cost' ? 'Top items by total spend' : topMode === 'frequency' ? 'Top items by purchase count' : 'Most spent per item each month'}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 4, background: 'var(--bg)', padding: 3, borderRadius: 8 }}>
-            {[['cost','By Cost'],['frequency','By Frequency']].map(([k,l]) => (
+          <div style={{ display: 'flex', gap: 3, background: 'var(--bg)', padding: 3, borderRadius: 8 }}>
+            {[['cost','By Cost'],['frequency','By Frequency'],['monthly','Monthly']].map(([k,l]) => (
               <button key={k} onClick={() => setTopMode(k)} style={{
-                padding: '6px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                padding: '5px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer', border: 'none',
                 background: topMode === k ? 'var(--card)' : 'transparent',
                 color: topMode === k ? 'var(--pr)' : 'var(--tx2)',
                 boxShadow: topMode === k ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
@@ -1610,6 +1635,46 @@ function AnalyticsView({ items, sessions }) {
         </div>
         {pLoading ? <div style={{ padding: 30, textAlign: 'center', color: 'var(--mu)' }}>Loading...</div> :
          topItems.length === 0 ? <div className="empty"><p>No purchase data yet.</p></div> :
+         topMode === 'monthly' ? (() => {
+           // Build month → [{name, spent}] sorted by spend
+           const byMonth = {};
+           filteredPurchases.forEach(p => {
+             const d = new Date(p.purchased_at);
+             const mk = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+             if (!byMonth[mk]) byMonth[mk] = {};
+             const cost = Number(p.price||0) * Number(p.qty||1);
+             byMonth[mk][p.item_name] = (byMonth[mk][p.item_name] || 0) + cost;
+           });
+           const months = Object.keys(byMonth).slice(-6); // last 6 months
+           return (
+             <div>
+               {months.map(mo => {
+                 const items2 = Object.entries(byMonth[mo]).sort((a,b) => b[1]-a[1]).slice(0,5);
+                 const monthTotal = items2.reduce((s,[,v]) => s+v, 0);
+                 const maxV = items2[0]?.[1] || 1;
+                 return (
+                   <div key={mo} style={{ marginBottom: 18 }}>
+                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                       <div style={{ fontSize: 12, fontWeight: 700 }}>{mo}</div>
+                       <div style={{ fontSize: 11, color: 'var(--pr)', fontWeight: 700 }}>${monthTotal.toFixed(0)}</div>
+                     </div>
+                     {items2.map(([name, spent], i) => (
+                       <div key={name} style={{ marginBottom: 6 }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
+                           <span style={{ fontWeight: i === 0 ? 700 : 400 }}>{name}</span>
+                           <span style={{ fontWeight: 700, color: 'var(--pr)' }}>${spent.toFixed(2)}</span>
+                         </div>
+                         <div style={{ height: 3, background: 'var(--bg)', borderRadius: 2 }}>
+                           <div style={{ height: '100%', width: (spent/maxV*100)+'%', background: i === 0 ? 'var(--pr)' : 'var(--bd)', borderRadius: 2, transition: 'width .4s ease' }} />
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 );
+               })}
+             </div>
+           );
+         })() :
          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {topItems.slice(0, 15).map((m, idx) => {
             const pct = topMode === 'cost' ? (m.totalSpent / maxValue) * 100 : (m.count / maxValue) * 100;
@@ -1652,20 +1717,37 @@ function AnalyticsView({ items, sessions }) {
       }
 
       {/* Trip averages */}
-      {completedSessions.length > 0 &&
-        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Trip Averages</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Based on {completedSessions.length} completed trips</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-            {[['Avg Cost', `$${avgTripCost.toFixed(0)}`, 'var(--pr)'], ['Avg Time', `${avgTripDuration.toFixed(0)}m`, null], ['Avg Items', avgItemsPerTrip.toFixed(0), null]].map(([lbl, val, col]) => (
-              <div key={lbl} style={{ padding: 12, background: 'var(--bg)', borderRadius: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>{lbl}</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: col || 'var(--tx)', marginTop: 2 }}>{val}</div>
-              </div>
-            ))}
+      {completedSessions.length > 0 && (() => {
+        const sessionMonths = {};
+        completedSessions.forEach(s => {
+          const mk = new Date(s.started_at).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          sessionMonths[mk] = (sessionMonths[mk] || 0) + 1;
+        });
+        const monthCount = Object.keys(sessionMonths).length || 1;
+        const avgTripsPerMonth = (completedSessions.length / monthCount).toFixed(1);
+        return (
+          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Trip Averages</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Based on {completedSessions.length} completed trips</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+              {[['Avg Cost', `$${avgTripCost.toFixed(0)}`, 'var(--pr)'], ['Avg Time', `${avgTripDuration.toFixed(0)}m`, null]].map(([lbl, val, col]) => (
+                <div key={lbl} style={{ padding: 12, background: 'var(--bg)', borderRadius: 10, textAlign: 'center' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>{lbl}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: col || 'var(--tx)', marginTop: 2 }}>{val}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              {[['Avg Items', avgItemsPerTrip.toFixed(0), null], ['Trips/Month', avgTripsPerMonth, 'var(--ok)']].map(([lbl, val, col]) => (
+                <div key={lbl} style={{ padding: 12, background: 'var(--bg)', borderRadius: 10, textAlign: 'center' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>{lbl}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: col || 'var(--tx)', marginTop: 2 }}>{val}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      }
+        );
+      })()}
 
       {/* Forecasting */}
       {dailyBurn > 0 && (() => {
@@ -2575,7 +2657,7 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
           <div>
             <div style={{ background: 'var(--bg)', borderRadius: 12, padding: 24, textAlign: 'center', marginBottom: 14, border: '2px dashed var(--bd)' }}>
               <p style={{ fontSize: 13, color: 'var(--tx2)', marginBottom: 14 }}>Take a photo or upload a receipt image</p>
-              <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={(e) => handleFile(e.target.files?.[0])} />
+              <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleFile(e.target.files?.[0])} />
               <button className="btn-full" onClick={() => fileRef.current?.click()}>Choose Photo</button>
             </div>
             <div style={{ fontSize: 11, color: 'var(--mu)', textAlign: 'center', lineHeight: 1.6 }}>
