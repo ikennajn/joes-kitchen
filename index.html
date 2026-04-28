@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Joe's Kitchen</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root{--bg:#F7F4EF;--card:#fff;--sb:#18120E;--pr:#C05621;--prl:#FEF0E8;--ok:#15803D;--okl:#F0FDF4;--wa:#D97706;--wal:#FFFBEB;--er:#DC2626;--erl:#FEF2F2;--tx:#1C1410;--tx2:#6B5E57;--bd:#E8E3DC;--mu:#A89080;--sw:220px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -716,13 +718,20 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
   const timerRef = useRef(null);
   // Smart Route / Price Compare state
   const [showRouteModal, setShowRouteModal] = useState(false);
-  const [routeStep, setRouteStep] = useState('zip'); // zip | loading | results | route
-  const [zipCode, setZipCode] = useState('');
-  const [destination, setDestination] = useState('');
-  const [priceResults, setPriceResults] = useState(null); // { items: [{name, stores:[{store,price,isBest}]}], totalSavings }
-  const [selectedStores, setSelectedStores] = useState({}); // itemId -> storeName
-  const [routeData, setRouteData] = useState(null); // [{store, order, items, subtotal}]
+  const [routeStep, setRouteStep] = useState('location'); // location | loading | results | route
+  const [startAddress, setStartAddress] = useState('');
+  const [startCoords, setStartCoords] = useState(null);
+  const [destAddress, setDestAddress] = useState('');
+  const [destSameAsStart, setDestSameAsStart] = useState(true);
+  const [sortMode, setSortMode] = useState('proximity'); // proximity | cost
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [priceResults, setPriceResults] = useState(null);
+  const [selectedStores, setSelectedStores] = useState({});
+  const [routeData, setRouteData] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
+  const [routeViewMode, setRouteViewMode] = useState('map'); // map | timeline
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
 
   useEffect(() => {
     if (!session) {clearInterval(timerRef.current);setElapsed('');return;}
@@ -767,14 +776,29 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
   // ── Smart Route / Price Compare ──
   const openRouteModal = () => {
     setShowRouteModal(true);
-    setRouteStep('zip');
+    setRouteStep('location');
     setPriceResults(null);
     setSelectedStores({});
     setRouteData(null);
   };
 
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) { alert('Geolocation not supported by your browser.'); return; }
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude, lon = pos.coords.longitude;
+        setStartCoords({ lat, lon });
+        setStartAddress(`Current location (${lat.toFixed(4)}, ${lon.toFixed(4)})`);
+        setGettingLocation(false);
+      },
+      (err) => { alert('Location error: ' + err.message); setGettingLocation(false); },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
   const runPriceCompare = async () => {
-    if (!zipCode.trim()) return;
+    if (!startAddress.trim()) return;
     setRouteStep('loading');
     const itemList = unchecked.map(i => ({ id: i.id, name: i.name, trackedStore: i.store, trackedPrice: i.price || 0, category: i.category }));
     try {
@@ -784,7 +808,9 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
         body: JSON.stringify({
           mode: 'price_compare',
           context: {
-            zipCode,
+            startAddress,
+            startCoords,
+            sortMode,
             items: itemList.slice(0, 20),
           },
         }),
@@ -797,13 +823,25 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       }
       const parsed = data;
 
-      // Mark best price per item, set default selection to cheapest
       const defaults = {};
       parsed.items = (parsed.items || []).map(item => {
-        const sorted = [...(item.stores||[])].sort((a,b) => a.price - b.price);
+        // Default selection depends on sort mode
+        let sorted;
+        if (sortMode === 'proximity') {
+          sorted = [...(item.stores||[])].sort((a,b) => (a.distanceMiles||999) - (b.distanceMiles||999));
+        } else {
+          sorted = [...(item.stores||[])].sort((a,b) => a.price - b.price);
+        }
         const best = sorted[0];
         defaults[item.id] = best?.store || item.stores?.[0]?.store;
-        return { ...item, stores: item.stores.map(s => ({ ...s, isBest: s.store === best?.store })) };
+        // Mark cheapest and closest separately
+        const cheapest = [...(item.stores||[])].sort((a,b) => a.price - b.price)[0];
+        const closest = [...(item.stores||[])].sort((a,b) => (a.distanceMiles||999) - (b.distanceMiles||999))[0];
+        return { ...item, stores: item.stores.map(s => ({
+          ...s,
+          isCheapest: s.store === cheapest?.store,
+          isClosest: s.store === closest?.store,
+        })) };
       });
       setSelectedStores(defaults);
       const savings = (parsed.totalCurrentCost||0) - (parsed.totalBestCost||0);
@@ -811,22 +849,26 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       setRouteStep('results');
     } catch (e) {
       alert('Price compare failed: ' + e.message);
-      setRouteStep('zip');
+      setRouteStep('location');
     }
   };
 
   const buildRoute = async () => {
     setRouteLoading(true);
-    // Group items by selected store
     const storeGroups = {};
     (priceResults?.items || []).forEach(item => {
       const store = selectedStores[item.id];
       if (!store) return;
       const inv = unchecked.find(i => i.id === item.id);
-      if (!storeGroups[store]) storeGroups[store] = [];
-      storeGroups[store].push({ name: item.name, price: item.stores.find(s=>s.store===store)?.price || 0, unit: inv?.unit||'ct', qty: inv ? inv.par_level - inv.current_qty : 1 });
+      const storeMatch = item.stores.find(s => s.store === store);
+      if (!storeGroups[store]) storeGroups[store] = { items: [], lat: storeMatch?.lat, lon: storeMatch?.lon };
+      storeGroups[store].items.push({
+        name: item.name,
+        price: storeMatch?.price || 0,
+        unit: inv?.unit || 'ct',
+        qty: inv ? inv.par_level - inv.current_qty : 1,
+      });
     });
-    const storeList = Object.keys(storeGroups);
     try {
       const resp = await fetch('/api/receipt-ocr', {
         method: 'POST',
@@ -834,9 +876,11 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
         body: JSON.stringify({
           mode: 'route',
           context: {
-            zipCode,
-            destination,
-            storeGroups,
+            startAddress,
+            startCoords,
+            destinationAddress: destSameAsStart ? startAddress : destAddress,
+            destinationCoords: destSameAsStart ? startCoords : null,
+            storeGroups: Object.fromEntries(Object.entries(storeGroups).map(([k,v]) => [k, v.items])),
           },
         }),
       });
@@ -845,20 +889,107 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
         const detail = data.detail ? ` (${data.detail})` : '';
         throw new Error((data.error || 'API error') + detail);
       }
-      const parsed = data;
-
-      const route = (parsed.route || []).sort((a,b) => a.order - b.order).map(r => ({
-        ...r,
-        items: storeGroups[r.store] || [],
-        subtotal: (storeGroups[r.store] || []).reduce((s,i) => s + i.price, 0),
-      }));
-      setRouteData({ stops: route, totalMiles: parsed.totalEstimatedMiles, summary: parsed.routeSummary });
+      const route = (data.route || []).sort((a,b) => a.order - b.order).map(r => {
+        const grp = storeGroups[r.store] || { items: [] };
+        // Use grp coords if route doesn't have them
+        return {
+          ...r,
+          lat: r.lat || grp.lat,
+          lon: r.lon || grp.lon,
+          items: grp.items,
+          subtotal: grp.items.reduce((s,i) => s + i.price, 0),
+        };
+      });
+      setRouteData({ stops: route, totalMiles: data.totalEstimatedMiles, summary: data.routeSummary });
       setRouteStep('route');
     } catch (e) {
       alert('Route planning failed: ' + e.message);
     }
     setRouteLoading(false);
   };
+
+  // Map effect: render route on Leaflet map when route step is shown in map mode
+  useEffect(() => {
+    if (routeStep !== 'route' || routeViewMode !== 'map' || !routeData || !mapRef.current || typeof L === 'undefined') return;
+    // Clean up previous instance
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+    }
+    // Collect coords: start + each stop + destination
+    const points = [];
+    if (startCoords) points.push({ lat: startCoords.lat, lon: startCoords.lon, label: 'Start', kind: 'start' });
+    routeData.stops.forEach((s, i) => {
+      if (s.lat && s.lon) points.push({ lat: s.lat, lon: s.lon, label: `${i+1}. ${s.store}`, kind: 'stop', subtotal: s.subtotal });
+    });
+    if (!destSameAsStart && destAddress) {
+      // No coords for typed destination — we'll skip drawing it
+    } else if (destSameAsStart && startCoords) {
+      points.push({ lat: startCoords.lat, lon: startCoords.lon, label: 'End (same as start)', kind: 'end' });
+    }
+    if (points.length === 0) return;
+
+    // Center on average
+    const avgLat = points.reduce((s,p) => s + p.lat, 0) / points.length;
+    const avgLon = points.reduce((s,p) => s + p.lon, 0) / points.length;
+    const map = L.map(mapRef.current, { zoomControl: true, attributionControl: false }).setView([avgLat, avgLon], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    mapInstanceRef.current = map;
+
+    // Add markers
+    points.forEach((p, i) => {
+      const isStart = p.kind === 'start';
+      const isEnd = p.kind === 'end';
+      const color = isStart ? '#15803D' : isEnd ? '#6B5E57' : '#C05621';
+      const icon = L.divIcon({
+        className: 'custom-map-marker',
+        html: `<div style="background:${color};color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);">${isStart ? 'A' : isEnd ? 'B' : (i)}</div>`,
+        iconSize: [28, 28], iconAnchor: [14, 14],
+      });
+      const marker = L.marker([p.lat, p.lon], { icon }).addTo(map);
+      marker.bindPopup(`<b>${p.label}</b>${p.subtotal ? `<br/>$${p.subtotal.toFixed(2)}` : ''}`);
+    });
+
+    // Draw animated polyline between points
+    if (points.length > 1) {
+      const latlngs = points.map(p => [p.lat, p.lon]);
+      // Static line
+      const baseLine = L.polyline(latlngs, { color: '#C05621', weight: 3, opacity: 0.4, dashArray: '6, 8' }).addTo(map);
+      // Animated overlay: progressively reveal
+      let progress = 0;
+      const segments = [];
+      for (let i = 1; i < latlngs.length; i++) segments.push([latlngs[i-1], latlngs[i]]);
+      const animatedLines = segments.map(seg =>
+        L.polyline([seg[0]], { color: '#C05621', weight: 4, opacity: 0.95 }).addTo(map)
+      );
+      let segIdx = 0, segProgress = 0;
+      const step = () => {
+        if (!mapInstanceRef.current || segIdx >= segments.length) return;
+        const [a, b] = segments[segIdx];
+        segProgress += 0.04;
+        if (segProgress >= 1) {
+          animatedLines[segIdx].setLatLngs([a, b]);
+          segIdx++;
+          segProgress = 0;
+        } else {
+          const lat = a[0] + (b[0] - a[0]) * segProgress;
+          const lon = a[1] + (b[1] - a[1]) * segProgress;
+          animatedLines[segIdx].setLatLngs([a, [lat, lon]]);
+        }
+        if (segIdx < segments.length) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+      // Fit bounds
+      map.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40] });
+    }
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [routeStep, routeViewMode, routeData, startCoords, destSameAsStart, destAddress]);
 
   const mileData = session ? mileageStore.get(session.id) : {};
   const sessionHrs = session ? (Date.now() - new Date(session.started_at).getTime()) / 3600000 : 0;
@@ -950,32 +1081,79 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       {/* Route Modal */}
       {showRouteModal && (
         <div className="overlay" onClick={e => { if (e.target === e.currentTarget) setShowRouteModal(false); }}>
-          <div className="modal" style={{ maxWidth: 500, maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="modal" style={{ maxWidth: 520, maxHeight: '92vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div className="modal-title" style={{ margin: 0 }}>
-                {routeStep === 'zip' ? 'Smart Route & Price Compare' : routeStep === 'loading' ? 'Finding best prices…' : routeStep === 'results' ? 'Price Comparison' : 'Your Route'}
+                {routeStep === 'location' ? 'Smart Route & Price Compare'
+                  : routeStep === 'loading' ? 'Finding best prices…'
+                  : routeStep === 'results' ? 'Price Comparison'
+                  : 'Your Route'}
               </div>
               <button className="panel-x" onClick={() => setShowRouteModal(false)}>×</button>
             </div>
 
-            {/* Step 1: ZIP + destination */}
-            {routeStep === 'zip' && (
+            {/* Step 1: Location + sort mode */}
+            {routeStep === 'location' && (
               <div>
                 <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 16 }}>
-                  Enter your zip code to find nearby stores and compare prices for your {unchecked.length} item{unchecked.length !== 1 ? 's' : ''}.
+                  We'll find the best stores for your {unchecked.length} item{unchecked.length !== 1 ? 's' : ''}.
                 </div>
+
+                {/* Start address */}
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 11, color: 'var(--tx2)', display: 'block', marginBottom: 4 }}>Your zip code</label>
-                  <input className="inp inp-big" value={zipCode} onChange={e => setZipCode(e.target.value)}
-                    placeholder="e.g. 98052" maxLength={10} autoFocus
-                    onKeyDown={e => e.key === 'Enter' && zipCode.trim() && runPriceCompare()} />
+                  <label style={{ fontSize: 11, color: 'var(--tx2)', display: 'block', marginBottom: 4, fontWeight: 600 }}>Start address or location</label>
+                  <input className="inp" value={startAddress} onChange={e => { setStartAddress(e.target.value); setStartCoords(null); }}
+                    placeholder="e.g. 123 Main St, Redmond WA" autoFocus />
+                  <button className="btn-outline" style={{ width: '100%', marginTop: 6, fontSize: 12 }}
+                    onClick={useCurrentLocation} disabled={gettingLocation}>
+                    {gettingLocation ? 'Getting location…' : 'Use my current location'}
+                  </button>
                 </div>
+
+                {/* Destination toggle */}
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 11, color: 'var(--tx2)', display: 'block', marginBottom: 4, fontWeight: 600 }}>Destination after shopping</label>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+                    <button onClick={() => setDestSameAsStart(true)} style={{
+                      flex: 1, padding: '7px 10px', fontSize: 11, fontWeight: 700, borderRadius: 8, cursor: 'pointer',
+                      border: '1px solid ' + (destSameAsStart ? 'var(--ok)' : 'var(--bd)'),
+                      background: destSameAsStart ? 'var(--ok)' : 'var(--card)',
+                      color: destSameAsStart ? '#fff' : 'var(--tx2)',
+                    }}>Same as start</button>
+                    <button onClick={() => setDestSameAsStart(false)} style={{
+                      flex: 1, padding: '7px 10px', fontSize: 11, fontWeight: 700, borderRadius: 8, cursor: 'pointer',
+                      border: '1px solid ' + (!destSameAsStart ? 'var(--pr)' : 'var(--bd)'),
+                      background: !destSameAsStart ? 'var(--pr)' : 'var(--card)',
+                      color: !destSameAsStart ? '#fff' : 'var(--tx2)',
+                    }}>Different address</button>
+                  </div>
+                  {!destSameAsStart && (
+                    <input className="inp" value={destAddress} onChange={e => setDestAddress(e.target.value)}
+                      placeholder="e.g. Joe's Kitchen, Redmond WA" />
+                  )}
+                </div>
+
+                {/* Sort mode */}
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ fontSize: 11, color: 'var(--tx2)', display: 'block', marginBottom: 4 }}>Destination after shopping (optional)</label>
-                  <input className="inp" value={destination} onChange={e => setDestination(e.target.value)}
-                    placeholder="e.g. Joe's Kitchen, Redmond WA" />
+                  <label style={{ fontSize: 11, color: 'var(--tx2)', display: 'block', marginBottom: 4, fontWeight: 600 }}>Optimize for</label>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => setSortMode('proximity')} style={{
+                      flex: 1, padding: '8px 10px', fontSize: 11, fontWeight: 700, borderRadius: 8, cursor: 'pointer',
+                      border: '1px solid ' + (sortMode === 'proximity' ? 'var(--pr)' : 'var(--bd)'),
+                      background: sortMode === 'proximity' ? 'var(--pr)' : 'var(--card)',
+                      color: sortMode === 'proximity' ? '#fff' : 'var(--tx2)',
+                    }}>Proximity (closest stores)</button>
+                    <button onClick={() => setSortMode('cost')} style={{
+                      flex: 1, padding: '8px 10px', fontSize: 11, fontWeight: 700, borderRadius: 8, cursor: 'pointer',
+                      border: '1px solid ' + (sortMode === 'cost' ? 'var(--pr)' : 'var(--bd)'),
+                      background: sortMode === 'cost' ? 'var(--pr)' : 'var(--card)',
+                      color: sortMode === 'cost' ? '#fff' : 'var(--tx2)',
+                    }}>Cost (lowest prices)</button>
+                  </div>
                 </div>
-                <button className="btn-full" onClick={runPriceCompare} disabled={!zipCode.trim()}>
+
+                <button className="btn-full" onClick={runPriceCompare}
+                  disabled={!startAddress.trim() || (!destSameAsStart && !destAddress.trim())}>
                   Compare Prices
                 </button>
               </div>
@@ -986,53 +1164,78 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
               <div style={{ padding: '40px 0', textAlign: 'center' }}>
                 <div className="spinner" style={{ margin: '0 auto 16px' }} />
                 <div style={{ fontSize: 13, fontWeight: 600 }}>Comparing prices across stores…</div>
-                <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 6 }}>Checking {unchecked.length} items near {zipCode}</div>
+                <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 6 }}>Sorting by {sortMode === 'proximity' ? 'closest to you' : 'lowest cost'}</div>
               </div>
             )}
 
-            {/* Step 3: Price results — pick stores */}
+            {/* Step 3: Price results */}
             {routeStep === 'results' && priceResults && (
               <div>
                 {priceResults.totalSavings > 0 && (
-                  <div style={{ padding: 12, background: 'var(--okl)', borderRadius: 10, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: 12, color: 'var(--ok)' }}>Potential savings with best prices</div>
+                  <div style={{ padding: 12, background: 'var(--okl)', borderRadius: 10, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: 12, color: 'var(--ok)' }}>Potential savings</div>
                     <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--ok)' }}>${priceResults.totalSavings.toFixed(2)}</div>
                   </div>
                 )}
+
+                {/* Stores considered */}
+                {priceResults.storesConsidered && priceResults.storesConsidered.length > 0 && (
+                  <details style={{ marginBottom: 12, padding: 8, background: 'var(--bg)', borderRadius: 8 }}>
+                    <summary style={{ cursor: 'pointer', fontSize: 11, color: 'var(--tx2)', fontWeight: 600 }}>
+                      {priceResults.storesConsidered.length} stores considered
+                    </summary>
+                    <div style={{ marginTop: 6, fontSize: 11, color: 'var(--tx2)', lineHeight: 1.6 }}>
+                      {priceResults.storesConsidered.join(' · ')}
+                    </div>
+                  </details>
+                )}
+
                 <div style={{ fontSize: 11, color: 'var(--tx2)', marginBottom: 12 }}>
-                  Best prices are pre-selected. Tap a store name to switch your preference.
+                  Sorted by <b>{sortMode === 'proximity' ? 'distance' : 'price'}</b>. Tap a store to switch.
                 </div>
-                <div style={{ maxHeight: '45vh', overflowY: 'auto', marginBottom: 14 }}>
+
+                <div style={{ maxHeight: '50vh', overflowY: 'auto', marginBottom: 14 }}>
                   {(priceResults.items || []).map(item => {
                     const selected = selectedStores[item.id];
-                    const sortedStores = [...item.stores].sort((a,b) => a.price - b.price);
+                    const sortedStores = [...item.stores].sort((a, b) => sortMode === 'proximity'
+                      ? (a.distanceMiles || 999) - (b.distanceMiles || 999)
+                      : a.price - b.price);
                     return (
                       <div key={item.id} style={{ marginBottom: 12, padding: 12, borderRadius: 10, border: '1px solid var(--bd)', background: 'var(--card)' }}>
                         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{item.name}</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          {sortedStores.map((s, si) => {
+                          {sortedStores.map(s => {
                             const isSelected = selected === s.store;
-                            const isBest = si === 0;
                             return (
-                              <div key={s.store} onClick={() => setSelectedStores(p => ({...p, [item.id]: s.store}))}
+                              <div key={s.store} onClick={() => setSelectedStores(p => ({ ...p, [item.id]: s.store }))}
                                 style={{
                                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                  padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
+                                  padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
                                   border: '1px solid ' + (isSelected ? 'var(--ok)' : 'var(--bd)'),
                                   background: isSelected ? 'var(--okl)' : 'var(--bg)',
                                   transition: 'all .15s',
                                 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
                                   <div style={{
                                     width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
                                     border: '2px solid ' + (isSelected ? 'var(--ok)' : 'var(--bd)'),
                                     background: isSelected ? 'var(--ok)' : 'transparent',
                                   }} />
-                                  <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 400 }}>{s.store}</span>
-                                  {isBest && <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--ok)', background: 'var(--okl)', padding: '1px 5px', borderRadius: 999 }}>BEST</span>}
+                                  <div style={{ minWidth: 0, flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                                      <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 400 }}>{s.store}</span>
+                                      {s.isCheapest && <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--ok)', background: 'var(--okl)', padding: '1px 5px', borderRadius: 999 }}>CHEAPEST</span>}
+                                      {s.isClosest && !s.isCheapest && <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--pr)', background: 'var(--prl)', padding: '1px 5px', borderRadius: 999 }}>CLOSEST</span>}
+                                    </div>
+                                    {(s.location || s.distanceMiles) && (
+                                      <div style={{ fontSize: 10, color: 'var(--mu)' }}>
+                                        {s.location}{s.distanceMiles != null ? ` · ${s.distanceMiles.toFixed(1)} mi` : ''}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                                <div style={{ textAlign: 'right' }}>
-                                  <div style={{ fontSize: 13, fontWeight: 700, color: isBest ? 'var(--ok)' : 'var(--tx)' }}>${s.price.toFixed(2)}</div>
+                                <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: s.isCheapest ? 'var(--ok)' : 'var(--tx)' }}>${Number(s.price).toFixed(2)}</div>
                                   {s.note && <div style={{ fontSize: 9, color: 'var(--mu)' }}>{s.note}</div>}
                                 </div>
                               </div>
@@ -1043,8 +1246,9 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
                     );
                   })}
                 </div>
+
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn-gh" style={{ flex: 1 }} onClick={() => setRouteStep('zip')}>Back</button>
+                  <button className="btn-gh" style={{ flex: 1 }} onClick={() => setRouteStep('location')}>Back</button>
                   <button className="btn-full" style={{ flex: 2 }} onClick={buildRoute} disabled={routeLoading}>
                     {routeLoading ? 'Planning route…' : 'Plan My Route'}
                   </button>
@@ -1052,64 +1256,90 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
               </div>
             )}
 
-            {/* Step 4: Animated route */}
+            {/* Step 4: Route — map / timeline toggle */}
             {routeStep === 'route' && routeData && (
               <div>
                 {routeData.summary && (
-                  <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 16, padding: 10, background: 'var(--bg)', borderRadius: 8 }}>
+                  <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 12, padding: 10, background: 'var(--bg)', borderRadius: 8 }}>
                     {routeData.summary}{routeData.totalMiles ? ` · ~${routeData.totalMiles} miles total` : ''}
                   </div>
                 )}
-                <div style={{ position: 'relative', paddingLeft: 28 }}>
-                  {/* vertical line */}
-                  <div style={{ position: 'absolute', left: 11, top: 20, bottom: 20, width: 2, background: 'var(--bd)' }} />
-                  {routeData.stops.map((stop, i) => (
-                    <div key={stop.store} style={{ animation: `rowIn .4s ease ${i * 0.12}s both`, marginBottom: 16, position: 'relative' }}>
-                      {/* dot */}
-                      <div style={{
-                        position: 'absolute', left: -28, top: 14,
-                        width: 22, height: 22, borderRadius: '50%',
-                        background: i === 0 ? 'var(--ok)' : i === routeData.stops.length - 1 ? 'var(--pr)' : 'var(--card)',
-                        border: '2px solid ' + (i === 0 ? 'var(--ok)' : i === routeData.stops.length - 1 ? 'var(--pr)' : 'var(--bd)'),
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 10, fontWeight: 800, color: (i === 0 || i === routeData.stops.length - 1) ? '#fff' : 'var(--tx2)',
-                        zIndex: 1,
-                      }}>{i + 1}</div>
-                      <div style={{ padding: 12, background: 'var(--card)', borderRadius: 10, border: '1px solid var(--bd)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                          <div style={{ fontSize: 14, fontWeight: 700 }}>{stop.store}</div>
-                          {stop.subtotal > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pr)' }}>${stop.subtotal.toFixed(2)}</div>}
-                        </div>
-                        {stop.travelNote && <div style={{ fontSize: 11, color: 'var(--tx2)', marginBottom: 6 }}>{stop.travelNote}</div>}
-                        {stop.items.length > 0 && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                            {stop.items.map(item => (
-                              <span key={item.name} style={{ fontSize: 10, padding: '2px 8px', background: 'var(--bg)', borderRadius: 999, color: 'var(--tx2)' }}>
-                                {item.name} · ${item.price.toFixed(2)}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+
+                {/* View toggle */}
+                <div style={{ display: 'flex', gap: 4, background: 'var(--bg)', padding: 3, borderRadius: 8, marginBottom: 12 }}>
+                  {[['map', 'Map'], ['timeline', 'Timeline']].map(([k, l]) => (
+                    <button key={k} onClick={() => setRouteViewMode(k)} style={{
+                      flex: 1, padding: '6px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                      background: routeViewMode === k ? 'var(--card)' : 'transparent',
+                      color: routeViewMode === k ? 'var(--pr)' : 'var(--tx2)',
+                      boxShadow: routeViewMode === k ? '0 1px 3px rgba(0,0,0,.1)' : 'none',
+                    }}>{l}</button>
                   ))}
-                  {destination && (
-                    <div style={{ animation: `rowIn .4s ease ${routeData.stops.length * 0.12}s both`, marginBottom: 16, position: 'relative' }}>
-                      <div style={{ position: 'absolute', left: -28, top: 14, width: 22, height: 22, borderRadius: '50%', background: 'var(--tx2)', border: '2px solid var(--tx2)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />
-                      </div>
-                      <div style={{ padding: '10px 12px', background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--bd)', fontSize: 12, color: 'var(--tx2)' }}>
-                        {destination}
-                      </div>
-                    </div>
-                  )}
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+
+                {routeViewMode === 'map' && (
+                  <div>
+                    <div ref={mapRef} style={{ width: '100%', height: 360, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--bd)', marginBottom: 12 }} />
+                    {/* Compact stop list under map */}
+                    <div style={{ marginBottom: 12 }}>
+                      {routeData.stops.map((s, i) => (
+                        <div key={s.store} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', borderBottom: '1px solid var(--bd)', fontSize: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--pr)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800 }}>{i+1}</div>
+                            <div>
+                              <div style={{ fontWeight: 700 }}>{s.store}</div>
+                              {s.address && <div style={{ fontSize: 10, color: 'var(--mu)' }}>{s.address}</div>}
+                            </div>
+                          </div>
+                          {s.subtotal > 0 && <div style={{ fontWeight: 700, color: 'var(--pr)' }}>${s.subtotal.toFixed(2)}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {routeViewMode === 'timeline' && (
+                  <div style={{ position: 'relative', paddingLeft: 28, marginBottom: 12 }}>
+                    <div style={{ position: 'absolute', left: 11, top: 20, bottom: 20, width: 2, background: 'var(--bd)' }} />
+                    {routeData.stops.map((stop, i) => (
+                      <div key={stop.store} style={{ animation: `rowIn .4s ease ${i * 0.1}s both`, marginBottom: 14, position: 'relative' }}>
+                        <div style={{
+                          position: 'absolute', left: -28, top: 14, width: 22, height: 22, borderRadius: '50%',
+                          background: i === 0 ? 'var(--ok)' : i === routeData.stops.length - 1 ? 'var(--pr)' : 'var(--card)',
+                          border: '2px solid ' + (i === 0 ? 'var(--ok)' : i === routeData.stops.length - 1 ? 'var(--pr)' : 'var(--bd)'),
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 10, fontWeight: 800, color: (i === 0 || i === routeData.stops.length - 1) ? '#fff' : 'var(--tx2)', zIndex: 1,
+                        }}>{i + 1}</div>
+                        <div style={{ padding: 12, background: 'var(--card)', borderRadius: 10, border: '1px solid var(--bd)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                            <div style={{ fontSize: 14, fontWeight: 700 }}>{stop.store}</div>
+                            {stop.subtotal > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pr)' }}>${stop.subtotal.toFixed(2)}</div>}
+                          </div>
+                          {stop.travelNote && <div style={{ fontSize: 11, color: 'var(--tx2)', marginBottom: 6 }}>{stop.travelNote}</div>}
+                          {stop.items.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                              {stop.items.map(item => (
+                                <span key={item.name} style={{ fontSize: 10, padding: '2px 8px', background: 'var(--bg)', borderRadius: 999, color: 'var(--tx2)' }}>
+                                  {item.name} · ${item.price.toFixed(2)}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn-gh" style={{ flex: 1 }} onClick={() => setRouteStep('results')}>Back</button>
                   <button className="btn-full" style={{ flex: 2 }} onClick={() => setShowRouteModal(false)}>Start Shopping</button>
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
           </div>
         </div>
       )}
@@ -1194,6 +1424,7 @@ function AnalyticsView({ items, sessions }) {
   const [pLoading, setPLoading] = useState(true);
   const [topMode, setTopMode] = useState('cost'); // 'cost' | 'frequency' | 'monthly'
   const [timeRange, setTimeRange] = useState('all'); // 'all' | '30' | '90'
+  const [selectedMonth, setSelectedMonth] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -1412,188 +1643,6 @@ function AnalyticsView({ items, sessions }) {
         <StatCard val={`$${totalDriverPay.toFixed(0)}`} label="Driver Pay" color="var(--wa)" />
       </div>
 
-      {/* Inventory Turnover */}
-      {Object.keys(itemHistory).length > 0 && (() => {
-        const turnoverItems = Object.entries(itemHistory).map(([name, hist]) => {
-          const inv = items.find(i => i.name === name);
-          if (!inv || !inv.par_level) return null;
-          const avgDays = hist.length >= 2
-            ? hist.slice(1).reduce((s,h,i) => s + (h.ts - hist[i].ts)/86400000, 0) / (hist.length-1)
-            : null;
-          const velocity = avgDays ? inv.par_level / avgDays : null; // units per day
-          const parCoverage = velocity ? inv.par_level / velocity : null; // days of stock at par
-          return { name, avgDays, velocity, parCoverage, par_level: inv.par_level, unit: inv.unit, buyCount: hist.length };
-        }).filter(x => x && x.velocity);
-        turnoverItems.sort((a,b) => a.avgDays - b.avgDays);
-        if (!turnoverItems.length) return null;
-        return (
-          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Inventory Turnover</div>
-            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>How fast items move from par to zero</div>
-            {turnoverItems.slice(0,10).map(x => {
-              const parOk = x.parCoverage >= 5 && x.parCoverage <= 45;
-              const parLow = x.parCoverage < 5;
-              return (
-                <div key={x.name} style={{ padding: '10px 0', borderBottom: '1px solid var(--bd)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{x.name}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: parLow ? 'var(--er)' : parOk ? 'var(--ok)' : 'var(--wa)', flexShrink: 0, marginLeft: 8 }}>
-                      {x.avgDays ? `every ${x.avgDays.toFixed(0)}d` : '—'}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    <span>par: {x.par_level} {x.unit}</span>
-                    <span>·</span>
-                    <span>{x.velocity.toFixed(1)} {x.unit}/day</span>
-                    {x.parCoverage && <><span>·</span>
-                    <span style={{ color: parLow ? 'var(--er)' : parOk ? 'var(--tx2)' : 'var(--wa)', fontWeight: parLow ? 700 : 400 }}>
-                      {parLow ? 'par too low — ' : x.parCoverage > 45 ? 'par too high — ' : ''}
-                      {x.parCoverage.toFixed(0)}d coverage
-                    </span></>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        );
-      })()}
-
-      {/* Dead Stock */}
-      {(() => {
-        const deadStock = items.filter(it => {
-          const hist = itemHistory[it.name];
-          if (!hist) return it.current_qty > 0;
-          const daysSince = (Date.now() - hist[hist.length-1].ts) / 86400000;
-          return daysSince > 60 && it.current_qty >= it.par_level;
-        });
-        if (!deadStock.length) return null;
-        return (
-          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Dead Stock</div>
-            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>At or above par but not purchased in 60+ days — consider reducing par</div>
-            {deadStock.slice(0,8).map(it => {
-              const hist = itemHistory[it.name];
-              const daysSince = hist ? Math.floor((Date.now() - hist[hist.length-1].ts)/86400000) : null;
-              return (
-                <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{it.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--tx2)' }}>{it.current_qty}/{it.par_level} {it.unit} · {it.store}</div>
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--mu)', flexShrink: 0 }}>{daysSince ? `${daysSince}d ago` : 'never bought'}</div>
-                </div>
-              );
-            })}
-          </div>
-        );
-      })()}
-
-      {/* Par Level Suggestions */}
-      {(() => {
-        const suggestions = Object.entries(itemHistory).map(([name, hist]) => {
-          if (hist.length < 3) return null;
-          const inv = items.find(i => i.name === name);
-          if (!inv) return null;
-          const avgDays = hist.slice(1).reduce((s,h,i) => s + (h.ts-hist[i].ts)/86400000, 0) / (hist.length-1);
-          const velocity = inv.par_level / Math.max(avgDays,1);
-          const idealPar = Math.ceil(velocity * 7); // 1 week buffer
-          const diff = Math.abs(idealPar - inv.par_level);
-          if (diff < 2) return null;
-          return { name, currentPar: inv.par_level, idealPar, avgDays: avgDays.toFixed(0), unit: inv.unit, direction: idealPar > inv.par_level ? 'up' : 'down' };
-        }).filter(Boolean).sort((a,b) => Math.abs(b.idealPar-b.currentPar) - Math.abs(a.idealPar-a.currentPar));
-        if (!suggestions.length) return null;
-        return (
-          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Par Level Suggestions</div>
-            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Based on actual purchase velocity vs current par</div>
-            {suggestions.slice(0,8).map(s => (
-              <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--tx2)' }}>You buy this every {s.avgDays}d · current par: {s.currentPar} {s.unit}</div>
-                </div>
-                <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: s.direction === 'up' ? 'var(--er)' : 'var(--ok)' }}>
-                    {s.direction === 'up' ? '+' : ''}{s.idealPar - s.currentPar} → {s.idealPar}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'var(--mu)' }}>suggested par</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-      })()}
-
-      {/* Store Performance */}
-      {(() => {
-        const storeStats = {};
-        filteredPurchases.forEach(p => {
-          const s = p.store || 'Other';
-          if (!storeStats[s]) storeStats[s] = { store: s, spend: 0, items: 0, trips: new Set() };
-          storeStats[s].spend += Number(p.price||0) * Number(p.qty||1);
-          storeStats[s].items += 1;
-          if (p.session_id) storeStats[s].trips.add(p.session_id);
-        });
-        const storeList = Object.values(storeStats).map(s => ({ ...s, trips: s.trips.size, avgPerItem: s.items ? s.spend/s.items : 0 })).sort((a,b) => b.spend - a.spend);
-        if (storeList.length < 2) return null;
-        return (
-          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Store Performance</div>
-            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Spend and item count by supplier</div>
-            {storeList.map(s => (
-              <div key={s.store} style={{ padding: '10px 0', borderBottom: '1px solid var(--bd)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>{s.store}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pr)' }}>${s.spend.toFixed(0)}</div>
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--tx2)', display: 'flex', gap: 10 }}>
-                  <span>{s.items} purchases</span>
-                  <span>·</span>
-                  <span>${s.avgPerItem.toFixed(2)} avg/item</span>
-                  {s.trips > 0 && <><span>·</span><span>{s.trips} trip{s.trips !== 1 ? 's' : ''}</span></>}
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-      })()}
-
-      {/* Price comparison per item per store */}
-      {cheaperAlternatives.length > 0 &&
-        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Cheaper Stores</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Items where switching stores saves money</div>
-          {cheaperAlternatives.slice(0, 8).map(x => (
-            <div key={x.itemName} style={{ padding: '10px 0', borderBottom: '1px solid var(--bd)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.itemName}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ok)', flexShrink: 0, marginLeft: 8 }}>save ${x.potentialSavings.toFixed(2)}</div>
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--tx2)' }}>
-                <span style={{ color: 'var(--ok)', fontWeight: 700 }}>{x.cheapestStore}</span> ${x.cheapestPrice.toFixed(2)}
-                {x.others.map(o => <span key={o.store}> · {o.store} ${o.avg.toFixed(2)}</span>)}
-              </div>
-            </div>
-          ))}
-        </div>
-      }
-
-      {/* Price increase flags */}
-      {priceFlags.length > 0 &&
-        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Price Increases</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Last purchase 15%+ above your 6-month average</div>
-          {priceFlags.slice(0, 6).map(f => (
-            <div key={f.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
-                <div style={{ fontSize: 10, color: 'var(--mu)' }}>avg ${f.priorAvg.toFixed(2)} → last ${f.lastPrice.toFixed(2)} at {f.store}</div>
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--er)', flexShrink: 0 }}>+{f.pctIncrease.toFixed(0)}%</div>
-            </div>
-          ))}
-        </div>
-      }
-
       {/* Frequently Bought */}
       <div className="card" style={{ padding: 20, marginBottom: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
@@ -1617,7 +1666,7 @@ function AnalyticsView({ items, sessions }) {
         {pLoading ? <div style={{ padding: 30, textAlign: 'center', color: 'var(--mu)' }}>Loading...</div> :
          topItems.length === 0 ? <div className="empty"><p>No purchase data yet.</p></div> :
          topMode === 'monthly' ? (() => {
-           // Build month → [{name, spent}] sorted by spend
+           // Build month → [{name, spent}]
            const byMonth = {};
            filteredPurchases.forEach(p => {
              const d = new Date(p.purchased_at);
@@ -1626,33 +1675,65 @@ function AnalyticsView({ items, sessions }) {
              const cost = Number(p.price||0) * Number(p.qty||1);
              byMonth[mk][p.item_name] = (byMonth[mk][p.item_name] || 0) + cost;
            });
-           const months = Object.keys(byMonth).slice(-6); // last 6 months
+           const monthKeys = Object.keys(byMonth);
+           // Sort newest first by parsing the date
+           monthKeys.sort((a, b) => new Date('1 ' + a) - new Date('1 ' + b));
+           const monthsReversed = [...monthKeys].reverse();
+           const activeMonth = selectedMonth && byMonth[selectedMonth] ? selectedMonth : monthsReversed[0];
+           if (!activeMonth) return <div className="empty"><p>No monthly data yet.</p></div>;
+           const items2 = Object.entries(byMonth[activeMonth]).sort((a,b) => b[1]-a[1]).slice(0, 12);
+           const monthTotal = items2.reduce((s,[,v]) => s+v, 0);
+           const maxV = items2[0]?.[1] || 1;
            return (
              <div>
-               {months.map(mo => {
-                 const items2 = Object.entries(byMonth[mo]).sort((a,b) => b[1]-a[1]).slice(0,5);
-                 const monthTotal = items2.reduce((s,[,v]) => s+v, 0);
-                 const maxV = items2[0]?.[1] || 1;
-                 return (
-                   <div key={mo} style={{ marginBottom: 18 }}>
-                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                       <div style={{ fontSize: 12, fontWeight: 700 }}>{mo}</div>
-                       <div style={{ fontSize: 11, color: 'var(--pr)', fontWeight: 700 }}>${monthTotal.toFixed(0)}</div>
-                     </div>
-                     {items2.map(([name, spent], i) => (
-                       <div key={name} style={{ marginBottom: 6 }}>
-                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
-                           <span style={{ fontWeight: i === 0 ? 700 : 400 }}>{name}</span>
-                           <span style={{ fontWeight: 700, color: 'var(--pr)' }}>${spent.toFixed(2)}</span>
+               {/* Month picker chips */}
+               <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 14, paddingBottom: 4 }}>
+                 {monthsReversed.map(mo => (
+                   <button key={mo} onClick={() => setSelectedMonth(mo)} style={{
+                     padding: '5px 11px', borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+                     border: '1px solid ' + (activeMonth === mo ? 'var(--pr)' : 'var(--bd)'),
+                     background: activeMonth === mo ? 'var(--pr)' : 'var(--card)',
+                     color: activeMonth === mo ? '#fff' : 'var(--tx2)',
+                   }}>{mo}</button>
+                 ))}
+               </div>
+
+               {/* Month total header */}
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '10px 12px', background: 'var(--bg)', borderRadius: 8 }}>
+                 <div style={{ fontSize: 12, fontWeight: 700 }}>{activeMonth}</div>
+                 <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--pr)' }}>${monthTotal.toFixed(2)}</div>
+               </div>
+
+               {/* Horizontal bars */}
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                 {items2.map(([name, spent], i) => {
+                   const pct = (spent / maxV) * 100;
+                   return (
+                     <div key={name} style={{ animation: 'rowIn .25s ease ' + (i * 0.04) + 's both' }}>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, gap: 10 }}>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+                           <div style={{
+                             width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                             background: i < 3 ? 'var(--pr)' : 'var(--bg)',
+                             color: i < 3 ? '#fff' : 'var(--tx2)',
+                             display: 'flex', alignItems: 'center', justifyContent: 'center',
+                             fontSize: 10, fontWeight: 800,
+                           }}>{i + 1}</div>
+                           <span style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
                          </div>
-                         <div style={{ height: 3, background: 'var(--bg)', borderRadius: 2 }}>
-                           <div style={{ height: '100%', width: (spent/maxV*100)+'%', background: i === 0 ? 'var(--pr)' : 'var(--bd)', borderRadius: 2, transition: 'width .4s ease' }} />
-                         </div>
+                         <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--pr)', flexShrink: 0 }}>${spent.toFixed(2)}</span>
                        </div>
-                     ))}
-                   </div>
-                 );
-               })}
+                       <div style={{ height: 8, background: 'var(--bg)', borderRadius: 4, overflow: 'hidden' }}>
+                         <div style={{
+                           height: '100%', width: pct + '%',
+                           background: i < 3 ? 'linear-gradient(90deg, var(--pr), #E07043)' : 'var(--bd)',
+                           borderRadius: 4, transition: 'width .5s ease',
+                         }} />
+                       </div>
+                     </div>
+                   );
+                 })}
+               </div>
              </div>
            );
          })() :
@@ -1687,15 +1768,6 @@ function AnalyticsView({ items, sessions }) {
          </div>
         }
       </div>
-
-      {/* Spending by category */}
-      {catSpendData.length > 0 &&
-        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Spending by Category</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Where your money actually goes</div>
-          <BarChartSVG data={catSpendData} color="var(--ok)" fmt="$" />
-        </div>
-      }
 
       {/* Trip averages */}
       {completedSessions.length > 0 && (() => {
@@ -1768,6 +1840,24 @@ function AnalyticsView({ items, sessions }) {
         );
       })()}
 
+      {/* Spending by store */}
+      {storeSpendData.length > 0 &&
+        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Spending by Store</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Total spent at each supplier</div>
+          <BarChartSVG data={storeSpendData.slice(0, 8)} color="var(--pr)" fmt="$" />
+        </div>
+      }
+
+      {/* Spending by month */}
+      {monthSpendData.length > 0 &&
+        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Monthly Spend</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Grocery spend trend</div>
+          <BarChartSVG data={monthSpendData} color="var(--pr)" fmt="$" />
+        </div>
+      }
+
       {/* Restock predictions */}
       {(overdueItems.length > 0 || upcomingRestock.length > 0) &&
         <div className="card" style={{ padding: 20, marginBottom: 14 }}>
@@ -1806,21 +1896,194 @@ function AnalyticsView({ items, sessions }) {
         </div>
       }
 
-      {/* Spending by store */}
-      {storeSpendData.length > 0 &&
+      {/* Spending by category */}
+      {catSpendData.length > 0 &&
         <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Spending by Store</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Total spent at each supplier</div>
-          <BarChartSVG data={storeSpendData.slice(0, 8)} color="var(--pr)" fmt="$" />
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Spending by Category</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Where your money actually goes</div>
+          <BarChartSVG data={catSpendData} color="var(--ok)" fmt="$" />
         </div>
       }
 
-      {/* Spending by month */}
-      {monthSpendData.length > 0 &&
+      {/* Store Performance */}
+      {(() => {
+        const storeStats = {};
+        filteredPurchases.forEach(p => {
+          const s = p.store || 'Other';
+          if (!storeStats[s]) storeStats[s] = { store: s, spend: 0, items: 0, trips: new Set() };
+          storeStats[s].spend += Number(p.price||0) * Number(p.qty||1);
+          storeStats[s].items += 1;
+          if (p.session_id) storeStats[s].trips.add(p.session_id);
+        });
+        const storeList = Object.values(storeStats).map(s => ({ ...s, trips: s.trips.size, avgPerItem: s.items ? s.spend/s.items : 0 })).sort((a,b) => b.spend - a.spend);
+        if (storeList.length < 2) return null;
+        return (
+          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Store Performance</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Spend and item count by supplier</div>
+            {storeList.map(s => (
+              <div key={s.store} style={{ padding: '10px 0', borderBottom: '1px solid var(--bd)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{s.store}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pr)' }}>${s.spend.toFixed(0)}</div>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--tx2)', display: 'flex', gap: 10 }}>
+                  <span>{s.items} purchases</span>
+                  <span>·</span>
+                  <span>${s.avgPerItem.toFixed(2)} avg/item</span>
+                  {s.trips > 0 && <><span>·</span><span>{s.trips} trip{s.trips !== 1 ? 's' : ''}</span></>}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* Dead Stock */}
+      {(() => {
+        const deadStock = items.filter(it => {
+          const hist = itemHistory[it.name];
+          if (!hist) return it.current_qty > 0;
+          const daysSince = (Date.now() - hist[hist.length-1].ts) / 86400000;
+          return daysSince > 60 && it.current_qty >= it.par_level;
+        });
+        if (!deadStock.length) return null;
+        return (
+          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Dead Stock</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>At or above par but not purchased in 60+ days — consider reducing par</div>
+            {deadStock.slice(0,8).map(it => {
+              const hist = itemHistory[it.name];
+              const daysSince = hist ? Math.floor((Date.now() - hist[hist.length-1].ts)/86400000) : null;
+              return (
+                <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{it.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--tx2)' }}>{it.current_qty}/{it.par_level} {it.unit} · {it.store}</div>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--mu)', flexShrink: 0 }}>{daysSince ? `${daysSince}d ago` : 'never bought'}</div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* Inventory Turnover */}
+      {Object.keys(itemHistory).length > 0 && (() => {
+        const turnoverItems = Object.entries(itemHistory).map(([name, hist]) => {
+          const inv = items.find(i => i.name === name);
+          if (!inv || !inv.par_level) return null;
+          const avgDays = hist.length >= 2
+            ? hist.slice(1).reduce((s,h,i) => s + (h.ts - hist[i].ts)/86400000, 0) / (hist.length-1)
+            : null;
+          const velocity = avgDays ? inv.par_level / avgDays : null; // units per day
+          const parCoverage = velocity ? inv.par_level / velocity : null; // days of stock at par
+          return { name, avgDays, velocity, parCoverage, par_level: inv.par_level, unit: inv.unit, buyCount: hist.length };
+        }).filter(x => x && x.velocity);
+        turnoverItems.sort((a,b) => a.avgDays - b.avgDays);
+        if (!turnoverItems.length) return null;
+        return (
+          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Inventory Turnover</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>How fast items move from par to zero</div>
+            {turnoverItems.slice(0,10).map(x => {
+              const parOk = x.parCoverage >= 5 && x.parCoverage <= 45;
+              const parLow = x.parCoverage < 5;
+              return (
+                <div key={x.name} style={{ padding: '10px 0', borderBottom: '1px solid var(--bd)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{x.name}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: parLow ? 'var(--er)' : parOk ? 'var(--ok)' : 'var(--wa)', flexShrink: 0, marginLeft: 8 }}>
+                      {x.avgDays ? `every ${x.avgDays.toFixed(0)}d` : '—'}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <span>par: {x.par_level} {x.unit}</span>
+                    <span>·</span>
+                    <span>{x.velocity.toFixed(1)} {x.unit}/day</span>
+                    {x.parCoverage && <><span>·</span>
+                    <span style={{ color: parLow ? 'var(--er)' : parOk ? 'var(--tx2)' : 'var(--wa)', fontWeight: parLow ? 700 : 400 }}>
+                      {parLow ? 'par too low — ' : x.parCoverage > 45 ? 'par too high — ' : ''}
+                      {x.parCoverage.toFixed(0)}d coverage
+                    </span></>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* Par Level Suggestions */}
+      {(() => {
+        const suggestions = Object.entries(itemHistory).map(([name, hist]) => {
+          if (hist.length < 3) return null;
+          const inv = items.find(i => i.name === name);
+          if (!inv) return null;
+          const avgDays = hist.slice(1).reduce((s,h,i) => s + (h.ts-hist[i].ts)/86400000, 0) / (hist.length-1);
+          const velocity = inv.par_level / Math.max(avgDays,1);
+          const idealPar = Math.ceil(velocity * 7); // 1 week buffer
+          const diff = Math.abs(idealPar - inv.par_level);
+          if (diff < 2) return null;
+          return { name, currentPar: inv.par_level, idealPar, avgDays: avgDays.toFixed(0), unit: inv.unit, direction: idealPar > inv.par_level ? 'up' : 'down' };
+        }).filter(Boolean).sort((a,b) => Math.abs(b.idealPar-b.currentPar) - Math.abs(a.idealPar-a.currentPar));
+        if (!suggestions.length) return null;
+        return (
+          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Par Level Suggestions</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Based on actual purchase velocity vs current par</div>
+            {suggestions.slice(0,8).map(s => (
+              <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--tx2)' }}>You buy this every {s.avgDays}d · current par: {s.currentPar} {s.unit}</div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: s.direction === 'up' ? 'var(--er)' : 'var(--ok)' }}>
+                    {s.direction === 'up' ? '+' : ''}{s.idealPar - s.currentPar} → {s.idealPar}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--mu)' }}>suggested par</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* Price comparison per item per store */}
+      {cheaperAlternatives.length > 0 &&
         <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Monthly Spend</div>
-          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Grocery spend trend</div>
-          <BarChartSVG data={monthSpendData} color="var(--pr)" fmt="$" />
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Cheaper Stores</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Items where switching stores saves money</div>
+          {cheaperAlternatives.slice(0, 8).map(x => (
+            <div key={x.itemName} style={{ padding: '10px 0', borderBottom: '1px solid var(--bd)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.itemName}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ok)', flexShrink: 0, marginLeft: 8 }}>save ${x.potentialSavings.toFixed(2)}</div>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--tx2)' }}>
+                <span style={{ color: 'var(--ok)', fontWeight: 700 }}>{x.cheapestStore}</span> ${x.cheapestPrice.toFixed(2)}
+                {x.others.map(o => <span key={o.store}> · {o.store} ${o.avg.toFixed(2)}</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      }
+
+      {/* Price increase flags */}
+      {priceFlags.length > 0 &&
+        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Price Increases</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Last purchase 15%+ above your 6-month average</div>
+          {priceFlags.slice(0, 6).map(f => (
+            <div key={f.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
+                <div style={{ fontSize: 10, color: 'var(--mu)' }}>avg ${f.priorAvg.toFixed(2)} → last ${f.lastPrice.toFixed(2)} at {f.store}</div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--er)', flexShrink: 0 }}>+{f.pctIncrease.toFixed(0)}%</div>
+            </div>
+          ))}
         </div>
       }
 
@@ -2066,53 +2329,16 @@ function MealsView({ items }) {
 }
 
 /* ─── ADD ITEM ─── */
-function AddView({ onAdd, busy, flash }) {
+function AddView({ onAdd, busy, flash, onScanReceipt }) {
   const [ni, setNi] = useState({ name: '', category: 'Other', store: 'Other', unit: 'ct', current_qty: 0, par_level: 1, price: 0, note: '' });
-  const [scanning, setScanning] = useState(false);
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-  const startScan = async () => {
-    setScanning(true);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      if ('BarcodeDetector' in window) {
-        const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'qr_code', 'upc_a', 'upc_e'] });
-        const scan = async () => {
-          if (!videoRef.current || !streamRef.current) return;
-          try {
-            const codes = await detector.detect(videoRef.current);
-            if (codes.length > 0) {setNi((p) => ({ ...p, note: `Barcode: ${codes[0].rawValue}` }));stopScan();flash('Barcode captured!');return;}
-          } catch {}
-          requestAnimationFrame(scan);
-        };
-        requestAnimationFrame(scan);
-      }
-    } catch {flash('Camera not available');setScanning(false);}
-  };
-  const stopScan = () => {
-    if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;setScanning(false);
-  };
   const handleAdd = async () => {await onAdd(ni);setNi({ name: '', category: 'Other', store: 'Other', unit: 'ct', current_qty: 0, par_level: 1, price: 0, note: '' });};
   return (
     <div className="page">
       <div className="page-hdr"><div><div className="page-title">Add Item</div><div className="page-sub">Add a new inventory item</div></div></div>
-      <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Barcode Scanner</div>
-        {!scanning ?
-        <button className="btn-outline" style={{ width: '100%' }} onClick={startScan}>Open Camera to Scan</button> :
-
-        <div>
-            <div className="scan-area">
-              <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: .85 }} />
-              <div className="scan-line" />
-            </div>
-            <button className="btn-gh" style={{ width: '100%' }} onClick={stopScan}>Cancel Scan</button>
-          </div>
-        }
-        {!('BarcodeDetector' in window) && !scanning && <p style={{ fontSize: 11, color: 'var(--mu)', marginTop: 6 }}>Auto-detect requires Chrome/Edge. Camera will still open for manual reference.</p>}
+      <div className="card" style={{ padding: 16, marginBottom: 16, background: 'var(--prl)', border: '1px solid var(--bd)' }}>
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Add by receipt</div>
+        <p style={{ fontSize: 11, color: 'var(--tx2)', marginBottom: 10 }}>Scan a receipt and add multiple items at once instead of typing them in.</p>
+        <button className="btn-pr" style={{ width: '100%' }} onClick={onScanReceipt}>Scan Receipt</button>
       </div>
       <div className="f-grp">
         <label className="f-lbl">Item Name *</label>
@@ -2983,7 +3209,7 @@ function App() {
         {view === 'shopping' && <ShoppingView items={items} session={session} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onShopperNote={updateShopperNote} flash={flash} />}
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
         {view === 'meals' && <MealsView items={items} />}
-        {view === 'add' && <AddView onAdd={addItem} busy={syncing} flash={flash} />}
+        {view === 'add' && <AddView onAdd={addItem} busy={syncing} flash={flash} onScanReceipt={() => setShowReceiptScanner(true)} />}
         {view === 'history' && <HistoryView sessions={sessions} />}
       </div>
       <BottomNav view={view} setView={setView} outCt={outCt} />
