@@ -302,6 +302,16 @@ window.userStore={
   getAll:()=>JSON.parse(localStorage.getItem('jk_users')||'["Joe","Team"]'),
   add(u){const a=window.userStore.getAll();if(!a.includes(u)){a.push(u);localStorage.setItem('jk_users',JSON.stringify(a));}}
 };
+// Driver pay constants
+// 2023 Hyundai Elantra Hybrid: 50 MPG combined (EPA)
+// WA state gas avg April 2026: $5.38/gal (AAA)
+window.HOURLY_RATE = 20;
+window.GAS_RATE_PER_MILE = 5.38 / 50; // $0.1076/mile
+window.calcDriverPay = function(hrs, miles) {
+  const timePay = (hrs || 0) * window.HOURLY_RATE;
+  const gasPay = (miles || 0) * window.GAS_RATE_PER_MILE;
+  return { timePay, gasPay, total: timePay + gasPay };
+};
 window.CATS=["Proteins","Produce","Spices & Seasonings","Oils & Sauces","Grains & Starches","Dairy & Eggs","Canned & Dry Goods","Packaging & Supplies","Other"];
 window.STORES=["Restaurant Depot","US Chef Store","QFC","Costco","Trader Joe's","Plaza Latina","Imrans","African Store","Amazon","Other"];
 window.UNITS=["lbs","oz","kg","g","gal","qt","L","ml","ct","bags","boxes","cans","bunches","heads","packs"];
@@ -557,7 +567,9 @@ function DashboardView({ items, sessions, onNavigate, onScanReceipt, flash }) {
           {recentSess.map((s) => {
           const miles = mileageStore.get(s.id);
           const hrs = s.ended_at ? (new Date(s.ended_at) - new Date(s.started_at)) / 3600000 : null;
-          const pay = hrs ? (hrs * 20).toFixed(2) : null;
+          const milesD = miles.start_miles && miles.end_miles ? Number(miles.end_miles) - Number(miles.start_miles) : null;
+          const payCalc = hrs ? window.calcDriverPay(hrs, milesD) : null;
+          const pay = payCalc ? payCalc.total.toFixed(2) : null;
           return (
             <div key={s.id} className="alert-item">
                 <div style={{ flex: 1 }}>
@@ -781,7 +793,10 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
 
   const mileData = session ? mileageStore.get(session.id) : {};
   const sessionHrs = session ? (Date.now() - new Date(session.started_at).getTime()) / 3600000 : 0;
-  const tripPay = (sessionHrs * 20).toFixed(2);
+  const tripPayCalc = window.calcDriverPay(sessionHrs, milesDriven);
+  const tripPay = tripPayCalc.total.toFixed(2);
+  const tripTimePay = tripPayCalc.timePay.toFixed(2);
+  const tripGasPay = tripPayCalc.gasPay.toFixed(2);
   const milesDriven = endMiles && mileData.start_miles ? Number(endMiles) - Number(mileData.start_miles) : null;
 
   return (
@@ -823,7 +838,9 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
                 <div className="trip-row"><span className="trip-lbl">Items Purchased</span><span className="trip-val">{checked.length}</span></div>
                 {mileData.start_miles && <div className="trip-row"><span className="trip-lbl">Miles Driven</span><span className="trip-val">{(Number(endMiles) - Number(mileData.start_miles)).toFixed(1)} mi</span></div>}
                 <div className="trip-row"><span className="trip-lbl">Groceries Total</span><span className="trip-val">${checked.reduce((s, i) => s + Number(i.price || 0), 0).toFixed(2)}</span></div>
-                <div className="trip-row"><span className="trip-lbl">Driver Pay (@$20/hr)</span><span className="trip-total">${tripPay}</span></div>
+                <div className="trip-row"><span className="trip-lbl">Time Pay (@$20/hr)</span><span className="trip-val">${tripTimePay}</span></div>
+                {milesDriven && <div className="trip-row"><span className="trip-lbl">Gas ({(Number(endMiles) - Number(mileData.start_miles)).toFixed(1)} mi)</span><span className="trip-val">${tripGasPay}</span></div>}
+                <div className="trip-row"><span className="trip-lbl">Total Driver Pay</span><span className="trip-total">${tripPay}</span></div>
               </div>
           }
             <div className="m-acts">
@@ -1138,7 +1155,9 @@ function AnalyticsView({ items, sessions }) {
   const totalSess = sessions.filter((s) => s.status === 'completed').length;
   const tripCosts = sessions.filter((s) => s.ended_at).map((s) => {
     const hrs = (new Date(s.ended_at) - new Date(s.started_at)) / 3600000;
-    return hrs * 20;
+    const mi = mileageStore.get(s.id);
+    const miles = mi.start_miles && mi.end_miles ? Number(mi.end_miles) - Number(mi.start_miles) : null;
+    return window.calcDriverPay(hrs, miles).total;
   }).filter((v) => v > 0);
   const totalDriverPay = tripCosts.reduce((a, b) => a + b, 0);
   const totalValue = items.reduce((s, i) => s + Number(i.price || 0), 0);
@@ -2079,7 +2098,9 @@ function HistoryView({ sessions }) {
   // Compute totals
   const totalEarned = sessions.filter(s => s.ended_at).reduce((sum, s) => {
     const hrs = (new Date(s.ended_at) - new Date(s.started_at)) / 3600000;
-    return sum + hrs * 20;
+    const mi = mileageStore.get(s.id);
+    const miles = mi.start_miles && mi.end_miles ? Number(mi.end_miles) - Number(mi.start_miles) : null;
+    return sum + window.calcDriverPay(hrs, miles).total;
   }, 0);
   const totalPaid = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
   const unpaidBalance = totalEarned - totalPaid;
@@ -2198,8 +2219,9 @@ function HistoryView({ sessions }) {
         const open = expandId === s.id;
         const miles = mileageStore.get(s.id);
         const hrs = s.ended_at ? (new Date(s.ended_at) - new Date(s.started_at)) / 3600000 : null;
-        const pay = hrs ? (hrs * 20).toFixed(2) : null;
-        const milesDriven = miles.start_miles && miles.end_miles ? miles.end_miles - miles.start_miles : null;
+        const milesDriven = miles.start_miles && miles.end_miles ? Number(miles.end_miles) - Number(miles.start_miles) : null;
+        const payBreakdown = hrs ? window.calcDriverPay(hrs, milesDriven) : null;
+        const pay = payBreakdown ? payBreakdown.total.toFixed(2) : null;
         const sNotes = notes[s.id] || [];
         return (
           <div key={s.id} className="hist-card" style={{ animation: `rowIn .28s ${idx * .04}s both` }}>
@@ -2226,7 +2248,9 @@ function HistoryView({ sessions }) {
                     {hrs && <div className="trip-row"><span className="trip-lbl">Duration</span><span className="trip-val">{hrs.toFixed(1)}h</span></div>}
                     {milesDriven && <div className="trip-row"><span className="trip-lbl">Miles Driven</span><span className="trip-val">{milesDriven} mi</span></div>}
                     {s.total_spent > 0 && <div className="trip-row"><span className="trip-lbl">Groceries</span><span className="trip-val">${Number(s.total_spent).toFixed(2)}</span></div>}
-                    {pay && <div className="trip-row"><span className="trip-lbl">Driver Pay</span><span className="trip-total">${pay}</span></div>}
+                    {payBreakdown && <div className="trip-row"><span className="trip-lbl">Time Pay (@$20/hr)</span><span className="trip-val">${payBreakdown.timePay.toFixed(2)}</span></div>}
+                    {payBreakdown && milesDriven && <div className="trip-row"><span className="trip-lbl">Gas ({milesDriven} mi × ${window.GAS_RATE_PER_MILE.toFixed(4)})</span><span className="trip-val">${payBreakdown.gasPay.toFixed(2)}</span></div>}
+                    {payBreakdown && <div className="trip-row"><span className="trip-lbl">Total Driver Pay</span><span className="trip-total">${pay}</span></div>}
                   </div>
               }
                 {sNotes.length > 0 && sNotes.map((n) =>
