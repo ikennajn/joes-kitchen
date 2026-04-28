@@ -284,6 +284,13 @@ window.db={
   getAliases:()=>q("receipt_aliases?select=*"),
   upsertAlias:(a)=>q("receipt_aliases",{method:"POST",headers:{...H,"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(a)}),
   deleteAlias:(id)=>q(`receipt_aliases?id=eq.${id}`,{method:"DELETE"}),
+  getMeals:()=>q("meals?select=*&order=name.asc"),
+  insertMeal:(m)=>q("meals",{method:"POST",body:JSON.stringify(m)}),
+  updateMeal:(id,f)=>q(`meals?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(f)}),
+  deleteMeal:(id)=>q(`meals?id=eq.${id}`,{method:"DELETE"}),
+  getMealIngredients:()=>q("meal_ingredients?select=*"),
+  upsertMealIngredient:(r)=>q("meal_ingredients",{method:"POST",headers:{...H,"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(r)}),
+  deleteMealIngredient:(meal_id,item_id)=>q(`meal_ingredients?meal_id=eq.${meal_id}&item_id=eq.${item_id}`,{method:"DELETE"}),
 };
 window.mileageStore={
   save(sid,d){const a=JSON.parse(localStorage.getItem('jk_miles')||'{}');a[sid]={...(a[sid]||{}),...d};localStorage.setItem('jk_miles',JSON.stringify(a));},
@@ -1382,11 +1389,598 @@ function AnalyticsView({ items, sessions }) {
         </div>
       }
 
+      {/* Inventory Turnover */}
+      {Object.keys(itemHistory).length > 0 && (() => {
+        const turnoverItems = Object.entries(itemHistory).map(([name, hist]) => {
+          const inv = items.find(i => i.name === name);
+          if (!inv || !inv.par_level) return null;
+          const avgDays = hist.length >= 2
+            ? hist.slice(1).reduce((s,h,i) => s + (h.ts - hist[i].ts)/86400000, 0) / (hist.length-1)
+            : null;
+          const velocity = avgDays ? inv.par_level / avgDays : null; // units per day
+          const parCoverage = velocity ? inv.par_level / velocity : null; // days of stock at par
+          return { name, avgDays, velocity, parCoverage, par_level: inv.par_level, unit: inv.unit, buyCount: hist.length };
+        }).filter(x => x && x.velocity);
+        turnoverItems.sort((a,b) => a.avgDays - b.avgDays);
+        if (!turnoverItems.length) return null;
+        return (
+          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Inventory Turnover</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>How fast items move from par to zero</div>
+            {turnoverItems.slice(0,10).map(x => {
+              const parOk = x.parCoverage >= 5 && x.parCoverage <= 45;
+              const parLow = x.parCoverage < 5;
+              return (
+                <div key={x.name} style={{ padding: '10px 0', borderBottom: '1px solid var(--bd)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{x.name}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: parLow ? 'var(--er)' : parOk ? 'var(--ok)' : 'var(--wa)', flexShrink: 0, marginLeft: 8 }}>
+                      {x.avgDays ? `every ${x.avgDays.toFixed(0)}d` : '—'}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <span>par: {x.par_level} {x.unit}</span>
+                    <span>·</span>
+                    <span>{x.velocity.toFixed(1)} {x.unit}/day</span>
+                    {x.parCoverage && <><span>·</span>
+                    <span style={{ color: parLow ? 'var(--er)' : parOk ? 'var(--tx2)' : 'var(--wa)', fontWeight: parLow ? 700 : 400 }}>
+                      {parLow ? 'par too low — ' : x.parCoverage > 45 ? 'par too high — ' : ''}
+                      {x.parCoverage.toFixed(0)}d coverage
+                    </span></>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* Dead Stock */}
+      {(() => {
+        const deadStock = items.filter(it => {
+          const hist = itemHistory[it.name];
+          if (!hist) return it.current_qty > 0;
+          const daysSince = (Date.now() - hist[hist.length-1].ts) / 86400000;
+          return daysSince > 60 && it.current_qty >= it.par_level;
+        });
+        if (!deadStock.length) return null;
+        return (
+          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Dead Stock</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>At or above par but not purchased in 60+ days — consider reducing par</div>
+            {deadStock.slice(0,8).map(it => {
+              const hist = itemHistory[it.name];
+              const daysSince = hist ? Math.floor((Date.now() - hist[hist.length-1].ts)/86400000) : null;
+              return (
+                <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{it.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--tx2)' }}>{it.current_qty}/{it.par_level} {it.unit} · {it.store}</div>
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--mu)', flexShrink: 0 }}>{daysSince ? `${daysSince}d ago` : 'never bought'}</div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* Par Level Suggestions */}
+      {(() => {
+        const suggestions = Object.entries(itemHistory).map(([name, hist]) => {
+          if (hist.length < 3) return null;
+          const inv = items.find(i => i.name === name);
+          if (!inv) return null;
+          const avgDays = hist.slice(1).reduce((s,h,i) => s + (h.ts-hist[i].ts)/86400000, 0) / (hist.length-1);
+          const velocity = inv.par_level / Math.max(avgDays,1);
+          const idealPar = Math.ceil(velocity * 7); // 1 week buffer
+          const diff = Math.abs(idealPar - inv.par_level);
+          if (diff < 2) return null;
+          return { name, currentPar: inv.par_level, idealPar, avgDays: avgDays.toFixed(0), unit: inv.unit, direction: idealPar > inv.par_level ? 'up' : 'down' };
+        }).filter(Boolean).sort((a,b) => Math.abs(b.idealPar-b.currentPar) - Math.abs(a.idealPar-a.currentPar));
+        if (!suggestions.length) return null;
+        return (
+          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Par Level Suggestions</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Based on actual purchase velocity vs current par</div>
+            {suggestions.slice(0,8).map(s => (
+              <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--tx2)' }}>You buy this every {s.avgDays}d · current par: {s.currentPar} {s.unit}</div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: s.direction === 'up' ? 'var(--er)' : 'var(--ok)' }}>
+                    {s.direction === 'up' ? '+' : ''}{s.idealPar - s.currentPar} → {s.idealPar}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--mu)' }}>suggested par</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* Store Performance */}
+      {(() => {
+        const storeStats = {};
+        filteredPurchases.forEach(p => {
+          const s = p.store || 'Other';
+          if (!storeStats[s]) storeStats[s] = { store: s, spend: 0, items: 0, trips: new Set() };
+          storeStats[s].spend += Number(p.price||0) * Number(p.qty||1);
+          storeStats[s].items += 1;
+          if (p.session_id) storeStats[s].trips.add(p.session_id);
+        });
+        const storeList = Object.values(storeStats).map(s => ({ ...s, trips: s.trips.size, avgPerItem: s.items ? s.spend/s.items : 0 })).sort((a,b) => b.spend - a.spend);
+        if (storeList.length < 2) return null;
+        return (
+          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Store Performance</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Spend and item count by supplier</div>
+            {storeList.map(s => (
+              <div key={s.store} style={{ padding: '10px 0', borderBottom: '1px solid var(--bd)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 3 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{s.store}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pr)' }}>${s.spend.toFixed(0)}</div>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--tx2)', display: 'flex', gap: 10 }}>
+                  <span>{s.items} purchases</span>
+                  <span>·</span>
+                  <span>${s.avgPerItem.toFixed(2)} avg/item</span>
+                  {s.trips > 0 && <><span>·</span><span>{s.trips} trip{s.trips !== 1 ? 's' : ''}</span></>}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* Price comparison per item per store */}
+      {cheaperAlternatives.length > 0 &&
+        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Cheaper Stores</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Items where switching stores saves money</div>
+          {cheaperAlternatives.slice(0, 8).map(x => (
+            <div key={x.itemName} style={{ padding: '10px 0', borderBottom: '1px solid var(--bd)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.itemName}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ok)', flexShrink: 0, marginLeft: 8 }}>save ${x.potentialSavings.toFixed(2)}</div>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--tx2)' }}>
+                <span style={{ color: 'var(--ok)', fontWeight: 700 }}>{x.cheapestStore}</span> ${x.cheapestPrice.toFixed(2)}
+                {x.others.map(o => <span key={o.store}> · {o.store} ${o.avg.toFixed(2)}</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      }
+
+      {/* Price increase flags */}
+      {priceFlags.length > 0 &&
+        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Price Increases</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Last purchase 15%+ above your 6-month average</div>
+          {priceFlags.slice(0, 6).map(f => (
+            <div key={f.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</div>
+                <div style={{ fontSize: 10, color: 'var(--mu)' }}>avg ${f.priorAvg.toFixed(2)} → last ${f.lastPrice.toFixed(2)} at {f.store}</div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--er)', flexShrink: 0 }}>+{f.pctIncrease.toFixed(0)}%</div>
+            </div>
+          ))}
+        </div>
+      }
+
+      {/* Frequently Bought */}
+      <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Frequently Bought</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)' }}>{topMode === 'cost' ? 'Top items by total cost' : 'Top items by purchase frequency'}</div>
+          </div>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--bg)', padding: 3, borderRadius: 8 }}>
+            {[['cost','By Cost'],['frequency','By Frequency']].map(([k,l]) => (
+              <button key={k} onClick={() => setTopMode(k)} style={{
+                padding: '6px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', border: 'none',
+                background: topMode === k ? 'var(--card)' : 'transparent',
+                color: topMode === k ? 'var(--pr)' : 'var(--tx2)',
+                boxShadow: topMode === k ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              }}>{l}</button>
+            ))}
+          </div>
+        </div>
+        {pLoading ? <div style={{ padding: 30, textAlign: 'center', color: 'var(--mu)' }}>Loading...</div> :
+         topItems.length === 0 ? <div className="empty"><p>No purchase data yet.</p></div> :
+         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {topItems.slice(0, 15).map((m, idx) => {
+            const pct = topMode === 'cost' ? (m.totalSpent / maxValue) * 100 : (m.count / maxValue) * 100;
+            const daysAgo = m.lastBought ? Math.floor((Date.now() - m.lastBought) / 86400000) : null;
+            return (
+              <div key={m.name} style={{ animation: 'rowIn .3s ease ' + (idx * 0.03) + 's both' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+                    <div style={{ width: 22, height: 22, flexShrink: 0, borderRadius: '50%', background: idx < 3 ? 'var(--pr)' : 'var(--bg)', color: idx < 3 ? '#fff' : 'var(--tx2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>{idx + 1}</div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</div>
+                      <div style={{ fontSize: 10, color: 'var(--mu)', display: 'flex', gap: 6, alignItems: 'center', marginTop: 1 }}>
+                        <span>{m.store}</span><span>·</span><span>{m.category}</span>
+                        {daysAgo !== null && <><span>·</span><span>{daysAgo === 0 ? 'today' : daysAgo + 'd ago'}</span></>}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--pr)' }}>{topMode === 'cost' ? `$${m.totalSpent.toFixed(2)}` : `${m.count}×`}</div>
+                    <div style={{ fontSize: 10, color: 'var(--mu)' }}>{topMode === 'cost' ? `${m.count} purchases` : `$${m.totalSpent.toFixed(0)} total`}</div>
+                  </div>
+                </div>
+                <div style={{ height: 4, background: 'var(--bg)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: pct + '%', background: idx < 3 ? 'linear-gradient(90deg, var(--pr), #E07043)' : 'var(--bd)', transition: 'width .4s ease' }} />
+                </div>
+              </div>
+            );
+          })}
+         </div>
+        }
+      </div>
+
+      {/* Spending by category */}
+      {catSpendData.length > 0 &&
+        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Spending by Category</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Where your money actually goes</div>
+          <BarChartSVG data={catSpendData} color="var(--ok)" fmt="$" />
+        </div>
+      }
+
+      {/* Trip averages */}
+      {completedSessions.length > 0 &&
+        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Trip Averages</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Based on {completedSessions.length} completed trips</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            {[['Avg Cost', `$${avgTripCost.toFixed(0)}`, 'var(--pr)'], ['Avg Time', `${avgTripDuration.toFixed(0)}m`, null], ['Avg Items', avgItemsPerTrip.toFixed(0), null]].map(([lbl, val, col]) => (
+              <div key={lbl} style={{ padding: 12, background: 'var(--bg)', borderRadius: 10, textAlign: 'center' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>{lbl}</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: col || 'var(--tx)', marginTop: 2 }}>{val}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      }
+
+      {/* Forecasting */}
+      {dailyBurn > 0 && (() => {
+        // When will 5+ items hit LOW?
+        const soonLow = items.filter(it => {
+          const hist = itemHistory[it.name];
+          if (!hist || hist.length < 2) return false;
+          const avgDays = hist.slice(1).reduce((s,h,i) => s + (h.ts-hist[i].ts)/86400000, 0) / (hist.length-1);
+          const velocity = it.par_level / Math.max(avgDays, 1);
+          const daysToLow = it.current_qty > it.par_level ? (it.current_qty - it.par_level) / velocity : 0;
+          return daysToLow <= 7 && it.current_qty > 0;
+        });
+        const tripReady = soonLow.length >= 5;
+        return (
+          <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Forecasting</div>
+            <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Based on ${dailyBurn.toFixed(2)}/day burn rate</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+              <div style={{ padding: 14, background: 'var(--bg)', borderRadius: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>Next 7 Days</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--pr)', marginTop: 2 }}>${projected7.toFixed(0)}</div>
+              </div>
+              <div style={{ padding: 14, background: 'var(--bg)', borderRadius: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>Next 30 Days</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--pr)', marginTop: 2 }}>${projected30.toFixed(0)}</div>
+              </div>
+            </div>
+            <div style={{ padding: 12, borderRadius: 10, border: '1px solid var(--bd)', background: tripReady ? 'var(--okl)' : 'var(--bg)' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: tripReady ? 'var(--ok)' : 'var(--tx2)', marginBottom: 4 }}>
+                {tripReady ? 'Trip recommended this week' : `${soonLow.length} item${soonLow.length !== 1 ? 's' : ''} going low within 7 days`}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--tx2)' }}>
+                {tripReady ? `${soonLow.length} items hitting LOW — worth a run` : 'Wait for 5+ items to maximize trip efficiency'}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Restock predictions */}
+      {(overdueItems.length > 0 || upcomingRestock.length > 0) &&
+        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Restock Predictions</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Based on average days between purchases</div>
+          {overdueItems.length > 0 && (
+            <div style={{ marginBottom: upcomingRestock.length > 0 ? 16 : 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--er)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Overdue ({overdueItems.length})</div>
+              {overdueItems.slice(0, 5).map(x => (
+                <div key={x.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.name}</div>
+                    <div style={{ fontSize: 10, color: 'var(--mu)' }}>usually every {x.avgDays.toFixed(0)} days</div>
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--er)', flexShrink: 0 }}>{Math.floor(x.daysSinceLast)}d ago</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {upcomingRestock.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ok)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Coming Up</div>
+              {upcomingRestock.slice(0, 5).map(x => (
+                <div key={x.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--bd)' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.name}</div>
+                    <div style={{ fontSize: 10, color: 'var(--mu)' }}>avg cycle: {x.avgDays.toFixed(0)}d</div>
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: x.daysUntilNext < 3 ? 'var(--wa)' : 'var(--tx2)', flexShrink: 0 }}>
+                    {x.daysUntilNext < 1 ? 'today' : `${Math.ceil(x.daysUntilNext)}d`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      }
+
+      {/* Spending by store */}
+      {storeSpendData.length > 0 &&
+        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Spending by Store</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Total spent at each supplier</div>
+          <BarChartSVG data={storeSpendData.slice(0, 8)} color="var(--pr)" fmt="$" />
+        </div>
+      }
+
+      {/* Spending by month */}
+      {monthSpendData.length > 0 &&
+        <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Monthly Spend</div>
+          <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>Grocery spend trend</div>
+          <BarChartSVG data={monthSpendData} color="var(--pr)" fmt="$" />
+        </div>
+      }
+
       {!pLoading && filteredPurchases.length === 0 &&
         <div className="empty"><div className="empty-icon"></div><p>No purchases in this time range</p></div>
       }
     </div>);
 
+}
+
+/* ─── MEALS VIEW ─── */
+function MealsView({ items }) {
+  const [meals, setMeals] = useState([]);
+  const [ingredients, setIngredients] = useState([]); // [{ meal_id, item_id, qty_per_batch, unit }]
+  const [loading, setLoading] = useState(true);
+  const [purchases, setPurchases] = useState([]);
+  const [editMeal, setEditMeal] = useState(null); // null | 'new' | meal object
+  const [editName, setEditName] = useState('');
+  const [editPortions, setEditPortions] = useState(4);
+  const [editNote, setEditNote] = useState('');
+  const [expandedId, setExpandedId] = useState(null);
+  const [addingIngredient, setAddingIngredient] = useState(null); // meal_id
+  const [newIngItemId, setNewIngItemId] = useState('');
+  const [newIngQty, setNewIngQty] = useState(1);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [m, ig, p] = await Promise.all([db.getMeals(), db.getMealIngredients(), db.getPurchaseLog()]);
+        setMeals(m || []);
+        setIngredients(ig || []);
+        setPurchases(p || []);
+      } catch (e) { console.error(e); }
+      setLoading(false);
+    })();
+  }, []);
+
+  const saveMeal = async () => {
+    const name = editName.trim();
+    if (!name) return;
+    try {
+      if (editMeal === 'new') {
+        const ins = await db.insertMeal({ name, portions: Number(editPortions)||4, note: editNote });
+        setMeals(p => [...p, ...(ins||[])].sort((a,b) => a.name.localeCompare(b.name)));
+      } else {
+        await db.updateMeal(editMeal.id, { name, portions: Number(editPortions)||4, note: editNote });
+        setMeals(p => p.map(m => m.id === editMeal.id ? { ...m, name, portions: Number(editPortions)||4, note: editNote } : m));
+      }
+    } catch (e) { console.error(e); }
+    setEditMeal(null); setEditName(''); setEditPortions(4); setEditNote('');
+  };
+
+  const deleteMeal = async (id) => {
+    if (!confirm('Delete this meal and all its ingredients?')) return;
+    await db.deleteMeal(id);
+    setMeals(p => p.filter(m => m.id !== id));
+    setIngredients(p => p.filter(i => i.meal_id !== id));
+  };
+
+  const addIngredient = async (meal_id) => {
+    if (!newIngItemId) return;
+    const inv = items.find(i => i.id === newIngItemId);
+    if (!inv) return;
+    try {
+      const row = { meal_id, item_id: newIngItemId, qty_per_batch: Number(newIngQty)||1, unit: inv.unit };
+      const ins = await db.upsertMealIngredient(row);
+      setIngredients(p => {
+        const filtered = p.filter(i => !(i.meal_id === meal_id && i.item_id === newIngItemId));
+        return [...filtered, ...(ins||[row])];
+      });
+    } catch (e) { console.error(e); }
+    setAddingIngredient(null); setNewIngItemId(''); setNewIngQty(1);
+  };
+
+  const removeIngredient = async (meal_id, item_id) => {
+    await db.deleteMealIngredient(meal_id, item_id);
+    setIngredients(p => p.filter(i => !(i.meal_id === meal_id && i.item_id === item_id)));
+  };
+
+  // COGS per meal: sum avg prices of all ingredients
+  const avgPrices = {};
+  purchases.forEach(p => {
+    if (!avgPrices[p.item_id]) avgPrices[p.item_id] = { sum: 0, count: 0 };
+    avgPrices[p.item_id].sum += Number(p.price||0);
+    avgPrices[p.item_id].count += 1;
+  });
+
+  const getMealCOGS = (meal) => {
+    const ings = ingredients.filter(i => i.meal_id === meal.id);
+    if (!ings.length) return null;
+    let total = 0;
+    for (const ing of ings) {
+      const inv = items.find(i => i.id === ing.item_id);
+      const priceData = avgPrices[ing.item_id];
+      const unitPrice = priceData ? priceData.sum / priceData.count : (inv?.price || 0);
+      total += unitPrice * (Number(ing.qty_per_batch)||1);
+    }
+    return { total, perPortion: total / (meal.portions || 4) };
+  };
+
+  const inp = { width: '100%', fontSize: 12, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)', boxSizing: 'border-box', marginBottom: 8 };
+
+  return (
+    <div className="page">
+      <div className="page-hdr" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div><div className="page-title">Meals</div><div className="page-sub">Tag ingredients · track COGS per dish</div></div>
+        <button className="btn-pr" style={{ fontSize: 12, padding: '8px 14px', marginTop: 4 }} onClick={() => { setEditMeal('new'); setEditName(''); setEditPortions(4); setEditNote(''); }}>+ Add Meal</button>
+      </div>
+
+      {loading && <div style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>Loading…</div>}
+
+      {!loading && meals.length === 0 && (
+        <div className="empty">
+          <p>No meals yet. Add your first dish to start tracking COGS.</p>
+        </div>
+      )}
+
+      {/* Add / Edit meal modal */}
+      {editMeal !== null && (
+        <div className="overlay" onClick={e => { if (e.target === e.currentTarget) setEditMeal(null); }}>
+          <div className="modal">
+            <div className="modal-title">{editMeal === 'new' ? 'Add Meal' : 'Edit Meal'}</div>
+            <label style={{ fontSize: 11, color: 'var(--tx2)', display: 'block', marginBottom: 4 }}>Meal name</label>
+            <input style={inp} value={editName} onChange={e => setEditName(e.target.value)} placeholder="e.g. Jollof Rice, Egusi Soup" autoFocus />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label style={{ fontSize: 11, color: 'var(--tx2)', display: 'block', marginBottom: 4 }}>Portions per batch</label>
+                <input type="number" min="1" style={inp} value={editPortions} onChange={e => setEditPortions(e.target.value)} />
+              </div>
+            </div>
+            <label style={{ fontSize: 11, color: 'var(--tx2)', display: 'block', marginBottom: 4 }}>Notes (optional)</label>
+            <input style={inp} value={editNote} onChange={e => setEditNote(e.target.value)} placeholder="e.g. party size, special version" />
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+              <button className="btn-full" onClick={saveMeal} disabled={!editName.trim()}>Save</button>
+              <button className="btn-gh" style={{ flex: 1 }} onClick={() => setEditMeal(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {meals.map(meal => {
+        const mealIngs = ingredients.filter(i => i.meal_id === meal.id);
+        const cogs = getMealCOGS(meal);
+        const isExpanded = expandedId === meal.id;
+        return (
+          <div key={meal.id} className="card" style={{ padding: 0, marginBottom: 12, overflow: 'hidden' }}>
+            {/* Meal header */}
+            <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => setExpandedId(isExpanded ? null : meal.id)}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>{meal.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 2, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <span>{meal.portions || 4} portions/batch</span>
+                  <span>·</span>
+                  <span>{mealIngs.length} ingredient{mealIngs.length !== 1 ? 's' : ''}</span>
+                  {cogs && <>
+                    <span>·</span>
+                    <span style={{ fontWeight: 700, color: 'var(--pr)' }}>COGS ${cogs.total.toFixed(2)}</span>
+                    <span>·</span>
+                    <span>${cogs.perPortion.toFixed(2)}/portion</span>
+                  </>}
+                </div>
+                {meal.note && <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>{meal.note}</div>}
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 10 }}>
+                <button onClick={e => { e.stopPropagation(); setEditMeal(meal); setEditName(meal.name); setEditPortions(meal.portions||4); setEditNote(meal.note||''); }}
+                  style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', cursor: 'pointer', color: 'var(--tx2)' }}>Edit</button>
+                <button onClick={e => { e.stopPropagation(); deleteMeal(meal.id); }}
+                  style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', cursor: 'pointer', color: 'var(--er)' }}>Delete</button>
+              </div>
+            </div>
+
+            {/* Ingredients list */}
+            {isExpanded && (
+              <div style={{ borderTop: '1px solid var(--bd)', padding: '12px 16px' }}>
+                {mealIngs.length === 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 12 }}>No ingredients yet. Add them below.</div>
+                )}
+                {mealIngs.map(ing => {
+                  const inv = items.find(i => i.id === ing.item_id);
+                  const priceData = avgPrices[ing.item_id];
+                  const unitPrice = priceData ? priceData.sum / priceData.count : (inv?.price || 0);
+                  const lineCost = unitPrice * (Number(ing.qty_per_batch)||1);
+                  return (
+                    <div key={ing.item_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid var(--bd)' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{inv?.name || ing.item_id}</div>
+                        <div style={{ fontSize: 11, color: 'var(--tx2)' }}>{ing.qty_per_batch} {ing.unit} · ${unitPrice.toFixed(2)}/unit</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--pr)' }}>${lineCost.toFixed(2)}</div>
+                        <button onClick={() => removeIngredient(meal.id, ing.item_id)}
+                          style={{ fontSize: 13, background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', padding: '2px 6px' }}>×</button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Add ingredient row */}
+                {addingIngredient === meal.id ? (
+                  <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
+                    <select value={newIngItemId} onChange={e => setNewIngItemId(e.target.value)}
+                      style={{ width: '100%', fontSize: 12, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)' }}>
+                      <option value="">— select ingredient —</option>
+                      {[...items].sort((a,b) => a.name.localeCompare(b.name)).filter(it => !mealIngs.find(i => i.item_id === it.id)).map(it => (
+                        <option key={it.id} value={it.id}>{it.name} · {it.unit}</option>
+                      ))}
+                    </select>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input type="number" min="0.01" step="0.01" value={newIngQty} onChange={e => setNewIngQty(e.target.value)}
+                        placeholder="Qty per batch" style={{ flex: 1, fontSize: 12, padding: '7px 10px', borderRadius: 8, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)' }} />
+                      <button className="btn-pr" style={{ flexShrink: 0, fontSize: 12, padding: '7px 14px' }} onClick={() => addIngredient(meal.id)} disabled={!newIngItemId}>Add</button>
+                      <button className="btn-gh" style={{ flexShrink: 0, fontSize: 12, padding: '7px 12px' }} onClick={() => { setAddingIngredient(null); setNewIngItemId(''); setNewIngQty(1); }}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => { setAddingIngredient(meal.id); setNewIngItemId(''); setNewIngQty(1); }}
+                    style={{ marginTop: 10, width: '100%', padding: '8px', fontSize: 12, borderRadius: 8, border: '1px dashed var(--bd)', background: 'transparent', color: 'var(--tx2)', cursor: 'pointer' }}>
+                    + Add ingredient
+                  </button>
+                )}
+
+                {/* COGS summary */}
+                {cogs && (
+                  <div style={{ marginTop: 12, padding: 12, background: 'var(--bg)', borderRadius: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>Batch COGS</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--pr)', marginTop: 2 }}>${cogs.total.toFixed(2)}</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: 1 }}>Per Portion</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--tx)', marginTop: 2 }}>${cogs.perPortion.toFixed(2)}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 /* ─── ADD ITEM ─── */
@@ -1657,6 +2251,7 @@ const TABS = [
 { k: 'inventory', l: 'Inventory', i: '' },
 { k: 'shopping', l: 'Shopping', i: '' },
 { k: 'analytics', l: 'Analytics', i: '' },
+{ k: 'meals', l: 'Meals', i: '' },
 { k: 'history', l: 'History', i: '' },
 { k: 'add', l: 'Add Item', i: '' }];
 
@@ -1691,7 +2286,7 @@ function BottomNav({ view, setView, outCt }) {
         {TABS.map((t) =>
         <button key={t.k} className={`bn-item ${view === t.k ? 'active' : ''}`} onClick={() => setView(t.k)}>
             
-            {t.k === 'dashboard' ? 'Home' : t.k === 'inventory' ? 'Stock' : t.k === 'shopping' ? 'Shop' : t.k === 'analytics' ? 'Stats' : t.k === 'history' ? 'Log' : 'Add'}
+            {t.k === 'dashboard' ? 'Home' : t.k === 'inventory' ? 'Stock' : t.k === 'shopping' ? 'Shop' : t.k === 'analytics' ? 'Stats' : t.k === 'meals' ? 'Meals' : t.k === 'history' ? 'Log' : 'Add'}
             {t.k === 'shopping' && outCt > 0 && <span className="bn-dot" />}
           </button>
         )}
@@ -2300,6 +2895,7 @@ function App() {
         {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onDelete={deleteItem} flash={flash} />}
         {view === 'shopping' && <ShoppingView items={items} session={session} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onShopperNote={updateShopperNote} flash={flash} />}
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
+        {view === 'meals' && <MealsView items={items} />}
         {view === 'add' && <AddView onAdd={addItem} busy={syncing} flash={flash} />}
         {view === 'history' && <HistoryView sessions={sessions} />}
       </div>
