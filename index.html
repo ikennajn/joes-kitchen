@@ -281,6 +281,9 @@ window.db={
   getPayments:()=>q("rider_payments?select=*&order=paid_at.desc"),
   addPayment:(p)=>q("rider_payments",{method:"POST",body:JSON.stringify(p)}),
   deletePayment:(id)=>q(`rider_payments?id=eq.${id}`,{method:"DELETE"}),
+  getAliases:()=>q("receipt_aliases?select=*"),
+  upsertAlias:(a)=>q("receipt_aliases",{method:"POST",headers:{...H,"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(a)}),
+  deleteAlias:(id)=>q(`receipt_aliases?id=eq.${id}`,{method:"DELETE"}),
 };
 window.mileageStore={
   save(sid,d){const a=JSON.parse(localStorage.getItem('jk_miles')||'{}');a[sid]={...(a[sid]||{}),...d};localStorage.setItem('jk_miles',JSON.stringify(a));},
@@ -1735,13 +1738,88 @@ function UserModal({ user, onClose, onSelect }) {
 
 }
 
+/* ─── RECEIPT ALIAS STORE ─── */
+// Supabase-backed alias map: receipt line text + store -> inventory item
+// Uses receipt_aliases table: id, store, raw_name, inventory_id, inventory_name, add_config
+const receiptAliasStore = {
+  _cache: null, // { "store||rawname": { inventoryId, inventoryName, addConfig, id } }
+
+  _mk(store, rawName) {
+    return `${(store||'').toLowerCase().trim()}||${(rawName||'').toLowerCase().trim()}`;
+  },
+
+  async _ensureLoaded() {
+    if (this._cache) return;
+    try {
+      const rows = await db.getAliases();
+      this._cache = {};
+      for (const r of (rows || [])) {
+        const k = this._mk(r.store, r.raw_name);
+        this._cache[k] = {
+          id: r.id,
+          inventoryId: r.inventory_id,
+          inventoryName: r.inventory_name,
+          addConfig: r.add_config || null,
+        };
+      }
+    } catch { this._cache = {}; }
+  },
+
+  async get(store, rawName) {
+    await this._ensureLoaded();
+    return this._cache[this._mk(store, rawName)] || null;
+  },
+
+  async saveMatch(store, rawName, inventoryId, inventoryName) {
+    await this._ensureLoaded();
+    const k = this._mk(store, rawName);
+    const existing = this._cache[k] || {};
+    const row = {
+      store: (store||'').toLowerCase().trim(),
+      raw_name: (rawName||'').toLowerCase().trim(),
+      inventory_id: inventoryId,
+      inventory_name: inventoryName,
+      add_config: existing.addConfig || null,
+    };
+    if (existing.id) row.id = existing.id;
+    try {
+      const res = await db.upsertAlias(row);
+      const saved = Array.isArray(res) ? res[0] : res;
+      this._cache[k] = { id: saved?.id || existing.id, inventoryId, inventoryName, addConfig: existing.addConfig || null };
+    } catch (e) { console.error('saveMatch failed', e); }
+  },
+
+  async saveAddConfig(store, rawName, addConfig) {
+    await this._ensureLoaded();
+    const k = this._mk(store, rawName);
+    const existing = this._cache[k] || {};
+    const row = {
+      store: (store||'').toLowerCase().trim(),
+      raw_name: (rawName||'').toLowerCase().trim(),
+      inventory_id: existing.inventoryId || null,
+      inventory_name: existing.inventoryName || null,
+      add_config: addConfig,
+    };
+    if (existing.id) row.id = existing.id;
+    try {
+      const res = await db.upsertAlias(row);
+      const saved = Array.isArray(res) ? res[0] : res;
+      this._cache[k] = { ...existing, id: saved?.id || existing.id, addConfig };
+    } catch (e) { console.error('saveAddConfig failed', e); }
+  },
+
+  invalidate() { this._cache = null; },
+};
+
 /* ─── RECEIPT SCANNER ─── */
 function ReceiptScanner({ items, onClose, onConfirm, flash }) {
   const [step, setStep] = useState('capture'); // capture | processing | review | error
   const [imageDataUrl, setImageDataUrl] = useState(null);
   const [error, setError] = useState('');
   const [parsed, setParsed] = useState(null); // { items, store_guess, total }
-  const [matched, setMatched] = useState([]); // [{ ...lineItem, inventoryId, action }]
+  const [matched, setMatched] = useState([]); // [{ ...lineItem, inventoryId, matchScore, action, aliasHit, addForm }]
+  // addForm: { name, category, store, unit, packSize } — shown inline when action==='add'
+  const [expandedAdd, setExpandedAdd] = useState({}); // idx -> bool, whether add-form is open
   const fileRef = useRef(null);
 
   const fuzzyMatch = (name) => {
@@ -1751,7 +1829,6 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
     for (const it of items) {
       const target = it.name.toLowerCase().replace(/[^a-z0-9 ]/g, '');
       if (target === n) return { id: it.id, score: 100 };
-      // word overlap score
       const nWords = new Set(n.split(/\s+/));
       const tWords = new Set(target.split(/\s+/));
       let overlap = 0;
@@ -1769,7 +1846,6 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
   const handleFile = async (file) => {
     if (!file) return;
     setError('');
-    // Compress the image client-side to keep API costs low
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
@@ -1815,16 +1891,41 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
         return;
       }
       setParsed(data);
-      // Auto-match
-      const m = data.items.map(li => {
+
+      const store = data.store_guess || '';
+      // Build matched list with alias lookups (async)
+      const m = await Promise.all(data.items.map(async li => {
+        // 1) Check alias store first (exact learned match)
+        const alias = await receiptAliasStore.get(store, li.raw || li.name);
+        if (alias && alias.inventoryId) {
+          const invItem = items.find(i => i.id === alias.inventoryId);
+          if (invItem) {
+            return { ...li, inventoryId: alias.inventoryId, matchScore: 100, action: 'update', aliasHit: true };
+          }
+        }
+        // 2) If alias has addConfig (previously added as new), pre-fill the add form
+        if (alias && alias.addConfig) {
+          return { ...li, inventoryId: null, matchScore: 0, action: 'add', aliasHit: true,
+            addForm: { ...alias.addConfig } };
+        }
+        // 3) Fall back to fuzzy match
         const match = fuzzyMatch(li.name);
+        const defaultAddForm = {
+          name: li.name,
+          category: 'Other',
+          store: store || 'Other',
+          unit: 'ct',
+          packSize: 1,
+        };
         return {
           ...li,
           inventoryId: match?.id || null,
           matchScore: match?.score || 0,
           action: match ? 'update' : 'add',
+          aliasHit: false,
+          addForm: defaultAddForm,
         };
-      });
+      }));
       setMatched(m);
       setStep('review');
     } catch (e) {
@@ -1837,17 +1938,30 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
     setMatched(p => p.map((m, i) => i === idx ? { ...m, [field]: val } : m));
   };
 
+  const updateAddForm = (idx, field, val) => {
+    setMatched(p => p.map((m, i) => i === idx ? { ...m, addForm: { ...m.addForm, [field]: val } } : m));
+  };
+
+  // When user manually picks an existing inventory item from the dropdown
+  const pickInventoryItem = (idx, inventoryId) => {
+    setMatched(p => p.map((m, i) => i === idx
+      ? { ...m, inventoryId, action: inventoryId ? 'update' : 'add' }
+      : m));
+  };
+
   const matchedCount = matched.filter(m => m.action === 'update').length;
   const addCount = matched.filter(m => m.action === 'add').length;
   const skipCount = matched.filter(m => m.action === 'skip').length;
+
+  const storeGuess = parsed?.store_guess || '';
 
   return (
     <div className="overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal" style={{ maxWidth: 480, maxHeight: '92vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div>
-            <div className="modal-title">📷 Scan Receipt</div>
-            {step === 'review' && parsed?.store_guess && <div style={{ fontSize: 12, color: 'var(--tx2)', marginTop: 2 }}>Detected: <b>{parsed.store_guess}</b>{parsed.total ? ` · Total $${parsed.total}` : ''}</div>}
+            <div className="modal-title">Scan Receipt</div>
+            {step === 'review' && storeGuess && <div style={{ fontSize: 12, color: 'var(--tx2)', marginTop: 2 }}>Detected: <b>{storeGuess}</b>{parsed.total ? ` · Total $${parsed.total}` : ''}</div>}
           </div>
           <button className="panel-x" onClick={onClose}>×</button>
         </div>
@@ -1855,13 +1969,12 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
         {step === 'capture' && (
           <div>
             <div style={{ background: 'var(--bg)', borderRadius: 12, padding: 24, textAlign: 'center', marginBottom: 14, border: '2px dashed var(--bd)' }}>
-              <div style={{ fontSize: 40, marginBottom: 8 }}>🧾</div>
               <p style={{ fontSize: 13, color: 'var(--tx2)', marginBottom: 14 }}>Take a photo or upload a receipt image</p>
               <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={(e) => handleFile(e.target.files?.[0])} />
               <button className="btn-full" onClick={() => fileRef.current?.click()}>Choose Photo</button>
             </div>
             <div style={{ fontSize: 11, color: 'var(--mu)', textAlign: 'center', lineHeight: 1.6 }}>
-              Receipt is sent to Claude AI to extract line items. Items get matched to your inventory and reviewed before any updates.
+              Receipt is sent to Claude AI to extract line items. Items are matched to your inventory and reviewed before any updates. Confirmed matches are remembered for future scans.
             </div>
           </div>
         )}
@@ -1889,15 +2002,17 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
 
         {step === 'review' && (
           <div>
-            <div style={{ display: 'flex', gap: 6, fontSize: 11, marginBottom: 12 }}>
+            <div style={{ display: 'flex', gap: 6, fontSize: 11, marginBottom: 12, flexWrap: 'wrap' }}>
               <span style={{ padding: '4px 10px', borderRadius: 999, background: 'var(--okl)', color: 'var(--ok)', fontWeight: 700 }}>{matchedCount} matched</span>
               {addCount > 0 && <span style={{ padding: '4px 10px', borderRadius: 999, background: 'var(--prl)', color: 'var(--pr)', fontWeight: 700 }}>{addCount} new</span>}
               {skipCount > 0 && <span style={{ padding: '4px 10px', borderRadius: 999, background: 'var(--bg)', color: 'var(--mu)', fontWeight: 700 }}>{skipCount} skipped</span>}
+              {matched.some(m => m.aliasHit) && <span style={{ padding: '4px 10px', borderRadius: 999, background: '#E8F4FD', color: '#1A7FC1', fontWeight: 700 }}>{matched.filter(m=>m.aliasHit).length} auto-matched</span>}
             </div>
 
-            <div style={{ maxHeight: '50vh', overflowY: 'auto', marginBottom: 14, paddingRight: 4 }}>
+            <div style={{ maxHeight: '55vh', overflowY: 'auto', marginBottom: 14, paddingRight: 4 }}>
               {matched.map((m, idx) => {
                 const matchedItem = m.inventoryId ? items.find(i => i.id === m.inventoryId) : null;
+                const isAddOpen = expandedAdd[idx] && m.action === 'add';
                 return (
                   <div key={idx} style={{
                     padding: 12, marginBottom: 8, borderRadius: 10,
@@ -1905,10 +2020,12 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
                     background: m.action === 'skip' ? 'var(--bg)' : m.action === 'add' ? 'var(--prl)' : 'var(--card)',
                     opacity: m.action === 'skip' ? 0.5 : 1,
                   }}>
+                    {/* Header row */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700 }}>{m.name}</div>
                         {m.raw && m.raw !== m.name && <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 1, fontFamily: 'monospace' }}>"{m.raw}"</div>}
+                        {m.aliasHit && m.action === 'update' && <div style={{ fontSize: 10, color: '#1A7FC1', marginTop: 2 }}>remembered match</div>}
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pr)' }}>${(Number(m.price) || 0).toFixed(2)}</div>
@@ -1916,16 +2033,98 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
                       </div>
                     </div>
 
+                    {/* Match info */}
                     {m.action === 'update' && matchedItem && (
-                      <div style={{ fontSize: 11, color: 'var(--ok)', marginBottom: 8 }}>
-                        ✓ Match: <b>{matchedItem.name}</b> ({matchedItem.current_qty}/{matchedItem.par_level} {matchedItem.unit})
-                        {m.matchScore < 80 && <span style={{ color: 'var(--wa)', marginLeft: 6 }}>· verify match</span>}
+                      <div style={{ fontSize: 11, color: 'var(--ok)', marginBottom: 6 }}>
+                        ✓ <b>{matchedItem.name}</b> · {matchedItem.current_qty}/{matchedItem.par_level} {matchedItem.unit}
+                        {m.matchScore < 80 && !m.aliasHit && <span style={{ color: 'var(--wa)', marginLeft: 6 }}>· verify match</span>}
                       </div>
                     )}
-                    {m.action === 'add' && (
-                      <div style={{ fontSize: 11, color: 'var(--pr)', marginBottom: 8 }}>+ Will be added as a new inventory item</div>
+
+                    {/* Manual inventory picker for 'update' action — let user switch which item */}
+                    {m.action === 'update' && (
+                      <div style={{ marginBottom: 8 }}>
+                        <select value={m.inventoryId || ''} onChange={e => pickInventoryItem(idx, e.target.value || null)}
+                          style={{ width: '100%', fontSize: 11, padding: '4px 6px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)' }}>
+                          <option value="">— pick inventory item —</option>
+                          {items.map(it => <option key={it.id} value={it.id}>{it.name} ({it.store})</option>)}
+                        </select>
+                      </div>
                     )}
 
+                    {/* Add-new expanded form */}
+                    {m.action === 'add' && (
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <div style={{ fontSize: 11, color: 'var(--pr)' }}>
+                            {m.aliasHit ? 'remembered — will add as:' : '+ New inventory item'}
+                          </div>
+                          <button onClick={() => setExpandedAdd(p => ({ ...p, [idx]: !p[idx] }))}
+                            style={{ fontSize: 10, padding: '2px 8px', borderRadius: 5, border: '1px solid var(--bd)', background: 'var(--card)', cursor: 'pointer', color: 'var(--tx2)' }}>
+                            {isAddOpen ? 'hide' : 'edit details'}
+                          </button>
+                        </div>
+
+                        {/* Compact summary when collapsed */}
+                        {!isAddOpen && (
+                          <div style={{ fontSize: 11, color: 'var(--tx2)', background: 'var(--bg)', borderRadius: 6, padding: '4px 8px' }}>
+                            {m.addForm?.name} · {m.addForm?.category} · {m.addForm?.store} · {m.addForm?.unit}
+                          </div>
+                        )}
+
+                        {/* Full form when expanded */}
+                        {isAddOpen && (
+                          <div style={{ display: 'grid', gap: 6, marginTop: 4 }}>
+                            <div>
+                              <div style={{ fontSize: 10, color: 'var(--tx2)', marginBottom: 2 }}>Name in inventory</div>
+                              <input value={m.addForm?.name || ''} onChange={e => updateAddForm(idx, 'name', e.target.value)}
+                                style={{ width: '100%', fontSize: 12, padding: '5px 8px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)' }} />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                              <div>
+                                <div style={{ fontSize: 10, color: 'var(--tx2)', marginBottom: 2 }}>Category</div>
+                                <select value={m.addForm?.category || 'Other'} onChange={e => updateAddForm(idx, 'category', e.target.value)}
+                                  style={{ width: '100%', fontSize: 11, padding: '5px 6px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)' }}>
+                                  {window.CATS.map(c => <option key={c}>{c}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 10, color: 'var(--tx2)', marginBottom: 2 }}>Store</div>
+                                <select value={m.addForm?.store || 'Other'} onChange={e => updateAddForm(idx, 'store', e.target.value)}
+                                  style={{ width: '100%', fontSize: 11, padding: '5px 6px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)' }}>
+                                  {window.STORES.map(s => <option key={s}>{s}</option>)}
+                                </select>
+                              </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                              <div>
+                                <div style={{ fontSize: 10, color: 'var(--tx2)', marginBottom: 2 }}>Unit</div>
+                                <select value={m.addForm?.unit || 'ct'} onChange={e => updateAddForm(idx, 'unit', e.target.value)}
+                                  style={{ width: '100%', fontSize: 11, padding: '5px 6px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)' }}>
+                                  {(window.UNITS || ['ct','lbs','oz','kg','g','gal','qt','l','ml','bag','box','case','ea']).map(u => <option key={u}>{u}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 10, color: 'var(--tx2)', marginBottom: 2 }}>Pack size</div>
+                                <input type="number" min="1" value={m.addForm?.packSize || 1} onChange={e => updateAddForm(idx, 'packSize', Number(e.target.value) || 1)}
+                                  style={{ width: '100%', fontSize: 12, padding: '5px 8px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)' }} />
+                              </div>
+                            </div>
+                            {/* Also allow linking to an existing item instead */}
+                            <div>
+                              <div style={{ fontSize: 10, color: 'var(--tx2)', marginBottom: 2 }}>Or link to existing inventory item</div>
+                              <select value="" onChange={e => { if (e.target.value) pickInventoryItem(idx, e.target.value); }}
+                                style={{ width: '100%', fontSize: 11, padding: '5px 6px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)' }}>
+                                <option value="">— select to link instead —</option>
+                                {items.map(it => <option key={it.id} value={it.id}>{it.name} ({it.store})</option>)}
+                              </select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Action buttons */}
                     <div style={{ display: 'flex', gap: 4 }}>
                       <button onClick={() => updateMatch(idx, 'action', 'update')} style={{
                         flex: 1, padding: '5px 8px', fontSize: 10, fontWeight: 700, borderRadius: 6,
@@ -1933,7 +2132,7 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
                         background: m.action === 'update' ? 'var(--ok)' : 'var(--card)',
                         color: m.action === 'update' ? '#fff' : 'var(--tx2)', cursor: 'pointer',
                       }} disabled={!m.inventoryId}>Update</button>
-                      <button onClick={() => updateMatch(idx, 'action', 'add')} style={{
+                      <button onClick={() => { updateMatch(idx, 'action', 'add'); setExpandedAdd(p => ({ ...p, [idx]: true })); }} style={{
                         flex: 1, padding: '5px 8px', fontSize: 10, fontWeight: 700, borderRadius: 6,
                         border: '1px solid ' + (m.action === 'add' ? 'var(--pr)' : 'var(--bd)'),
                         background: m.action === 'add' ? 'var(--pr)' : 'var(--card)',
@@ -1951,7 +2150,7 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
               })}
             </div>
 
-            <button className="btn-full" onClick={() => onConfirm(matched, parsed?.store_guess)} disabled={matched.every(m => m.action === 'skip')}>
+            <button className="btn-full" onClick={() => onConfirm(matched, storeGuess)} disabled={matched.every(m => m.action === 'skip')}>
               Confirm {matchedCount + addCount} Item{matchedCount + addCount !== 1 ? 's' : ''}
             </button>
           </div>
@@ -2087,11 +2286,14 @@ function App() {
   }, []);
 
   const handleReceiptConfirm = useCallback(async (matchedItems, storeGuess) => {
-    // matchedItems: [{ inventoryId | null, name, qty, price, action: 'update' | 'add' | 'skip' }]
+    // matchedItems: [{ inventoryId|null, name, raw, qty, price, action, addForm, aliasHit }]
     let updated = 0, added = 0;
     const purchaseRows = [];
+    const aliasKey = (m) => m.raw || m.name; // use raw receipt text as the alias key
+
     for (const m of matchedItems) {
       if (m.action === 'skip') continue;
+
       if (m.action === 'update' && m.inventoryId) {
         const it = items.find(x => x.id === m.inventoryId);
         if (!it) continue;
@@ -2101,6 +2303,8 @@ function App() {
           await db.update(m.inventoryId, { current_qty: newQty, price: Number(m.price) || it.price });
           setItems((p) => p.map((i) => i.id === m.inventoryId ? { ...i, current_qty: newQty, price: Number(m.price) || i.price } : i));
           updated++;
+          // Save alias: next time this receipt line appears, auto-match to this inventory item
+          await receiptAliasStore.saveMatch(storeGuess, aliasKey(m), m.inventoryId, it.name);
           purchaseRows.push({
             item_id: m.inventoryId,
             item_name: it.name,
@@ -2111,28 +2315,40 @@ function App() {
             price: Number(m.price) || 0,
           });
         } catch (e) { console.error('Update failed', e); }
+
       } else if (m.action === 'add') {
+        const form = m.addForm || {};
+        const invName = (form.name || m.name || '').trim();
+        const invCategory = form.category || 'Other';
+        const invStore = form.store || storeGuess || 'Other';
+        const invUnit = form.unit || 'ct';
+        const invPackSize = Number(form.packSize || 1);
         try {
           const ins = await db.insert({
-            name: m.name.trim(),
-            category: 'Other',
-            store: storeGuess || 'Other',
-            unit: 'ct',
+            name: invName,
+            category: invCategory,
+            store: invStore,
+            unit: invUnit,
             current_qty: Number(m.qty) || 1,
             par_level: Number(m.qty) || 1,
             price: Number(m.price) || 0,
             note: 'Added from receipt scan',
-            pack_size: 1,
+            pack_size: invPackSize,
           });
           if (ins[0]) {
             setItems((p) => [...p, ins[0]].sort((a, b) => a.name.localeCompare(b.name)));
             added++;
+            // Save alias with the full add config — next time auto-fill the form
+            await receiptAliasStore.saveMatch(storeGuess, aliasKey(m), ins[0].id, invName);
+            await receiptAliasStore.saveAddConfig(storeGuess, aliasKey(m), {
+              name: invName, category: invCategory, store: invStore, unit: invUnit, packSize: invPackSize,
+            });
             purchaseRows.push({
               item_id: ins[0].id,
               item_name: ins[0].name,
-              category: 'Other',
-              store: storeGuess || 'Other',
-              unit: 'ct',
+              category: invCategory,
+              store: invStore,
+              unit: invUnit,
               qty: Number(m.qty) || 1,
               price: Number(m.price) || 0,
             });
