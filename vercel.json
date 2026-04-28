@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "functions": {
+    "api/receipt-ocr.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/receipt-ocr", "destination": "/api/receipt-ocr" }
+  ]
+}
