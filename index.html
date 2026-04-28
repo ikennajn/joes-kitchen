@@ -789,12 +789,13 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
           },
         }),
       });
-      if (!resp.ok) throw new Error('API error');
       const data = await resp.json();
-      let raw = data.recommendation || '';
-      raw = raw.replace(/```json|```/g, '').trim();
-      let parsed;
-      try { parsed = JSON.parse(raw); } catch { throw new Error('Could not parse price data'); }
+      if (!resp.ok || data.error) {
+        const detail = data.detail ? ` (${data.detail})` : '';
+        const sample = data.rawSample ? `\nSample: ${data.rawSample.slice(0, 150)}` : '';
+        throw new Error((data.error || 'API error') + detail + sample);
+      }
+      const parsed = data;
 
       // Mark best price per item, set default selection to cheapest
       const defaults = {};
@@ -839,12 +840,12 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
           },
         }),
       });
-      if (!resp.ok) throw new Error('API error');
       const data = await resp.json();
-      let raw = data.recommendation || '';
-      raw = raw.replace(/```json|```/g, '').trim();
-      let parsed;
-      try { parsed = JSON.parse(raw); } catch { throw new Error('Could not parse route data'); }
+      if (!resp.ok || data.error) {
+        const detail = data.detail ? ` (${data.detail})` : '';
+        throw new Error((data.error || 'API error') + detail);
+      }
+      const parsed = data;
 
       const route = (parsed.route || []).sort((a,b) => a.order - b.order).map(r => ({
         ...r,
