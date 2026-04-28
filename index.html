@@ -815,7 +815,14 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
           },
         }),
       });
-      const data = await resp.json();
+      let data;
+      try {
+        data = await resp.json();
+      } catch (parseErr) {
+        const text = await resp.text().catch(() => '');
+        const hint = !resp.ok ? ` (HTTP ${resp.status})` : '';
+        throw new Error(`Server returned non-JSON${hint}. Check that /api/receipt-ocr is routed to the function (netlify.toml). First chars: ${text.slice(0, 80)}`);
+      }
       if (!resp.ok || data.error) {
         const detail = data.detail ? ` (${data.detail})` : '';
         const sample = data.rawSample ? `\nSample: ${data.rawSample.slice(0, 150)}` : '';
@@ -884,7 +891,13 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
           },
         }),
       });
-      const data = await resp.json();
+      let data;
+      try {
+        data = await resp.json();
+      } catch (parseErr) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(`Server returned non-JSON (HTTP ${resp.status}). First chars: ${text.slice(0, 80)}`);
+      }
       if (!resp.ok || data.error) {
         const detail = data.detail ? ` (${data.detail})` : '';
         throw new Error((data.error || 'API error') + detail);
