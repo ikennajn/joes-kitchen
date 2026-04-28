@@ -782,20 +782,10 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mode: 'compare',
-          image: 'placeholder',
+          mode: 'price_compare',
           context: {
-            itemName: 'price_compare_json',
-            category: 'planning',
-            currentStore: zipCode,
-            currentPrice: 0,
-            history: [{
-              note: `ZIP code: ${zipCode}. Shopping list: ${JSON.stringify(itemList.slice(0,20).map(i=>({name:i.name,trackedStore:i.trackedStore,trackedPrice:i.trackedPrice})))}.
-Available stores in WA: Restaurant Depot, US Chef Store, QFC, Costco, Trader Joe's, Plaza Latina, Imrans, African Store, Walmart, Amazon.
-For each item, estimate prices at 2-4 relevant stores based on typical retail prices in WA. Use real knowledge of what each store typically charges.
-Respond ONLY with valid JSON, no markdown:
-{"items":[{"id":"<id>","name":"<name>","stores":[{"store":"<name>","price":<number>,"note":"<optional note>"}]}],"totalCurrentCost":<number>,"totalBestCost":<number>}`
-            }],
+            zipCode,
+            items: itemList.slice(0, 20),
           },
         }),
       });
@@ -841,21 +831,11 @@ Respond ONLY with valid JSON, no markdown:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mode: 'compare',
-          image: 'placeholder',
+          mode: 'route',
           context: {
-            itemName: 'route_order_json',
-            category: 'planning',
-            currentStore: zipCode,
-            currentPrice: 0,
-            history: [{
-              note: `ZIP: ${zipCode}. Destination after shopping: ${destination || 'home / back to zip ' + zipCode}.
-Stores to visit: ${storeList.join(', ')}.
-Order these stores for the most efficient driving route starting from ZIP ${zipCode} and ending at ${destination || 'ZIP ' + zipCode}.
-Consider that Restaurant Depot and US Chef Store are typically farther / wholesale, QFC and Walmart are nearby, Costco is mid-distance.
-Respond ONLY with valid JSON, no markdown:
-{"route":[{"store":"<name>","order":<number>,"travelNote":"<short note about this leg>"}],"totalEstimatedMiles":<number>,"routeSummary":"<1 sentence>"}`
-            }],
+            zipCode,
+            destination,
+            storeGroups,
           },
         }),
       });
