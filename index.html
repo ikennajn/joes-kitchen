@@ -274,6 +274,7 @@ window.db={
   insertMany:items=>q("inventory",{method:"POST",body:JSON.stringify(items)}),
   getActiveSession:()=>q("shopping_sessions?status=eq.active&order=started_at.desc&limit=1"),
   createSession:(d)=>q("shopping_sessions",{method:"POST",body:JSON.stringify({status:"active",...d})}),
+  update_session:(id,fields)=>q(`shopping_sessions?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
   endSession:(id,d)=>q(`shopping_sessions?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({...d,status:"completed",ended_at:new Date().toISOString()})}),
   getSessions:()=>q("shopping_sessions?order=started_at.desc&limit=30"),
   archiveNote:n=>q("session_notes",{method:"POST",body:JSON.stringify(n)}),
@@ -307,9 +308,39 @@ window.db={
     return `${sb}/storage/v1/object/public/${bucket}/${path}`;
   },
 };
-window.mileageStore={
-  save(sid,d){const a=JSON.parse(localStorage.getItem('jk_miles')||'{}');a[sid]={...(a[sid]||{}),...d};localStorage.setItem('jk_miles',JSON.stringify(a));},
-  get(sid){return(JSON.parse(localStorage.getItem('jk_miles')||'{}'))[sid]||{};}
+// Hybrid mileage store: prefers Supabase (synced) but reads localStorage as fallback
+// for sessions started before the v5 mileage migration.
+window.mileageStore = {
+  // Save to BOTH Supabase (if session id known) and localStorage
+  async save(sid, data) {
+    const a = JSON.parse(localStorage.getItem('jk_miles') || '{}');
+    a[sid] = { ...(a[sid] || {}), ...data };
+    localStorage.setItem('jk_miles', JSON.stringify(a));
+    // Map the keys we care about onto session columns
+    const row = {};
+    if ('start_miles' in data) row.start_miles = data.start_miles;
+    if ('end_miles' in data) row.end_miles = data.end_miles;
+    if ('driver' in data) row.driver_name = data.driver;
+    if (Object.keys(row).length > 0) {
+      try { await window.db.update_session(sid, row); } catch {}
+    }
+  },
+  // Get prefers session columns if a session object is passed, else localStorage by id
+  get(sidOrSession) {
+    // If passed a session object, prefer its columns
+    if (sidOrSession && typeof sidOrSession === 'object') {
+      const s = sidOrSession;
+      const ls = (JSON.parse(localStorage.getItem('jk_miles') || '{}'))[s.id] || {};
+      return {
+        start_miles: s.start_miles != null ? Number(s.start_miles) : ls.start_miles,
+        end_miles: s.end_miles != null ? Number(s.end_miles) : ls.end_miles,
+        driver: s.driver_name || ls.driver,
+        end_time: ls.end_time, // not yet synced
+      };
+    }
+    // Legacy path: by id from localStorage
+    return (JSON.parse(localStorage.getItem('jk_miles') || '{}'))[sidOrSession] || {};
+  },
 };
 window.userStore={
   get:()=>localStorage.getItem('jk_user')||'',
@@ -613,7 +644,7 @@ function DashboardView({ items, sessions, onNavigate, onScanReceipt, flash }) {
             <button className="btn-outline" onClick={() => onNavigate('history')}>All History →</button>
           </div>
           {recentSess.map((s) => {
-          const miles = mileageStore.get(s.id);
+          const miles = mileageStore.get(s);
           const hrs = s.ended_at ? (new Date(s.ended_at) - new Date(s.started_at)) / 3600000 : null;
           const milesD = miles.start_miles && miles.end_miles ? Number(miles.end_miles) - Number(miles.start_miles) : null;
           const payCalc = hrs ? window.calcDriverPay(hrs, milesD) : null;
@@ -821,13 +852,14 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
   };
 
   const handleStart = async () => {
-    // Owner mode skips mileage requirement
     if (startData.role === 'shopper' && !startData.miles) return;
-    const sess = await onStartSession(startData.name, startData.role);
+    // Pass mileage straight into createSession so it's persisted to Supabase
+    const sess = await onStartSession(startData.name, startData.role, startData.miles);
     if (sess) {
-      const data = { driver: startData.name, role: startData.role };
+      // Also write to localStorage so reads work immediately even if Supabase is slow
+      const data = { driver: startData.name };
       if (startData.role === 'shopper' && startData.miles) data.start_miles = Number(startData.miles);
-      mileageStore.save(sess.id, data);
+      await mileageStore.save(sess.id, data);
       userStore.set(startData.name);
       userStore.setRole(startData.role);
     }
@@ -838,7 +870,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
     if (session) {
       const data = { end_time: new Date().toISOString() };
       if (session.driver_role !== 'owner' && endMiles) data.end_miles = Number(endMiles);
-      mileageStore.save(session.id, data);
+      await mileageStore.save(session.id, data);
     }
     await onEndSession();
     setShowEnd(false);setEndMiles('');
@@ -1093,7 +1125,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
     };
   }, [routeStep, routeViewMode, routeData]);
 
-  const mileData = session ? mileageStore.get(session.id) : {};
+  const mileData = session ? mileageStore.get(session) : {};
   const sessionHrs = session ? (Date.now() - new Date(session.started_at).getTime()) / 3600000 : 0;
   const tripPayCalc = window.calcDriverPay(sessionHrs, milesDriven);
   const tripPay = tripPayCalc.total.toFixed(2);
@@ -1789,7 +1821,7 @@ function AnalyticsView({ items, sessions }) {
   const totalSess = sessions.filter((s) => s.status === 'completed').length;
   const tripCosts = sessions.filter((s) => s.ended_at).map((s) => {
     const hrs = (new Date(s.ended_at) - new Date(s.started_at)) / 3600000;
-    const mi = mileageStore.get(s.id);
+    const mi = mileageStore.get(s);
     const miles = mi.start_miles && mi.end_miles ? Number(mi.end_miles) - Number(mi.start_miles) : null;
     return window.calcDriverPay(hrs, miles).total;
   }).filter((v) => v > 0);
@@ -2698,7 +2730,7 @@ function SessionReceipts({ sessionId, estimatedTotal, onTotalChange }) {
 }
 
 /* ─── HISTORY ─── */
-function HistoryView({ sessions }) {
+function HistoryView({ sessions, onSessionUpdate }) {
   const [expandId, setExpandId] = useState(null);
   const [notes, setNotes] = useState({});
   const [payments, setPayments] = useState([]);
@@ -2707,6 +2739,32 @@ function HistoryView({ sessions }) {
   const [payAmount, setPayAmount] = useState('');
   const [payNote, setPayNote] = useState('');
   const [showPayLog, setShowPayLog] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editMiles, setEditMiles] = useState({ start: '', end: '', driver: '' });
+
+  const openEdit = (s) => {
+    const miles = mileageStore.get(s);
+    setEditMiles({
+      start: miles.start_miles ?? '',
+      end: miles.end_miles ?? '',
+      driver: miles.driver ?? '',
+    });
+    setEditingId(s.id);
+  };
+
+  const saveEdit = async (s) => {
+    const data = {};
+    if (editMiles.start !== '') data.start_miles = Number(editMiles.start);
+    if (editMiles.end !== '') data.end_miles = Number(editMiles.end);
+    if (editMiles.driver) data.driver = editMiles.driver;
+    await mileageStore.save(s.id, data);
+    if (onSessionUpdate) onSessionUpdate(s.id, {
+      start_miles: data.start_miles,
+      end_miles: data.end_miles,
+      driver_name: editMiles.driver || s.driver_name,
+    });
+    setEditingId(null);
+  };
 
   useEffect(() => {
     (async () => {
@@ -2718,7 +2776,7 @@ function HistoryView({ sessions }) {
   // Compute totals
   const totalEarned = sessions.filter(s => s.ended_at && s.driver_role !== 'owner').reduce((sum, s) => {
     const hrs = (new Date(s.ended_at) - new Date(s.started_at)) / 3600000;
-    const mi = mileageStore.get(s.id);
+    const mi = mileageStore.get(s);
     const miles = mi.start_miles && mi.end_miles ? Number(mi.end_miles) - Number(mi.start_miles) : null;
     return sum + window.calcDriverPay(hrs, miles).total;
   }, 0);
@@ -2837,7 +2895,7 @@ function HistoryView({ sessions }) {
 
       {sessions.map((s, idx) => {
         const open = expandId === s.id;
-        const miles = mileageStore.get(s.id);
+        const miles = mileageStore.get(s);
         const hrs = s.ended_at ? (new Date(s.ended_at) - new Date(s.started_at)) / 3600000 : null;
         const milesDriven = miles.start_miles && miles.end_miles ? Number(miles.end_miles) - Number(miles.start_miles) : null;
         const payBreakdown = hrs ? window.calcDriverPay(hrs, milesDriven) : null;
@@ -2873,6 +2931,55 @@ function HistoryView({ sessions }) {
                     {s.driver_role !== 'owner' && payBreakdown && <div className="trip-row"><span className="trip-lbl">Total Driver Pay</span><span className="trip-total">${pay}</span></div>}
                   </div>
               }
+
+                {/* Mileage edit panel — owner can fix missing/wrong miles */}
+                {s.driver_role !== 'owner' && (
+                  <div style={{ marginTop: 12, padding: 12, background: 'var(--card)', borderRadius: 10, border: '1px solid var(--bd)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editingId === s.id ? 10 : 0 }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>Trip Mileage</div>
+                        <div style={{ fontSize: 11, color: 'var(--tx2)' }}>
+                          {miles.start_miles ? `Start: ${miles.start_miles}` : 'No start miles'}
+                          {miles.end_miles ? ` · End: ${miles.end_miles}` : ' · No end miles'}
+                          {milesDriven ? ` · ${milesDriven.toFixed(1)} mi driven` : ''}
+                        </div>
+                      </div>
+                      {editingId !== s.id && (
+                        <button onClick={() => openEdit(s)} className="btn-outline" style={{ fontSize: 11, padding: '5px 10px' }}>
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                    {editingId === s.id && (
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          <div>
+                            <label style={{ fontSize: 10, color: 'var(--tx2)', display: 'block', marginBottom: 3 }}>Start odometer</label>
+                            <input type="number" className="inp" value={editMiles.start}
+                              onChange={(e) => setEditMiles(p => ({ ...p, start: e.target.value }))}
+                              placeholder="e.g. 42350" style={{ fontSize: 12 }} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 10, color: 'var(--tx2)', display: 'block', marginBottom: 3 }}>End odometer</label>
+                            <input type="number" className="inp" value={editMiles.end}
+                              onChange={(e) => setEditMiles(p => ({ ...p, end: e.target.value }))}
+                              placeholder="e.g. 42398" style={{ fontSize: 12 }} />
+                          </div>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 10, color: 'var(--tx2)', display: 'block', marginBottom: 3 }}>Driver name</label>
+                          <input type="text" className="inp" value={editMiles.driver}
+                            onChange={(e) => setEditMiles(p => ({ ...p, driver: e.target.value }))}
+                            placeholder="Driver" style={{ fontSize: 12 }} />
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                          <button className="btn-gh" style={{ flex: 1, fontSize: 12 }} onClick={() => setEditingId(null)}>Cancel</button>
+                          <button className="btn-pr" style={{ flex: 2, fontSize: 12 }} onClick={() => saveEdit(s)}>Save mileage</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Multi-receipt uploader for actual costs */}
                 <SessionReceipts sessionId={s.id} estimatedTotal={Number(s.total_spent || 0)} onTotalChange={() => {}} />
@@ -3407,9 +3514,12 @@ function App() {
     setSyncing(false);
   }, [flash]);
 
-  const startSession = useCallback(async (driverName, role) => {
+  const startSession = useCallback(async (driverName, role, startMiles) => {
     try {
-      const created = await db.createSession({ status: 'active', driver_role: role || 'shopper' });
+      const payload = { status: 'active', driver_role: role || 'shopper' };
+      if (driverName) payload.driver_name = driverName;
+      if (startMiles != null && role === 'shopper') payload.start_miles = Number(startMiles);
+      const created = await db.createSession(payload);
       const sess = created[0];
       setSession(sess);
       setSessions((prev) => [sess, ...prev]);
@@ -3549,7 +3659,7 @@ function App() {
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
         {view === 'meals' && <MealsView items={items} />}
         {view === 'add' && <AddView onAdd={addItem} busy={syncing} flash={flash} onScanReceipt={() => setShowReceiptScanner(true)} />}
-        {view === 'history' && <HistoryView sessions={sessions} />}
+        {view === 'history' && <HistoryView sessions={sessions} onSessionUpdate={(sid, fields) => setSessions(p => p.map(s => s.id === sid ? { ...s, ...fields } : s))} />}
       </div>
       <BottomNav view={view} setView={setView} outCt={outCt} />
       {toast && <div className="toast-wrap"><div className="toast">{toast}</div></div>}
