@@ -293,6 +293,19 @@ window.db={
   getMealIngredients:()=>q("meal_ingredients?select=*"),
   upsertMealIngredient:(r)=>q("meal_ingredients",{method:"POST",headers:{...H,"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(r)}),
   deleteMealIngredient:(meal_id,item_id)=>q(`meal_ingredients?meal_id=eq.${meal_id}&item_id=eq.${item_id}`,{method:"DELETE"}),
+  getShopQty:(sid)=>q(`shop_quantities?session_id=eq.${sid}`),
+  upsertShopQty:(r)=>q("shop_quantities",{method:"POST",headers:{...H,"Prefer":"resolution=merge-duplicates"},body:JSON.stringify(r)}),
+  getSessionReceipts:(sid)=>q(`session_receipts?session_id=eq.${sid}&order=uploaded_at.desc`),
+  insertSessionReceipt:(r)=>q("session_receipts",{method:"POST",body:JSON.stringify(r)}),
+  deleteSessionReceipt:(id)=>q(`session_receipts?id=eq.${id}`,{method:"DELETE"}),
+  uploadFile: async (bucket, path, file) => {
+    const sb = window.SUPABASE_URL || "https://tcpblqxybtcpkfsultxd.supabase.co";
+    const key = window.SUPABASE_KEY || "sb_publishable_4jSNU5t3x1n6hqC4H0MRAw_ZN4v0Jub";
+    const url = `${sb}/storage/v1/object/${bucket}/${path}`;
+    const r = await fetch(url, { method: "POST", headers: { "Authorization": `Bearer ${key}`, "Content-Type": file.type || "image/jpeg", "x-upsert": "true" }, body: file });
+    if (!r.ok) throw new Error("Upload failed: " + r.status);
+    return `${sb}/storage/v1/object/public/${bucket}/${path}`;
+  },
 };
 window.mileageStore={
   save(sid,d){const a=JSON.parse(localStorage.getItem('jk_miles')||'{}');a[sid]={...(a[sid]||{}),...d};localStorage.setItem('jk_miles',JSON.stringify(a));},
@@ -302,7 +315,9 @@ window.userStore={
   get:()=>localStorage.getItem('jk_user')||'',
   set:u=>localStorage.setItem('jk_user',u),
   getAll:()=>JSON.parse(localStorage.getItem('jk_users')||'["Joe","Team"]'),
-  add(u){const a=window.userStore.getAll();if(!a.includes(u)){a.push(u);localStorage.setItem('jk_users',JSON.stringify(a));}}
+  add(u){const a=window.userStore.getAll();if(!a.includes(u)){a.push(u);localStorage.setItem('jk_users',JSON.stringify(a));}},
+  getRole:()=>localStorage.getItem('jk_default_role')||'shopper',  // 'owner' | 'shopper'
+  setRole:r=>localStorage.setItem('jk_default_role',r),
 };
 // Driver pay constants
 // 2023 Hyundai Elantra Hybrid: 50 MPG combined (EPA)
@@ -432,6 +447,9 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onUpdate, onDelete, 
     <div className="item-row">
       <div className="item-main" onClick={bulk ? () => onBulkToggle(item.id) : onToggle}>
         {bulk && <div className={`bk-check ${selected ? 'on' : ''}`}>{selected && '✓'}</div>}
+        {item.photo_url && (
+          <img src={item.photo_url} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, flexShrink: 0, border: '1px solid var(--bd)' }} />
+        )}
         <div className="item-body">
           <div className="item-top">
             <span className="item-name">{item.name}</span>
@@ -483,6 +501,34 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onUpdate, onDelete, 
           <div className="e-row"><label className="e-lbl">Store</label><select className="e-inp" value={item.store} onChange={(e) => onUpdate(item.id, 'store', e.target.value)}>{STORES.map((s) => <option key={s}>{s}</option>)}</select></div>
           <div className="e-row"><label className="e-lbl">Price</label><input type="number" step="0.01" className="e-inp" value={item.price} onChange={(e) => onUpdate(item.id, 'price', Math.max(0, +e.target.value))} /></div>
           <div className="e-row"><label className="e-lbl">Note</label><input type="text" className="e-inp" value={item.note || ''} onChange={(e) => onUpdate(item.id, 'note', e.target.value)} placeholder="Brand, aisle..." /></div>
+          <div className="e-row" style={{ alignItems: 'flex-start' }}>
+            <label className="e-lbl">Photo</label>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {item.photo_url && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <img src={item.photo_url} alt="" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--bd)' }} />
+                  <button onClick={() => onUpdate(item.id, 'photo_url', null)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', cursor: 'pointer', color: 'var(--er)' }}>Remove</button>
+                </div>
+              )}
+              <input type="file" accept="image/*" id={`photo-${item.id}`} style={{ display: 'none' }}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+                    const path = `${item.id}-${Date.now()}.${ext}`;
+                    const url = await db.uploadFile('item-photos', path, file);
+                    onUpdate(item.id, 'photo_url', url);
+                  } catch (err) {
+                    alert('Photo upload failed: ' + err.message);
+                  }
+                }} />
+              <button onClick={() => document.getElementById(`photo-${item.id}`).click()}
+                className="btn-outline" style={{ fontSize: 12, padding: '6px 10px', width: '100%' }}>
+                {item.photo_url ? 'Replace photo' : 'Add photo'}
+              </button>
+            </div>
+          </div>
           <button className="del-btn" onClick={() => onDelete(item.id)}>Remove Item</button>
         </div>
       }
@@ -712,11 +758,12 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
   const [expandNote, setExpandNote] = useState(null);
   const [showStart, setShowStart] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
-  const [startData, setStartData] = useState({ name: userStore.get(), miles: '' });
+  const [startData, setStartData] = useState({ name: userStore.get(), miles: '', role: userStore.getRole() });
   const [endMiles, setEndMiles] = useState('');
   const [elapsed, setElapsed] = useState('');
   const timerRef = useRef(null);
   // Smart Route / Price Compare state
+  const [shopQty, setShopQty] = useState({}); // { item_id: qty } overrides for current session
   const [showRouteModal, setShowRouteModal] = useState(false);
   const [routeStep, setRouteStep] = useState('location'); // location | loading | results | route
   const [startAddress, setStartAddress] = useState('');
@@ -724,6 +771,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
   const [destAddress, setDestAddress] = useState('');
   const [destSameAsStart, setDestSameAsStart] = useState(true);
   const [sortMode, setSortMode] = useState('proximity'); // proximity | cost
+  const [radiusMiles, setRadiusMiles] = useState(15);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [priceResults, setPriceResults] = useState(null);
   const [selectedStores, setSelectedStores] = useState({});
@@ -734,7 +782,13 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
   const mapInstanceRef = useRef(null);
 
   useEffect(() => {
-    if (!session) {clearInterval(timerRef.current);setElapsed('');return;}
+    if (!session) {clearInterval(timerRef.current);setElapsed('');setShopQty({});return;}
+    // Load per-session shop quantities
+    db.getShopQty(session.id).then(rows => {
+      const m = {};
+      (rows || []).forEach(r => { m[r.item_id] = Number(r.qty); });
+      setShopQty(m);
+    }).catch(() => {});
     const tick = () => {
       const ms = Date.now() - new Date(session.started_at).getTime();
       const h = Math.floor(ms / 3600000),m = Math.floor(ms % 3600000 / 60000),s = Math.floor(ms % 60000 / 1000);
@@ -758,19 +812,36 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
     if (session && unchecked.length === 0 && checked.length > 0 && !showEnd) setShowEnd(true);
   }, [session, unchecked.length, checked.length]);
 
+  const updateShopQty = async (itemId, qty) => {
+    const q = Math.max(1, Number(qty) || 1);
+    setShopQty(p => ({ ...p, [itemId]: q }));
+    if (session) {
+      try { await db.upsertShopQty({ session_id: session.id, item_id: itemId, qty: q }); } catch {}
+    }
+  };
+
   const handleStart = async () => {
-    if (!startData.miles) return;
-    const sess = await onStartSession(startData.name);
-    if (sess) {mileageStore.save(sess.id, { start_miles: Number(startData.miles), driver: startData.name });userStore.set(startData.name);}
+    // Owner mode skips mileage requirement
+    if (startData.role === 'shopper' && !startData.miles) return;
+    const sess = await onStartSession(startData.name, startData.role);
+    if (sess) {
+      const data = { driver: startData.name, role: startData.role };
+      if (startData.role === 'shopper' && startData.miles) data.start_miles = Number(startData.miles);
+      mileageStore.save(sess.id, data);
+      userStore.set(startData.name);
+      userStore.setRole(startData.role);
+    }
     setShowStart(false);
   };
 
   const handleEnd = async () => {
     if (session) {
-      mileageStore.save(session.id, { end_miles: Number(endMiles), end_time: new Date().toISOString() });
+      const data = { end_time: new Date().toISOString() };
+      if (session.driver_role !== 'owner' && endMiles) data.end_miles = Number(endMiles);
+      mileageStore.save(session.id, data);
     }
     await onEndSession();
-    setShowEnd(false);setEndMiles('');setRoutePlan(null);
+    setShowEnd(false);setEndMiles('');
   };
 
   // ── Smart Route / Price Compare ──
@@ -811,7 +882,8 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
             startAddress,
             startCoords,
             sortMode,
-            items: itemList.slice(0, 8), // keep token usage low
+            radiusMiles,
+            items: itemList.slice(0, 12),
           },
         }),
       });
@@ -862,18 +934,30 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
 
   const buildRoute = async () => {
     setRouteLoading(true);
-    const storeGroups = {};
+    // Group items by selected store, preserving real coords/address from price compare
+    const storeStops = {};
     (priceResults?.items || []).forEach(item => {
-      const store = selectedStores[item.id];
-      if (!store) return;
+      const storeBrand = selectedStores[item.id];
+      if (!storeBrand) return;
       const inv = unchecked.find(i => i.id === item.id);
-      const storeMatch = item.stores.find(s => s.store === store);
-      if (!storeGroups[store]) storeGroups[store] = { items: [], lat: storeMatch?.lat, lon: storeMatch?.lon };
-      storeGroups[store].items.push({
+      const storeMatch = item.stores.find(s => s.store === storeBrand);
+      if (!storeMatch) return;
+      const key = storeMatch.placeId || storeBrand;
+      if (!storeStops[key]) {
+        storeStops[key] = {
+          brand: storeBrand,
+          name: storeMatch.storeName || storeBrand,
+          lat: storeMatch.lat,
+          lon: storeMatch.lon,
+          address: storeMatch.location || '',
+          items: [],
+        };
+      }
+      storeStops[key].items.push({
         name: item.name,
-        price: storeMatch?.price || 0,
+        price: storeMatch.price || 0,
         unit: inv?.unit || 'ct',
-        qty: inv ? inv.par_level - inv.current_qty : 1,
+        qty: inv ? Math.max(1, inv.par_level - inv.current_qty) : 1,
       });
     });
     try {
@@ -885,35 +969,37 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
           context: {
             startAddress,
             startCoords,
-            destinationAddress: destSameAsStart ? startAddress : destAddress,
-            destinationCoords: destSameAsStart ? startCoords : null,
-            storeGroups: Object.fromEntries(Object.entries(storeGroups).map(([k,v]) => [k, v.items])),
+            destinationAddress: destAddress,
+            destSameAsStart,
+            storeStops: Object.values(storeStops),
           },
         }),
       });
       let data;
       try {
         data = await resp.json();
-      } catch (parseErr) {
+      } catch {
         const text = await resp.text().catch(() => '');
-        throw new Error(`Server returned non-JSON (HTTP ${resp.status}). First chars: ${text.slice(0, 80)}`);
+        throw new Error(`Server returned non-JSON (HTTP ${resp.status}). ${text.slice(0, 80)}`);
       }
-      if (!resp.ok || data.error) {
-        const detail = data.detail ? ` (${data.detail})` : '';
-        throw new Error((data.error || 'API error') + detail);
-      }
-      const route = (data.route || []).sort((a,b) => a.order - b.order).map(r => {
-        const grp = storeGroups[r.store] || { items: [] };
-        // Use grp coords if route doesn't have them
+      if (!resp.ok || data.error) throw new Error(data.error || 'API error');
+
+      const route = (data.route || []).map(r => {
+        const stopData = Object.values(storeStops).find(s => s.brand === r.store);
         return {
           ...r,
-          lat: r.lat || grp.lat,
-          lon: r.lon || grp.lon,
-          items: grp.items,
-          subtotal: grp.items.reduce((s,i) => s + i.price, 0),
+          items: r.items?.length ? r.items : (stopData?.items || []),
+          subtotal: (r.items || stopData?.items || []).reduce((s, i) => s + (i.price || 0), 0),
         };
       });
-      setRouteData({ stops: route, totalMiles: data.totalEstimatedMiles, summary: data.routeSummary });
+      setRouteData({
+        stops: route,
+        origin: data.origin,
+        destination: data.destination,
+        totalMiles: data.totalEstimatedMiles,
+        totalMinutes: data.totalEstimatedMinutes,
+        summary: data.routeSummary,
+      });
       setRouteStep('route');
     } catch (e) {
       alert('Route planning failed: ' + e.message);
@@ -921,24 +1007,24 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
     setRouteLoading(false);
   };
 
-  // Map effect: render route on Leaflet map when route step is shown in map mode
+  // Map effect: render route on Leaflet map using REAL origin/destination from server
   useEffect(() => {
     if (routeStep !== 'route' || routeViewMode !== 'map' || !routeData || !mapRef.current || typeof L === 'undefined') return;
-    // Clean up previous instance
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
       mapInstanceRef.current = null;
     }
-    // Collect coords: start + each stop + destination
     const points = [];
-    if (startCoords) points.push({ lat: startCoords.lat, lon: startCoords.lon, label: 'Start', kind: 'start' });
+    if (routeData.origin) points.push({ lat: routeData.origin.lat, lon: routeData.origin.lon, label: 'Start: ' + (routeData.origin.address || ''), kind: 'start' });
     routeData.stops.forEach((s, i) => {
-      if (s.lat && s.lon) points.push({ lat: s.lat, lon: s.lon, label: `${i+1}. ${s.store}`, kind: 'stop', subtotal: s.subtotal });
+      if (s.lat && s.lon) points.push({ lat: s.lat, lon: s.lon, label: `${i+1}. ${s.store} (${s.address || ''})`, kind: 'stop', subtotal: s.subtotal, travelNote: s.travelNote });
     });
-    if (!destSameAsStart && destAddress) {
-      // No coords for typed destination — we'll skip drawing it
-    } else if (destSameAsStart && startCoords) {
-      points.push({ lat: startCoords.lat, lon: startCoords.lon, label: 'End (same as start)', kind: 'end' });
+    if (routeData.destination && routeData.destination.lat) {
+      const last = points[points.length - 1];
+      // Only add destination if it's not the same as the last stop
+      if (!last || (Math.abs(last.lat - routeData.destination.lat) > 0.0001 || Math.abs(last.lon - routeData.destination.lon) > 0.0001)) {
+        points.push({ lat: routeData.destination.lat, lon: routeData.destination.lon, label: 'End: ' + (routeData.destination.address || ''), kind: 'end' });
+      }
     }
     if (points.length === 0) return;
 
@@ -960,7 +1046,10 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
         iconSize: [28, 28], iconAnchor: [14, 14],
       });
       const marker = L.marker([p.lat, p.lon], { icon }).addTo(map);
-      marker.bindPopup(`<b>${p.label}</b>${p.subtotal ? `<br/>$${p.subtotal.toFixed(2)}` : ''}`);
+      let popupContent = `<b>${p.label}</b>`;
+      if (p.travelNote) popupContent += `<br/><small>${p.travelNote}</small>`;
+      if (p.subtotal) popupContent += `<br/>Subtotal: $${p.subtotal.toFixed(2)}`;
+      marker.bindPopup(popupContent);
     });
 
     // Draw animated polyline between points
@@ -1002,7 +1091,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
         mapInstanceRef.current = null;
       }
     };
-  }, [routeStep, routeViewMode, routeData, startCoords, destSameAsStart, destAddress]);
+  }, [routeStep, routeViewMode, routeData]);
 
   const mileData = session ? mileageStore.get(session.id) : {};
   const sessionHrs = session ? (Date.now() - new Date(session.started_at).getTime()) / 3600000 : 0;
@@ -1019,18 +1108,44 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       <div className="overlay">
           <div className="modal">
             <div className="modal-title">Start Shopping Trip</div>
-            <div className="modal-sub">Record who's driving and your starting odometer. Trip time will be tracked automatically.</div>
+            <div className="modal-sub">{startData.role === 'owner' ? "Owner mode: just track grocery cost, no timer or pay." : "Hired shopper: tracks time, mileage, and driver pay."}</div>
+
             <div className="f-grp">
-              <label className="f-lbl">Driver Name</label>
-              <input className="inp" value={startData.name} onChange={(e) => setStartData({ ...startData, name: e.target.value })} placeholder="Your name" />
+              <label className="f-lbl">Who's shopping?</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={() => setStartData({ ...startData, role: 'owner' })} style={{
+                  flex: 1, padding: '10px 8px', fontSize: 12, fontWeight: 700, borderRadius: 8, cursor: 'pointer',
+                  border: '1px solid ' + (startData.role === 'owner' ? 'var(--pr)' : 'var(--bd)'),
+                  background: startData.role === 'owner' ? 'var(--pr)' : 'var(--card)',
+                  color: startData.role === 'owner' ? '#fff' : 'var(--tx2)',
+                }}>Me (Owner)</button>
+                <button onClick={() => setStartData({ ...startData, role: 'shopper' })} style={{
+                  flex: 1, padding: '10px 8px', fontSize: 12, fontWeight: 700, borderRadius: 8, cursor: 'pointer',
+                  border: '1px solid ' + (startData.role === 'shopper' ? 'var(--pr)' : 'var(--bd)'),
+                  background: startData.role === 'shopper' ? 'var(--pr)' : 'var(--card)',
+                  color: startData.role === 'shopper' ? '#fff' : 'var(--tx2)',
+                }}>Hired Shopper</button>
+              </div>
             </div>
+
             <div className="f-grp">
-              <label className="f-lbl">Starting Odometer (miles)</label>
-              <input className="inp inp-big" type="number" value={startData.miles} onChange={(e) => setStartData({ ...startData, miles: e.target.value })} placeholder="e.g. 42350" autoFocus />
+              <label className="f-lbl">{startData.role === 'owner' ? 'Your name' : 'Driver name'}</label>
+              <input className="inp" value={startData.name} onChange={(e) => setStartData({ ...startData, name: e.target.value })} placeholder="Name" />
             </div>
+
+            {startData.role === 'shopper' && (
+              <div className="f-grp">
+                <label className="f-lbl">Starting odometer (miles)</label>
+                <input className="inp inp-big" type="number" value={startData.miles} onChange={(e) => setStartData({ ...startData, miles: e.target.value })} placeholder="e.g. 42350" />
+              </div>
+            )}
+
             <div className="m-acts">
               <button className="btn-gh" onClick={() => setShowStart(false)}>Cancel</button>
-              <button className="btn-pr" style={{ flex: 1 }} onClick={handleStart} disabled={!startData.miles}>Start Trip</button>
+              <button className="btn-pr" style={{ flex: 1 }} onClick={handleStart}
+                disabled={!startData.name.trim() || (startData.role === 'shopper' && !startData.miles)}>
+                Start Trip
+              </button>
             </div>
           </div>
         </div>
@@ -1040,22 +1155,34 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       <div className="overlay">
           <div className="modal">
             <div className="modal-title">End Shopping Trip</div>
-            <div className="modal-sub">Enter your current odometer to complete the trip summary.</div>
-            <div className="f-grp">
-              <label className="f-lbl">Ending Odometer (miles)</label>
-              <input className="inp inp-big" type="number" value={endMiles} onChange={(e) => setEndMiles(e.target.value)} placeholder="e.g. 42398" autoFocus />
-            </div>
-            {endMiles &&
-          <div className="trip-box">
-                <div className="trip-row"><span className="trip-lbl">Duration</span><span className="trip-val">{elapsed}</span></div>
-                <div className="trip-row"><span className="trip-lbl">Items Purchased</span><span className="trip-val">{checked.length}</span></div>
-                {mileData.start_miles && <div className="trip-row"><span className="trip-lbl">Miles Driven</span><span className="trip-val">{(Number(endMiles) - Number(mileData.start_miles)).toFixed(1)} mi</span></div>}
-                <div className="trip-row"><span className="trip-lbl">Groceries Total</span><span className="trip-val">${checked.reduce((s, i) => s + Number(i.price || 0), 0).toFixed(2)}</span></div>
-                <div className="trip-row"><span className="trip-lbl">Time Pay (@$20/hr)</span><span className="trip-val">${tripTimePay}</span></div>
-                {milesDriven && <div className="trip-row"><span className="trip-lbl">Gas ({(Number(endMiles) - Number(mileData.start_miles)).toFixed(1)} mi)</span><span className="trip-val">${tripGasPay}</span></div>}
-                <div className="trip-row"><span className="trip-lbl">Total Driver Pay</span><span className="trip-total">${tripPay}</span></div>
-              </div>
-          }
+            {session.driver_role === 'owner' ? (
+              <>
+                <div className="modal-sub">Owner mode — no mileage or pay needed.</div>
+                <div className="trip-box">
+                  <div className="trip-row"><span className="trip-lbl">Items Purchased</span><span className="trip-val">{checked.length}</span></div>
+                  <div className="trip-row"><span className="trip-lbl">Groceries Total</span><span className="trip-total">${checked.reduce((s, i) => s + Number(i.price || 0), 0).toFixed(2)}</span></div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="modal-sub">Enter your current odometer to complete the trip summary.</div>
+                <div className="f-grp">
+                  <label className="f-lbl">Ending Odometer (miles)</label>
+                  <input className="inp inp-big" type="number" value={endMiles} onChange={(e) => setEndMiles(e.target.value)} placeholder="e.g. 42398" autoFocus />
+                </div>
+                {endMiles &&
+                  <div className="trip-box">
+                    <div className="trip-row"><span className="trip-lbl">Duration</span><span className="trip-val">{elapsed}</span></div>
+                    <div className="trip-row"><span className="trip-lbl">Items Purchased</span><span className="trip-val">{checked.length}</span></div>
+                    {mileData.start_miles && <div className="trip-row"><span className="trip-lbl">Miles Driven</span><span className="trip-val">{(Number(endMiles) - Number(mileData.start_miles)).toFixed(1)} mi</span></div>}
+                    <div className="trip-row"><span className="trip-lbl">Groceries Total</span><span className="trip-val">${checked.reduce((s, i) => s + Number(i.price || 0), 0).toFixed(2)}</span></div>
+                    <div className="trip-row"><span className="trip-lbl">Time Pay (@$20/hr)</span><span className="trip-val">${tripTimePay}</span></div>
+                    {milesDriven && <div className="trip-row"><span className="trip-lbl">Gas ({(Number(endMiles) - Number(mileData.start_miles)).toFixed(1)} mi)</span><span className="trip-val">${tripGasPay}</span></div>}
+                    <div className="trip-row"><span className="trip-lbl">Total Driver Pay</span><span className="trip-total">${tripPay}</span></div>
+                  </div>
+                }
+              </>
+            )}
             <div className="m-acts">
               <button className="btn-gh" onClick={() => setShowEnd(false)}>Keep Shopping</button>
               <button className="btn-pr" style={{ flex: 1 }} onClick={handleEnd}>End Trip ✓</button>
@@ -1067,13 +1194,14 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       {session &&
       <div className="sess-banner">
           <div className="sess-top">
-            <span className="sess-lbl">Trip In Progress</span>
+            <span className="sess-lbl">{session.driver_role === 'owner' ? 'Owner Shopping' : 'Trip In Progress'}</span>
             <button className="btn-er" onClick={() => setShowEnd(true)}>End Trip</button>
           </div>
           <div className="sess-meta">
-            <span className="sess-timer">{elapsed}</span>
+            {session.driver_role !== 'owner' && <span className="sess-timer">{elapsed}</span>}
             {mileData.driver && <span>{mileData.driver}</span>}
-            {mileData.start_miles && <span>Started at {mileData.start_miles} mi</span>}
+            {session.driver_role !== 'owner' && mileData.start_miles && <span>Started at {mileData.start_miles} mi</span>}
+            {session.driver_role === 'owner' && <span>Tracking groceries only</span>}
           </div>
         </div>
       }
@@ -1147,7 +1275,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
                 </div>
 
                 {/* Sort mode */}
-                <div style={{ marginBottom: 16 }}>
+                <div style={{ marginBottom: 12 }}>
                   <label style={{ fontSize: 11, color: 'var(--tx2)', display: 'block', marginBottom: 4, fontWeight: 600 }}>Optimize for</label>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={() => setSortMode('proximity')} style={{
@@ -1162,6 +1290,20 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
                       background: sortMode === 'cost' ? 'var(--pr)' : 'var(--card)',
                       color: sortMode === 'cost' ? '#fff' : 'var(--tx2)',
                     }}>Cost (lowest prices)</button>
+                  </div>
+                </div>
+
+                {/* Search radius */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <label style={{ fontSize: 11, color: 'var(--tx2)', fontWeight: 600 }}>Search radius</label>
+                    <span style={{ fontSize: 11, color: 'var(--pr)', fontWeight: 700 }}>{radiusMiles} mi</span>
+                  </div>
+                  <input type="range" min="5" max="40" step="5" value={radiusMiles}
+                    onChange={e => setRadiusMiles(Number(e.target.value))}
+                    style={{ width: '100%', accentColor: 'var(--pr)' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'var(--mu)' }}>
+                    <span>5 mi</span><span>40 mi</span>
                   </div>
                 </div>
 
@@ -1191,16 +1333,32 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
                   </div>
                 )}
 
-                {/* Stores considered */}
+                {/* Stores considered — real addresses and drive times */}
                 {priceResults.storesConsidered && priceResults.storesConsidered.length > 0 && (
-                  <details style={{ marginBottom: 12, padding: 8, background: 'var(--bg)', borderRadius: 8 }}>
+                  <details style={{ marginBottom: 12, padding: 10, background: 'var(--bg)', borderRadius: 8 }}>
                     <summary style={{ cursor: 'pointer', fontSize: 11, color: 'var(--tx2)', fontWeight: 600 }}>
-                      {priceResults.storesConsidered.length} stores considered
+                      {priceResults.storesConsidered.length} stores within {radiusMiles} mi (Google Maps)
                     </summary>
-                    <div style={{ marginTop: 6, fontSize: 11, color: 'var(--tx2)', lineHeight: 1.6 }}>
-                      {priceResults.storesConsidered.join(' · ')}
+                    <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {[...priceResults.storesConsidered].sort((a,b) => (a.distanceMiles||999) - (b.distanceMiles||999)).map((s, i) => (
+                        <div key={i} style={{ fontSize: 11, padding: '4px 6px', borderRadius: 6, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontWeight: 700 }}>{s.brand}</div>
+                            <div style={{ fontSize: 10, color: 'var(--mu)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.address}</div>
+                          </div>
+                          <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                            <div style={{ fontWeight: 700, color: 'var(--pr)' }}>{s.distanceMiles?.toFixed(1)} mi</div>
+                            {s.durationMinutes && <div style={{ fontSize: 10, color: 'var(--mu)' }}>{Math.round(s.durationMinutes)} min</div>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </details>
+                )}
+                {priceResults.warning && (
+                  <div style={{ padding: 10, background: 'var(--prl)', borderRadius: 8, marginBottom: 12, fontSize: 11, color: 'var(--pr)' }}>
+                    {priceResults.warning}
+                  </div>
                 )}
 
                 <div style={{ fontSize: 11, color: 'var(--tx2)', marginBottom: 12 }}>
@@ -1240,9 +1398,11 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
                                       {s.isCheapest && <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--ok)', background: 'var(--okl)', padding: '1px 5px', borderRadius: 999 }}>CHEAPEST</span>}
                                       {s.isClosest && !s.isCheapest && <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--pr)', background: 'var(--prl)', padding: '1px 5px', borderRadius: 999 }}>CLOSEST</span>}
                                     </div>
-                                    {(s.location || s.distanceMiles) && (
-                                      <div style={{ fontSize: 10, color: 'var(--mu)' }}>
-                                        {s.location}{s.distanceMiles != null ? ` · ${s.distanceMiles.toFixed(1)} mi` : ''}
+                                    {(s.location || s.distanceMiles != null) && (
+                                      <div style={{ fontSize: 10, color: 'var(--mu)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {s.distanceMiles != null && <span style={{ fontWeight: 600 }}>{s.distanceMiles.toFixed(1)} mi</span>}
+                                        {s.durationMinutes != null && <span> · {Math.round(s.durationMinutes)} min</span>}
+                                        {s.storeName && s.storeName !== s.store && <span> · {s.storeName}</span>}
                                       </div>
                                     )}
                                   </div>
@@ -1273,8 +1433,8 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
             {routeStep === 'route' && routeData && (
               <div>
                 {routeData.summary && (
-                  <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 12, padding: 10, background: 'var(--bg)', borderRadius: 8 }}>
-                    {routeData.summary}{routeData.totalMiles ? ` · ~${routeData.totalMiles} miles total` : ''}
+                  <div style={{ fontSize: 12, color: 'var(--tx)', marginBottom: 12, padding: 10, background: 'var(--bg)', borderRadius: 8, fontWeight: 600 }}>
+                    {routeData.summary}
                   </div>
                 )}
 
@@ -1376,14 +1536,23 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
               return (
                 <div key={item.id} className="sh-item" style={{ animation: `rowIn .25s ${itemIdx * .03}s both` }}>
                   <div className="sh-check" onClick={() => onCheck(item.id)} />
-                  <div style={{ flex: 1 }} onClick={() => onCheck(item.id)}>
+                  {item.photo_url && (
+                    <img src={item.photo_url} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, flexShrink: 0, border: '1px solid var(--bd)' }} onClick={() => onCheck(item.id)} />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }} onClick={() => onCheck(item.id)}>
                     <div className="sh-name">{item.name}</div>
                     {item.note && <div className="sh-sub">{item.note}</div>}
                     {item.shopper_note && <div className="sh-warn">{item.shopper_note}</div>}
                   </div>
-                  <div className="sh-right">
+                  <div className="sh-right" onClick={(e) => e.stopPropagation()}>
                     {item.price > 0 && <span className="sh-price">${Number(item.price).toFixed(2)}</span>}
-                    <span className="sh-qty">{nd} {item.unit}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <button onClick={() => updateShopQty(item.id, (shopQty[item.id] ?? nd) - 1)}
+                        style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid var(--bd)', background: 'var(--card)', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--tx2)', padding: 0, lineHeight: 1 }}>−</button>
+                      <span className="sh-qty" style={{ minWidth: 50, textAlign: 'center' }}>{shopQty[item.id] ?? nd} {item.unit}</span>
+                      <button onClick={() => updateShopQty(item.id, (shopQty[item.id] ?? nd) + 1)}
+                        style={{ width: 22, height: 22, borderRadius: '50%', border: '1px solid var(--bd)', background: 'var(--card)', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--tx2)', padding: 0, lineHeight: 1 }}>+</button>
+                    </div>
                   </div>
                   <div className="sh-pills">
                     <button className={`sh-pill ${noteOpen ? 'sh-pill-active' : ''}`} title="Add note" onClick={(e) => {e.stopPropagation();setExpandNote(noteOpen ? null : item.id);}}>
@@ -2376,6 +2545,158 @@ function AddView({ onAdd, busy, flash, onScanReceipt }) {
 
 }
 
+/* ─── SESSION RECEIPTS UPLOADER ─── */
+// Allows uploading multiple receipt photos per session, OCRing each, summing actual totals.
+function SessionReceipts({ sessionId, estimatedTotal, onTotalChange }) {
+  const [receipts, setReceipts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    db.getSessionReceipts(sessionId).then(rows => {
+      setReceipts(rows || []);
+      setLoading(false);
+      const total = (rows || []).reduce((s, r) => s + Number(r.total || 0), 0);
+      onTotalChange?.(total);
+    }).catch(() => setLoading(false));
+  }, [sessionId]);
+
+  const compressImage = (file, maxDim = 1600, quality = 0.85) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) { h = h * (maxDim / w); w = maxDim; } else { w = w * (maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        // Convert dataUrl back to blob
+        canvas.toBlob(b => resolve({ blob: b, dataUrl }), 'image/jpeg', quality);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const handleFiles = async (files) => {
+    if (!files?.length) return;
+    setUploading(true);
+    setProgress({ current: 0, total: files.length });
+    const newRows = [];
+    for (let i = 0; i < files.length; i++) {
+      setProgress({ current: i + 1, total: files.length });
+      const file = files[i];
+      try {
+        // Compress the image
+        const { blob, dataUrl } = await compressImage(file);
+        const base64 = dataUrl.split(',')[1];
+        // OCR via API
+        const ocrResp = await fetch('/api/receipt-ocr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'receipt', image: base64, mediaType: 'image/jpeg' }),
+        });
+        if (!ocrResp.ok) throw new Error('OCR failed');
+        const parsed = await ocrResp.json();
+        const total = Number(parsed.total) || (parsed.items || []).reduce((s, it) => s + (Number(it.price) || 0) * (Number(it.qty) || 1), 0);
+        // Upload the photo to Supabase Storage
+        let photoUrl = null;
+        try {
+          const path = `${sessionId}/${Date.now()}-${i}.jpg`;
+          photoUrl = await db.uploadFile('receipts', path, blob);
+        } catch {}
+        // Save to DB
+        const inserted = await db.insertSessionReceipt({
+          session_id: sessionId,
+          store_guess: parsed.store_guess || null,
+          total: total,
+          item_count: (parsed.items || []).length,
+          photo_url: photoUrl,
+          raw_items: parsed.items || [],
+        });
+        if (inserted?.[0]) newRows.push(inserted[0]);
+      } catch (err) {
+        console.error('Receipt upload failed:', err);
+      }
+    }
+    const updated = [...newRows, ...receipts];
+    setReceipts(updated);
+    const newTotal = updated.reduce((s, r) => s + Number(r.total || 0), 0);
+    onTotalChange?.(newTotal);
+    setUploading(false);
+    setProgress({ current: 0, total: 0 });
+  };
+
+  const removeReceipt = async (id) => {
+    if (!confirm('Remove this receipt?')) return;
+    try { await db.deleteSessionReceipt(id); } catch {}
+    const updated = receipts.filter(r => r.id !== id);
+    setReceipts(updated);
+    const newTotal = updated.reduce((s, r) => s + Number(r.total || 0), 0);
+    onTotalChange?.(newTotal);
+  };
+
+  const actualTotal = receipts.reduce((s, r) => s + Number(r.total || 0), 0);
+  const variance = estimatedTotal > 0 ? actualTotal - estimatedTotal : null;
+
+  return (
+    <div style={{ marginTop: 12, padding: 12, background: 'var(--card)', borderRadius: 10, border: '1px solid var(--bd)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>Receipts ({receipts.length})</div>
+          <div style={{ fontSize: 11, color: 'var(--tx2)' }}>Actual cost from uploaded receipts</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--pr)' }}>${actualTotal.toFixed(2)}</div>
+          {estimatedTotal > 0 && variance != null && (
+            <div style={{ fontSize: 10, color: variance > 0 ? 'var(--er)' : 'var(--ok)', fontWeight: 600 }}>
+              {variance > 0 ? '+' : ''}${variance.toFixed(2)} vs est ${estimatedTotal.toFixed(2)}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {loading && <div style={{ fontSize: 11, color: 'var(--mu)', textAlign: 'center', padding: 8 }}>Loading...</div>}
+
+      {receipts.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          {receipts.map(r => (
+            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid var(--bd)' }}>
+              {r.photo_url ? (
+                <img src={r.photo_url} alt="receipt" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--bd)', cursor: 'pointer' }}
+                  onClick={() => window.open(r.photo_url, '_blank')} />
+              ) : (
+                <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>📄</div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600 }}>{r.store_guess || 'Receipt'}</div>
+                <div style={{ fontSize: 10, color: 'var(--mu)' }}>{r.item_count || 0} items · {new Date(r.uploaded_at).toLocaleDateString()}</div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pr)', flexShrink: 0 }}>${Number(r.total).toFixed(2)}</div>
+              <button onClick={() => removeReceipt(r.id)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 16, padding: 4 }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
+        onChange={(e) => handleFiles(Array.from(e.target.files || []))} />
+      <button className="btn-outline" style={{ width: '100%', fontSize: 12 }}
+        onClick={() => fileRef.current?.click()} disabled={uploading}>
+        {uploading ? `Processing ${progress.current}/${progress.total}…` : '+ Add Receipt(s)'}
+      </button>
+    </div>
+  );
+}
+
 /* ─── HISTORY ─── */
 function HistoryView({ sessions }) {
   const [expandId, setExpandId] = useState(null);
@@ -2395,7 +2716,7 @@ function HistoryView({ sessions }) {
   }, []);
 
   // Compute totals
-  const totalEarned = sessions.filter(s => s.ended_at).reduce((sum, s) => {
+  const totalEarned = sessions.filter(s => s.ended_at && s.driver_role !== 'owner').reduce((sum, s) => {
     const hrs = (new Date(s.ended_at) - new Date(s.started_at)) / 3600000;
     const mi = mileageStore.get(s.id);
     const miles = mi.start_miles && mi.end_miles ? Number(mi.end_miles) - Number(mi.start_miles) : null;
@@ -2543,22 +2864,30 @@ function HistoryView({ sessions }) {
             {open &&
             <div className="hist-det">
                 {(pay || milesDriven) &&
-              <div className="trip-box" style={{ marginBottom: sNotes.length ? 12 : 0 }}>
+              <div className="trip-box">
                     {hrs && <div className="trip-row"><span className="trip-lbl">Duration</span><span className="trip-val">{hrs.toFixed(1)}h</span></div>}
                     {milesDriven && <div className="trip-row"><span className="trip-lbl">Miles Driven</span><span className="trip-val">{milesDriven} mi</span></div>}
-                    {s.total_spent > 0 && <div className="trip-row"><span className="trip-lbl">Groceries</span><span className="trip-val">${Number(s.total_spent).toFixed(2)}</span></div>}
-                    {payBreakdown && <div className="trip-row"><span className="trip-lbl">Time Pay (@$20/hr)</span><span className="trip-val">${payBreakdown.timePay.toFixed(2)}</span></div>}
-                    {payBreakdown && milesDriven && <div className="trip-row"><span className="trip-lbl">Gas ({milesDriven} mi × ${window.GAS_RATE_PER_MILE.toFixed(4)})</span><span className="trip-val">${payBreakdown.gasPay.toFixed(2)}</span></div>}
-                    {payBreakdown && <div className="trip-row"><span className="trip-lbl">Total Driver Pay</span><span className="trip-total">${pay}</span></div>}
+                    {s.total_spent > 0 && <div className="trip-row"><span className="trip-lbl">Groceries (estimated)</span><span className="trip-val">${Number(s.total_spent).toFixed(2)}</span></div>}
+                    {s.driver_role !== 'owner' && payBreakdown && <div className="trip-row"><span className="trip-lbl">Time Pay (@$20/hr)</span><span className="trip-val">${payBreakdown.timePay.toFixed(2)}</span></div>}
+                    {s.driver_role !== 'owner' && payBreakdown && milesDriven && <div className="trip-row"><span className="trip-lbl">Gas ({milesDriven} mi × ${window.GAS_RATE_PER_MILE.toFixed(4)})</span><span className="trip-val">${payBreakdown.gasPay.toFixed(2)}</span></div>}
+                    {s.driver_role !== 'owner' && payBreakdown && <div className="trip-row"><span className="trip-lbl">Total Driver Pay</span><span className="trip-total">${pay}</span></div>}
                   </div>
               }
-                {sNotes.length > 0 && sNotes.map((n) =>
-              <div key={n.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--bd)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ fontSize: 13, fontWeight: 600 }}>{n.item_name}</span><span style={{ fontSize: 11, color: 'var(--mu)' }}>{n.store}</span></div>
-                    <p style={{ fontSize: 12, color: 'var(--tx2)', marginTop: 2 }}>"{n.note}"</p>
+
+                {/* Multi-receipt uploader for actual costs */}
+                <SessionReceipts sessionId={s.id} estimatedTotal={Number(s.total_spent || 0)} onTotalChange={() => {}} />
+
+                {sNotes.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--tx2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Shopper Notes</div>
+                    {sNotes.map((n) =>
+                      <div key={n.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--bd)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ fontSize: 13, fontWeight: 600 }}>{n.item_name}</span><span style={{ fontSize: 11, color: 'var(--mu)' }}>{n.store}</span></div>
+                        <p style={{ fontSize: 12, color: 'var(--tx2)', marginTop: 2 }}>"{n.note}"</p>
+                      </div>
+                    )}
                   </div>
-              )}
-                {sNotes.length === 0 && !pay && <p style={{ fontSize: 12, color: 'var(--mu)' }}>No notes for this trip</p>}
+                )}
               </div>
             }
           </div>);
@@ -3078,13 +3407,13 @@ function App() {
     setSyncing(false);
   }, [flash]);
 
-  const startSession = useCallback(async (driverName) => {
+  const startSession = useCallback(async (driverName, role) => {
     try {
-      const created = await db.createSession({ status: 'active' });
+      const created = await db.createSession({ status: 'active', driver_role: role || 'shopper' });
       const sess = created[0];
       setSession(sess);
       setSessions((prev) => [sess, ...prev]);
-      flash('Shopping trip started!');
+      flash(role === 'owner' ? 'Owner trip started!' : 'Shopping trip started!');
       return sess;
     } catch {flash('Session start failed');return null;}
   }, [flash]);
