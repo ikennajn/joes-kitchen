@@ -302,6 +302,7 @@ window.db={
   upsertShopQty:(r)=>q("shop_quantities",{method:"POST",headers:{...H,"Prefer":"resolution=merge-duplicates"},body:JSON.stringify(r)}),
   getSessionReceipts:(sid)=>q(`session_receipts?session_id=eq.${sid}&order=uploaded_at.desc`),
   insertSessionReceipt:(r)=>q("session_receipts",{method:"POST",body:JSON.stringify(r)}),
+  updateSessionReceipt:(id,fields)=>q(`session_receipts?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
   deleteSessionReceipt:(id)=>q(`session_receipts?id=eq.${id}`,{method:"DELETE"}),
   uploadFile: async (bucket, path, file) => {
     const sb = window.SUPABASE_URL || "https://tcpblqxybtcpkfsultxd.supabase.co";
@@ -2596,14 +2597,16 @@ function AddView({ onAdd, busy, flash, onScanReceipt }) {
 // Lets owner correct prices/quantities, delete erroneous entries,
 // add items that were missed off the receipt, and add inventory items
 // that should have been ticked but weren't.
-function SessionPurchaseEditor({ session, inventoryItems, onTotalChange }) {
+function SessionPurchaseEditor({ session, inventoryItems, onTotalChange, onInventoryUpdate, refreshTick }) {
   const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({}); // { name, store, qty, price }
   const [showAddInventory, setShowAddInventory] = useState(false);
+  const [showAddShopping, setShowAddShopping] = useState(false);
   const [showAddCustom, setShowAddCustom] = useState(false);
   const [invFilter, setInvFilter] = useState('');
+  const [shopFilter, setShopFilter] = useState('');
   const [customDraft, setCustomDraft] = useState({ name: '', store: '', qty: 1, price: 0, category: 'Other', unit: 'ct' });
 
   useEffect(() => {
@@ -2612,7 +2615,7 @@ function SessionPurchaseEditor({ session, inventoryItems, onTotalChange }) {
       setLoading(false);
       onTotalChange?.((rows || []).reduce((s, r) => s + Number(r.price || 0) * Number(r.qty || 1), 0));
     }).catch(() => setLoading(false));
-  }, [session.id]);
+  }, [session.id, refreshTick]);
 
   const recalcTotal = (list) => onTotalChange?.(list.reduce((s, r) => s + Number(r.price || 0) * Number(r.qty || 1), 0));
 
@@ -2666,6 +2669,47 @@ function SessionPurchaseEditor({ session, inventoryItems, onTotalChange }) {
     } catch (e) { alert('Add failed: ' + e.message); }
   };
 
+  // Add an item that's currently on the shopping list (out/low) to this session.
+  // Bumps inventory qty up to par level (so it leaves the shopping list) and
+  // logs the purchase. Useful when a receipt didn't itemize and you missed
+  // ticking it during the trip.
+  const addFromShoppingList = async (item) => {
+    const fillQty = Math.max(1, item.par_level - item.current_qty);
+    const newRow = {
+      session_id: session.id,
+      item_id: item.id,
+      item_name: item.name,
+      category: item.category,
+      store: item.store,
+      unit: item.unit,
+      qty: fillQty,
+      price: Number(item.price || 0),
+      purchased_at: session.started_at || new Date().toISOString(),
+    };
+    try {
+      // 1. Log the purchase
+      const inserted = await db.insertPurchase(newRow);
+      const row = inserted?.[0] || newRow;
+      const updated = [...purchases, row];
+      setPurchases(updated);
+      recalcTotal(updated);
+
+      // 2. Bump inventory qty to par (removes it from the shopping list)
+      const newInvFields = {
+        current_qty: item.par_level,
+        checked_at: null,
+        session_id: null,
+      };
+      try {
+        await db.update(item.id, newInvFields);
+        onInventoryUpdate?.(item.id, newInvFields);
+      } catch (e) { console.error('Inventory update failed', e); }
+
+      setShowAddShopping(false);
+      setShopFilter('');
+    } catch (e) { alert('Add failed: ' + e.message); }
+  };
+
   const addCustom = async () => {
     if (!customDraft.name.trim()) return;
     const newRow = {
@@ -2705,6 +2749,21 @@ function SessionPurchaseEditor({ session, inventoryItems, onTotalChange }) {
     .filter(it => !purchasedIds.has(it.id))
     .filter(it => !invFilter || it.name.toLowerCase().includes(invFilter.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Shopping list items = inventory items currently below par level (out or low)
+  // and not already in this session. These are items that need to be bought —
+  // useful when a receipt didn't itemize them and you want to mark them as purchased.
+  const shoppingListInv = inventoryItems
+    .filter(it => !purchasedIds.has(it.id))
+    .filter(it => Number(it.current_qty || 0) < Number(it.par_level || 0))
+    .filter(it => !shopFilter || it.name.toLowerCase().includes(shopFilter.toLowerCase()))
+    .sort((a, b) => {
+      // out first, then low
+      const aOut = Number(a.current_qty || 0) === 0;
+      const bOut = Number(b.current_qty || 0) === 0;
+      if (aOut !== bOut) return aOut ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
 
   const inp = { width: '100%', fontSize: 12, padding: '5px 7px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)', boxSizing: 'border-box' };
 
@@ -2765,16 +2824,60 @@ function SessionPurchaseEditor({ session, inventoryItems, onTotalChange }) {
       )}
 
       {/* Add buttons */}
-      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-        <button className="btn-outline" style={{ flex: 1, fontSize: 11, padding: '6px 8px' }}
-          onClick={() => { setShowAddInventory(!showAddInventory); setShowAddCustom(false); }}>
-          + From Inventory
+      <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+        <button className="btn-outline" style={{ flex: '1 1 0', minWidth: 100, fontSize: 11, padding: '6px 6px' }}
+          onClick={() => { setShowAddShopping(!showAddShopping); setShowAddInventory(false); setShowAddCustom(false); }}>
+          + Shopping List{shoppingListInv.length > 0 ? ` (${shoppingListInv.length})` : ''}
         </button>
-        <button className="btn-outline" style={{ flex: 1, fontSize: 11, padding: '6px 8px' }}
-          onClick={() => { setShowAddCustom(!showAddCustom); setShowAddInventory(false); }}>
-          + Custom Item
+        <button className="btn-outline" style={{ flex: '1 1 0', minWidth: 100, fontSize: 11, padding: '6px 6px' }}
+          onClick={() => { setShowAddInventory(!showAddInventory); setShowAddShopping(false); setShowAddCustom(false); }}>
+          + Inventory
+        </button>
+        <button className="btn-outline" style={{ flex: '1 1 0', minWidth: 100, fontSize: 11, padding: '6px 6px' }}
+          onClick={() => { setShowAddCustom(!showAddCustom); setShowAddInventory(false); setShowAddShopping(false); }}>
+          + Custom
         </button>
       </div>
+
+      {/* Add from shopping list picker — shows out/low items only */}
+      {showAddShopping && (
+        <div style={{ marginTop: 8, padding: 10, background: 'var(--bg)', borderRadius: 8 }}>
+          <div style={{ fontSize: 10, color: 'var(--tx2)', marginBottom: 6, lineHeight: 1.4 }}>
+            Items currently out or low. Adding restocks inventory to par and removes from shopping list.
+          </div>
+          <input className="inp" value={shopFilter} onChange={e => setShopFilter(e.target.value)}
+            placeholder="Search shopping list…" style={{ fontSize: 12, marginBottom: 8 }} />
+          <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+            {shoppingListInv.length === 0 && <div style={{ fontSize: 11, color: 'var(--mu)', textAlign: 'center', padding: 6 }}>Nothing on the shopping list right now</div>}
+            {shoppingListInv.slice(0, 50).map(it => {
+              const isOut = Number(it.current_qty || 0) === 0;
+              const fillQty = Math.max(1, it.par_level - it.current_qty);
+              return (
+                <div key={it.id} onClick={() => addFromShoppingList(it)} style={{
+                  padding: '6px 8px', cursor: 'pointer', borderRadius: 6, fontSize: 12,
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6,
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--card)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontWeight: 600 }}>{it.name}</span>
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
+                        background: isOut ? 'var(--er)' : 'var(--wa)', color: '#fff',
+                      }}>{isOut ? 'OUT' : 'LOW'}</span>
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--mu)' }}>
+                      {it.store} · need {fillQty} {it.unit || 'ct'} · ${Number(it.price || 0).toFixed(2)}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 14, color: 'var(--pr)', flexShrink: 0 }}>+</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Add from inventory picker */}
       {showAddInventory && (
@@ -2833,11 +2936,19 @@ function SessionPurchaseEditor({ session, inventoryItems, onTotalChange }) {
 
 /* ─── SESSION RECEIPTS UPLOADER ─── */
 // Allows uploading multiple receipt photos per session, OCRing each, summing actual totals.
-function SessionReceipts({ sessionId, estimatedTotal, onTotalChange }) {
+function SessionReceipts({ session, sessionId, estimatedTotal, onTotalChange, inventoryItems, onInventoryUpdate, onPurchasesChanged }) {
   const [receipts, setReceipts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [progress, setProgress] = useState({ current: 0, total: 0, label: '' });
+  // multiPage = true means all selected files are pages of ONE long receipt;
+  // false means each file is a separate receipt.
+  const [multiPage, setMultiPage] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  // Per-receipt session-purchase attachment state
+  const [attachingId, setAttachingId] = useState(null);
+  const [attachFilter, setAttachFilter] = useState('');
+  const [sessionPurchases, setSessionPurchases] = useState([]);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -2848,6 +2959,15 @@ function SessionReceipts({ sessionId, estimatedTotal, onTotalChange }) {
       onTotalChange?.(total);
     }).catch(() => setLoading(false));
   }, [sessionId]);
+
+  // Refresh session purchases when opening the attach panel — these are the
+  // candidate items that can be linked to a receipt missing line items.
+  const refreshSessionPurchases = async () => {
+    try {
+      const rows = await db.getSessionPurchases(sessionId);
+      setSessionPurchases(rows || []);
+    } catch {}
+  };
 
   const compressImage = (file, maxDim = 1600, quality = 0.85) => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -2862,7 +2982,6 @@ function SessionReceipts({ sessionId, estimatedTotal, onTotalChange }) {
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        // Convert dataUrl back to blob
         canvas.toBlob(b => resolve({ blob: b, dataUrl }), 'image/jpeg', quality);
       };
       img.onerror = reject;
@@ -2872,53 +2991,97 @@ function SessionReceipts({ sessionId, estimatedTotal, onTotalChange }) {
     reader.readAsDataURL(file);
   });
 
+  // Process a single receipt = N images sent to OCR together.
+  // The API combines them into one parsed result.
+  const processSingleReceipt = async (files, baseIdx = 0) => {
+    // Compress all images first
+    const compressed = [];
+    for (let j = 0; j < files.length; j++) {
+      setProgress({ current: baseIdx + 1, total: 0, label: `Compressing page ${j + 1}/${files.length}…` });
+      const c = await compressImage(files[j]);
+      compressed.push(c);
+    }
+    // Send all base64 images in one request
+    setProgress({ current: baseIdx + 1, total: 0, label: `Reading receipt (${files.length} page${files.length > 1 ? 's' : ''})…` });
+    const ocrResp = await fetch('/api/receipt-ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: 'receipt',
+        // Send first as `image` (legacy single) AND all as `images` array
+        image: compressed[0].dataUrl.split(',')[1],
+        images: compressed.map(c => c.dataUrl.split(',')[1]),
+        mediaType: 'image/jpeg',
+      }),
+    });
+    if (!ocrResp.ok) throw new Error('OCR failed');
+    const parsed = await ocrResp.json();
+    const items = parsed.items || [];
+    const subtotal = parsed.subtotal != null ? Number(parsed.subtotal) : null;
+    const tax = parsed.tax != null ? Number(parsed.tax) : null;
+    const total = parsed.total != null
+      ? Number(parsed.total)
+      : (subtotal != null && tax != null
+        ? subtotal + tax
+        : items.reduce((s, it) => s + (Number(it.price) || 0) * (Number(it.qty) || 1), 0));
+
+    // Upload first photo as the cover, rest as additional pages
+    let photoUrl = null;
+    const additionalPhotos = [];
+    for (let j = 0; j < compressed.length; j++) {
+      try {
+        const path = `${sessionId}/${Date.now()}-${baseIdx}-p${j}.jpg`;
+        const url = await db.uploadFile('receipts', path, compressed[j].blob);
+        if (j === 0) photoUrl = url;
+        else additionalPhotos.push(url);
+      } catch {}
+    }
+
+    const inserted = await db.insertSessionReceipt({
+      session_id: sessionId,
+      store_guess: parsed.store_guess || null,
+      subtotal,
+      tax,
+      total,
+      item_count: items.length,
+      photo_url: photoUrl,
+      raw_items: additionalPhotos.length
+        ? { items, additional_photos: additionalPhotos }
+        : items,
+    });
+    return inserted?.[0] || null;
+  };
+
   const handleFiles = async (files) => {
     if (!files?.length) return;
     setUploading(true);
-    setProgress({ current: 0, total: files.length });
     const newRows = [];
-    for (let i = 0; i < files.length; i++) {
-      setProgress({ current: i + 1, total: files.length });
-      const file = files[i];
+
+    if (multiPage) {
+      // All files = pages of one receipt
+      setProgress({ current: 1, total: 1, label: 'Processing combined receipt…' });
       try {
-        // Compress the image
-        const { blob, dataUrl } = await compressImage(file);
-        const base64 = dataUrl.split(',')[1];
-        // OCR via API
-        const ocrResp = await fetch('/api/receipt-ocr', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mode: 'receipt', image: base64, mediaType: 'image/jpeg' }),
-        });
-        if (!ocrResp.ok) throw new Error('OCR failed');
-        const parsed = await ocrResp.json();
-        const total = Number(parsed.total) || (parsed.items || []).reduce((s, it) => s + (Number(it.price) || 0) * (Number(it.qty) || 1), 0);
-        // Upload the photo to Supabase Storage
-        let photoUrl = null;
+        const row = await processSingleReceipt(files, 0);
+        if (row) newRows.push(row);
+      } catch (err) { console.error('Receipt upload failed:', err); alert('Could not process receipt — try again or split into separate receipts'); }
+    } else {
+      // Each file is its own receipt
+      setProgress({ current: 0, total: files.length, label: '' });
+      for (let i = 0; i < files.length; i++) {
+        setProgress({ current: i + 1, total: files.length, label: '' });
         try {
-          const path = `${sessionId}/${Date.now()}-${i}.jpg`;
-          photoUrl = await db.uploadFile('receipts', path, blob);
-        } catch {}
-        // Save to DB
-        const inserted = await db.insertSessionReceipt({
-          session_id: sessionId,
-          store_guess: parsed.store_guess || null,
-          total: total,
-          item_count: (parsed.items || []).length,
-          photo_url: photoUrl,
-          raw_items: parsed.items || [],
-        });
-        if (inserted?.[0]) newRows.push(inserted[0]);
-      } catch (err) {
-        console.error('Receipt upload failed:', err);
+          const row = await processSingleReceipt([files[i]], i);
+          if (row) newRows.push(row);
+        } catch (err) { console.error('Receipt upload failed:', err); }
       }
     }
+
     const updated = [...newRows, ...receipts];
     setReceipts(updated);
     const newTotal = updated.reduce((s, r) => s + Number(r.total || 0), 0);
     onTotalChange?.(newTotal);
     setUploading(false);
-    setProgress({ current: 0, total: 0 });
+    setProgress({ current: 0, total: 0, label: '' });
   };
 
   const removeReceipt = async (id) => {
@@ -2930,8 +3093,70 @@ function SessionReceipts({ sessionId, estimatedTotal, onTotalChange }) {
     onTotalChange?.(newTotal);
   };
 
+  // Toggle a session-purchase row's link to a receipt. When linked,
+  // the receipt records that this purchase belongs to it.
+  const toggleAttach = async (receipt, purchaseId) => {
+    const current = Array.isArray(receipt.linked_purchase_ids) ? receipt.linked_purchase_ids : [];
+    const isLinked = current.includes(purchaseId);
+    const next = isLinked ? current.filter(id => id !== purchaseId) : [...current, purchaseId];
+    try {
+      await db.updateSessionReceipt(receipt.id, { linked_purchase_ids: next });
+      setReceipts(p => p.map(r => r.id === receipt.id ? { ...r, linked_purchase_ids: next } : r));
+    } catch (e) { alert('Update failed: ' + e.message); }
+  };
+
+  // Attach an inventory item that's still on the shopping list (out/low) to a receipt.
+  // Creates a purchase row, bumps inventory to par, and links the new purchase to the receipt.
+  const attachShoppingItem = async (receipt, item) => {
+    const fillQty = Math.max(1, item.par_level - item.current_qty);
+    const newRow = {
+      session_id: sessionId,
+      item_id: item.id,
+      item_name: item.name,
+      category: item.category,
+      store: item.store,
+      unit: item.unit,
+      qty: fillQty,
+      price: Number(item.price || 0),
+      purchased_at: session?.started_at || new Date().toISOString(),
+    };
+    try {
+      const inserted = await db.insertPurchase(newRow);
+      const purchase = inserted?.[0] || newRow;
+      // Bump inventory
+      const invFields = { current_qty: item.par_level, checked_at: null, session_id: null };
+      try {
+        await db.update(item.id, invFields);
+        onInventoryUpdate?.(item.id, invFields);
+      } catch {}
+      // Link to receipt
+      const current = Array.isArray(receipt.linked_purchase_ids) ? receipt.linked_purchase_ids : [];
+      const next = [...current, purchase.id];
+      try {
+        await db.updateSessionReceipt(receipt.id, { linked_purchase_ids: next });
+        setReceipts(p => p.map(r => r.id === receipt.id ? { ...r, linked_purchase_ids: next } : r));
+      } catch {}
+      // Refresh local sessionPurchases so the row appears in the toggle list
+      await refreshSessionPurchases();
+      // Tell parent so SessionPurchaseEditor refetches too
+      onPurchasesChanged?.();
+    } catch (e) { alert('Attach failed: ' + e.message); }
+  };
+
+  const subtotalSum = receipts.reduce((s, r) => s + Number(r.subtotal || 0), 0);
+  const taxSum = receipts.reduce((s, r) => s + Number(r.tax || 0), 0);
   const actualTotal = receipts.reduce((s, r) => s + Number(r.total || 0), 0);
   const variance = estimatedTotal > 0 ? actualTotal - estimatedTotal : null;
+  // Only show subtotal/tax breakdown if at least one receipt has them
+  const hasBreakdown = receipts.some(r => r.subtotal != null || r.tax != null);
+
+  // Items still on the shopping list (out/low) that could be attached
+  const purchasedItemIds = new Set(sessionPurchases.map(p => p.item_id).filter(Boolean));
+  const shoppingListInv = (inventoryItems || [])
+    .filter(it => !purchasedItemIds.has(it.id))
+    .filter(it => Number(it.current_qty || 0) < Number(it.par_level || 0))
+    .filter(it => !attachFilter || it.name.toLowerCase().includes(attachFilter.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div style={{ marginTop: 12, padding: 12, background: 'var(--card)', borderRadius: 10, border: '1px solid var(--bd)' }}>
@@ -2942,6 +3167,12 @@ function SessionReceipts({ sessionId, estimatedTotal, onTotalChange }) {
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--pr)' }}>${actualTotal.toFixed(2)}</div>
+          {hasBreakdown && (
+            <div style={{ fontSize: 10, color: 'var(--tx2)', marginTop: 2 }}>
+              Food <b style={{ color: 'var(--tx)' }}>${subtotalSum.toFixed(2)}</b>
+              {' · '}Tax <b style={{ color: 'var(--tx)' }}>${taxSum.toFixed(2)}</b>
+            </div>
+          )}
           {estimatedTotal > 0 && variance != null && (
             <div style={{ fontSize: 10, color: variance > 0 ? 'var(--er)' : 'var(--ok)', fontWeight: 600 }}>
               {variance > 0 ? '+' : ''}${variance.toFixed(2)} vs est ${estimatedTotal.toFixed(2)}
@@ -2950,41 +3181,202 @@ function SessionReceipts({ sessionId, estimatedTotal, onTotalChange }) {
         </div>
       </div>
 
-      {loading && <div style={{ fontSize: 11, color: 'var(--mu)', textAlign: 'center', padding: 8 }}>Loading...</div>}
+      {loading && <div style={{ fontSize: 11, color: 'var(--mu)', textAlign: 'center', padding: 8 }}>Loading…</div>}
 
       {receipts.length > 0 && (
         <div style={{ marginBottom: 10 }}>
-          {receipts.map(r => (
-            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid var(--bd)' }}>
-              {r.photo_url ? (
-                <img src={r.photo_url} alt="receipt" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--bd)', cursor: 'pointer' }}
-                  onClick={() => window.open(r.photo_url, '_blank')} />
-              ) : (
-                <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>📄</div>
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600 }}>{r.store_guess || 'Receipt'}</div>
-                <div style={{ fontSize: 10, color: 'var(--mu)' }}>{r.item_count || 0} items · {new Date(r.uploaded_at).toLocaleDateString()}</div>
+          {receipts.map(r => {
+            const linkedIds = Array.isArray(r.linked_purchase_ids) ? r.linked_purchase_ids : [];
+            const linkedRows = sessionPurchases.filter(p => linkedIds.includes(p.id));
+            const isAttaching = attachingId === r.id;
+            const itemsArr = Array.isArray(r.raw_items) ? r.raw_items : (r.raw_items?.items || []);
+            const additionalPhotos = (r.raw_items?.additional_photos) || [];
+            const itemCount = (r.item_count || itemsArr.length || 0);
+            return (
+              <div key={r.id} style={{ borderBottom: '1px solid var(--bd)', padding: '8px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {r.photo_url ? (
+                    <img src={r.photo_url} alt="receipt" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--bd)', cursor: 'pointer' }}
+                      onClick={() => window.open(r.photo_url, '_blank')} />
+                  ) : (
+                    <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>📄</div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600 }}>
+                      {r.store_guess || 'Receipt'}
+                      {additionalPhotos.length > 0 && (
+                        <span style={{ fontSize: 9, fontWeight: 700, marginLeft: 6, padding: '1px 5px', borderRadius: 3, background: 'var(--bd)', color: 'var(--tx2)' }}>
+                          {additionalPhotos.length + 1} pages
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--mu)' }}>
+                      {itemCount} item{itemCount !== 1 ? 's' : ''}
+                      {linkedRows.length > 0 && ` · ${linkedRows.length} attached`}
+                      {' · '}{new Date(r.uploaded_at).toLocaleDateString()}
+                    </div>
+                    {(r.subtotal != null || r.tax != null) && (
+                      <div style={{ fontSize: 10, color: 'var(--tx2)' }}>
+                        {r.subtotal != null && <>Food ${Number(r.subtotal).toFixed(2)}</>}
+                        {r.subtotal != null && r.tax != null && ' · '}
+                        {r.tax != null && <>Tax ${Number(r.tax).toFixed(2)}</>}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pr)', flexShrink: 0 }}>${Number(r.total).toFixed(2)}</div>
+                  <button onClick={() => removeReceipt(r.id)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 16, padding: 4 }}>×</button>
+                </div>
+
+                {/* Additional page thumbnails */}
+                {additionalPhotos.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4, marginTop: 6, marginLeft: 46, flexWrap: 'wrap' }}>
+                    {additionalPhotos.map((url, i) => (
+                      <img key={i} src={url} alt={`page ${i + 2}`}
+                        style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 4, border: '1px solid var(--bd)', cursor: 'pointer' }}
+                        onClick={() => window.open(url, '_blank')} />
+                    ))}
+                  </div>
+                )}
+
+                {/* Linked items chips */}
+                {linkedRows.length > 0 && (
+                  <div style={{ marginTop: 6, marginLeft: 46, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {linkedRows.map(lr => (
+                      <span key={lr.id} style={{
+                        fontSize: 10, padding: '2px 6px', borderRadius: 10,
+                        background: 'var(--prl)', color: 'var(--pr)', fontWeight: 600,
+                      }}>
+                        {lr.item_name} · ${Number(lr.price * lr.qty).toFixed(2)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Attach toggle button */}
+                <div style={{ marginTop: 6, marginLeft: 46 }}>
+                  <button onClick={async () => {
+                    if (isAttaching) { setAttachingId(null); return; }
+                    setAttachingId(r.id);
+                    setAttachFilter('');
+                    await refreshSessionPurchases();
+                  }} style={{
+                    fontSize: 10, padding: '3px 8px', borderRadius: 4,
+                    border: '1px solid var(--bd)', background: 'transparent',
+                    color: 'var(--tx2)', cursor: 'pointer',
+                  }}>
+                    {isAttaching ? 'Done' : '🔗 Attach items'}
+                  </button>
+                </div>
+
+                {/* Attach panel */}
+                {isAttaching && (
+                  <div style={{ marginTop: 8, marginLeft: 46, padding: 10, background: 'var(--bg)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 10, color: 'var(--tx2)', lineHeight: 1.4, marginBottom: 8 }}>
+                      Attach items to this receipt. Useful for receipts that don't itemize (e.g. African Store).
+                    </div>
+
+                    {/* Items already in session — toggle to link/unlink */}
+                    {sessionPurchases.length > 0 && (
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--tx2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>From this trip</div>
+                        <div style={{ maxHeight: 140, overflowY: 'auto' }}>
+                          {sessionPurchases.map(sp => {
+                            const isLinked = linkedIds.includes(sp.id);
+                            return (
+                              <div key={sp.id} onClick={() => toggleAttach(r, sp.id)} style={{
+                                padding: '5px 7px', cursor: 'pointer', borderRadius: 4, fontSize: 11,
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                background: isLinked ? 'var(--prl)' : 'transparent', marginBottom: 2,
+                              }}>
+                                <span style={{ fontWeight: isLinked ? 700 : 400 }}>
+                                  {isLinked ? '✓ ' : '○ '}{sp.item_name}
+                                </span>
+                                <span style={{ fontSize: 10, color: 'var(--mu)' }}>
+                                  {sp.store} · ${(Number(sp.price) * Number(sp.qty)).toFixed(2)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Shopping list items — adds + links */}
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--tx2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Add from shopping list</div>
+                      <input className="inp" value={attachFilter} onChange={e => setAttachFilter(e.target.value)}
+                        placeholder="Search…" style={{ fontSize: 11, marginBottom: 6, padding: '4px 6px' }} />
+                      <div style={{ maxHeight: 160, overflowY: 'auto' }}>
+                        {shoppingListInv.length === 0 && (
+                          <div style={{ fontSize: 10, color: 'var(--mu)', textAlign: 'center', padding: 6 }}>
+                            Nothing on the shopping list
+                          </div>
+                        )}
+                        {shoppingListInv.slice(0, 30).map(it => {
+                          const isOut = Number(it.current_qty || 0) === 0;
+                          return (
+                            <div key={it.id} onClick={() => attachShoppingItem(r, it)} style={{
+                              padding: '5px 7px', cursor: 'pointer', borderRadius: 4, fontSize: 11,
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            }}>
+                              <span>
+                                <span style={{
+                                  fontSize: 8, fontWeight: 700, padding: '1px 4px', borderRadius: 3,
+                                  background: isOut ? 'var(--er)' : 'var(--wa)', color: '#fff', marginRight: 5,
+                                }}>{isOut ? 'OUT' : 'LOW'}</span>
+                                {it.name}
+                              </span>
+                              <span style={{ color: 'var(--pr)', fontSize: 13 }}>+</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--pr)', flexShrink: 0 }}>${Number(r.total).toFixed(2)}</div>
-              <button onClick={() => removeReceipt(r.id)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 16, padding: 4 }}>×</button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Upload options */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <button onClick={() => setShowOptions(!showOptions)} style={{
+          fontSize: 10, color: 'var(--tx2)', background: 'none', border: 'none',
+          cursor: 'pointer', padding: 0,
+        }}>
+          {showOptions ? '▾' : '▸'} Options {multiPage ? '· Multi-page mode' : ''}
+        </button>
+      </div>
+      {showOptions && (
+        <div style={{ background: 'var(--bg)', padding: 10, borderRadius: 8, marginBottom: 8 }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 11 }}>
+            <input type="checkbox" checked={multiPage} onChange={e => setMultiPage(e.target.checked)} style={{ marginTop: 2 }} />
+            <div>
+              <div style={{ fontWeight: 600 }}>Multi-page receipt</div>
+              <div style={{ fontSize: 10, color: 'var(--tx2)', marginTop: 2, lineHeight: 1.4 }}>
+                Combine all selected photos into ONE receipt (for long receipts that need several pictures). Otherwise each photo is its own receipt.
+              </div>
             </div>
-          ))}
+          </label>
         </div>
       )}
 
       <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
-        onChange={(e) => handleFiles(Array.from(e.target.files || []))} />
+        onChange={(e) => { handleFiles(Array.from(e.target.files || [])); e.target.value = ''; }} />
       <button className="btn-outline" style={{ width: '100%', fontSize: 12 }}
         onClick={() => fileRef.current?.click()} disabled={uploading}>
-        {uploading ? `Processing ${progress.current}/${progress.total}…` : '+ Add Receipt(s)'}
+        {uploading
+          ? (progress.label || `Processing ${progress.current}/${progress.total}…`)
+          : (multiPage ? '+ Add Multi-Page Receipt' : '+ Add Receipt(s)')}
       </button>
     </div>
   );
 }
 
 /* ─── HISTORY ─── */
-function HistoryView({ sessions, onSessionUpdate, inventoryItems }) {
+function HistoryView({ sessions, onSessionUpdate, inventoryItems, onInventoryUpdate }) {
   const [expandId, setExpandId] = useState(null);
   const [notes, setNotes] = useState({});
   const [payments, setPayments] = useState([]);
@@ -2995,6 +3387,11 @@ function HistoryView({ sessions, onSessionUpdate, inventoryItems }) {
   const [showPayLog, setShowPayLog] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editMiles, setEditMiles] = useState({ start: '', end: '', driver: '' });
+  // Per-session refresh tick — bumped when one child component changes data the other reads.
+  // E.g. attaching a shopping-list item from SessionReceipts creates a purchase row that
+  // SessionPurchaseEditor needs to re-fetch.
+  const [purchaseRefresh, setPurchaseRefresh] = useState({});
+  const bumpPurchaseRefresh = (sid) => setPurchaseRefresh(p => ({ ...p, [sid]: (p[sid] || 0) + 1 }));
 
   const openEdit = (s) => {
     const miles = mileageStore.get(s);
@@ -3236,10 +3633,10 @@ function HistoryView({ sessions, onSessionUpdate, inventoryItems }) {
                 )}
 
                 {/* Editable purchase log */}
-                <SessionPurchaseEditor session={s} inventoryItems={inventoryItems || []} onTotalChange={() => {}} />
+                <SessionPurchaseEditor session={s} inventoryItems={inventoryItems || []} onTotalChange={() => {}} onInventoryUpdate={onInventoryUpdate} refreshTick={purchaseRefresh[s.id] || 0} />
 
                 {/* Multi-receipt uploader for actual costs */}
-                <SessionReceipts sessionId={s.id} estimatedTotal={Number(s.total_spent || 0)} onTotalChange={() => {}} />
+                <SessionReceipts session={s} sessionId={s.id} estimatedTotal={Number(s.total_spent || 0)} onTotalChange={() => {}} inventoryItems={inventoryItems || []} onInventoryUpdate={onInventoryUpdate} onPurchasesChanged={() => bumpPurchaseRefresh(s.id)} />
 
                 {sNotes.length > 0 && (
                   <div style={{ marginTop: 12 }}>
@@ -3962,7 +4359,7 @@ function App() {
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
         {view === 'meals' && <MealsView items={items} />}
         {view === 'add' && <AddView onAdd={addItem} busy={syncing} flash={flash} onScanReceipt={() => setShowReceiptScanner(true)} />}
-        {view === 'history' && <HistoryView sessions={sessions} inventoryItems={items} onSessionUpdate={(sid, fields) => setSessions(p => p.map(s => s.id === sid ? { ...s, ...fields } : s))} />}
+        {view === 'history' && <HistoryView sessions={sessions} inventoryItems={items} onSessionUpdate={(sid, fields) => setSessions(p => p.map(s => s.id === sid ? { ...s, ...fields } : s))} onInventoryUpdate={(itemId, fields) => setItems(p => p.map(i => i.id === itemId ? { ...i, ...fields } : i))} />}
       </div>
       <BottomNav view={view} setView={setView} outCt={outCt} />
       {toast && <div className="toast-wrap"><div className="toast">{toast}</div></div>}
