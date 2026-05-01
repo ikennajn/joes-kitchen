@@ -281,6 +281,10 @@ window.db={
   getSessionNotes:sid=>q(`session_notes?session_id=eq.${sid}&order=created_at.asc`),
   getPurchaseLog:()=>q("purchase_log?select=*&order=purchased_at.desc&limit=2000"),
   logPurchases:(rows)=>q("purchase_log",{method:"POST",body:JSON.stringify(rows)}),
+  getSessionPurchases:(sid)=>q(`purchase_log?session_id=eq.${sid}&order=purchased_at.asc`),
+  insertPurchase:(row)=>q("purchase_log",{method:"POST",body:JSON.stringify(row)}),
+  updatePurchase:(id,fields)=>q(`purchase_log?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
+  deletePurchase:(id)=>q(`purchase_log?id=eq.${id}`,{method:"DELETE"}),
   getPayments:()=>q("rider_payments?select=*&order=paid_at.desc"),
   addPayment:(p)=>q("rider_payments",{method:"POST",body:JSON.stringify(p)}),
   deletePayment:(id)=>q(`rider_payments?id=eq.${id}`,{method:"DELETE"}),
@@ -558,6 +562,16 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onUpdate, onDelete, 
                 className="btn-outline" style={{ fontSize: 12, padding: '6px 10px', width: '100%' }}>
                 {item.photo_url ? 'Replace photo' : 'Add photo'}
               </button>
+            </div>
+          </div>
+          <div className="e-row" style={{ alignItems: 'flex-start' }}>
+            <label className="e-lbl">Multi-store</label>
+            <div style={{ flex: 1 }}>
+              <button onClick={() => onUpdate(item.id, '__duplicate__', null)}
+                className="btn-outline" style={{ fontSize: 12, padding: '6px 10px', width: '100%' }}>
+                Add this item at another store
+              </button>
+              <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 4 }}>Creates a copy you can assign to a different store with its own price.</div>
             </div>
           </div>
           <button className="del-btn" onClick={() => onDelete(item.id)}>Remove Item</button>
@@ -2577,6 +2591,246 @@ function AddView({ onAdd, busy, flash, onScanReceipt }) {
 
 }
 
+/* ─── SESSION PURCHASE EDITOR ─── */
+// Editable list of every item purchased during a session.
+// Lets owner correct prices/quantities, delete erroneous entries,
+// add items that were missed off the receipt, and add inventory items
+// that should have been ticked but weren't.
+function SessionPurchaseEditor({ session, inventoryItems, onTotalChange }) {
+  const [purchases, setPurchases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [draft, setDraft] = useState({}); // { name, store, qty, price }
+  const [showAddInventory, setShowAddInventory] = useState(false);
+  const [showAddCustom, setShowAddCustom] = useState(false);
+  const [invFilter, setInvFilter] = useState('');
+  const [customDraft, setCustomDraft] = useState({ name: '', store: '', qty: 1, price: 0, category: 'Other', unit: 'ct' });
+
+  useEffect(() => {
+    db.getSessionPurchases(session.id).then(rows => {
+      setPurchases(rows || []);
+      setLoading(false);
+      onTotalChange?.((rows || []).reduce((s, r) => s + Number(r.price || 0) * Number(r.qty || 1), 0));
+    }).catch(() => setLoading(false));
+  }, [session.id]);
+
+  const recalcTotal = (list) => onTotalChange?.(list.reduce((s, r) => s + Number(r.price || 0) * Number(r.qty || 1), 0));
+
+  const startEdit = (p) => {
+    setEditingId(p.id);
+    setDraft({ name: p.item_name, store: p.store || '', qty: p.qty, price: p.price });
+  };
+
+  const saveEdit = async (p) => {
+    const fields = {
+      item_name: draft.name.trim(),
+      store: draft.store,
+      qty: Number(draft.qty) || 1,
+      price: Number(draft.price) || 0,
+    };
+    try { await db.updatePurchase(p.id, fields); } catch (e) { alert('Save failed: ' + e.message); return; }
+    const updated = purchases.map(r => r.id === p.id ? { ...r, ...fields } : r);
+    setPurchases(updated);
+    recalcTotal(updated);
+    setEditingId(null);
+  };
+
+  const removeRow = async (p) => {
+    if (!confirm(`Remove "${p.item_name}" from this trip?`)) return;
+    try { await db.deletePurchase(p.id); } catch (e) { alert('Delete failed: ' + e.message); return; }
+    const updated = purchases.filter(r => r.id !== p.id);
+    setPurchases(updated);
+    recalcTotal(updated);
+  };
+
+  const addFromInventory = async (item) => {
+    const newRow = {
+      session_id: session.id,
+      item_id: item.id,
+      item_name: item.name,
+      category: item.category,
+      store: item.store,
+      unit: item.unit,
+      qty: Math.max(1, item.par_level - item.current_qty) || 1,
+      price: Number(item.price || 0),
+      purchased_at: session.started_at || new Date().toISOString(),
+    };
+    try {
+      const inserted = await db.insertPurchase(newRow);
+      const row = inserted?.[0] || newRow;
+      const updated = [...purchases, row];
+      setPurchases(updated);
+      recalcTotal(updated);
+      setShowAddInventory(false);
+      setInvFilter('');
+    } catch (e) { alert('Add failed: ' + e.message); }
+  };
+
+  const addCustom = async () => {
+    if (!customDraft.name.trim()) return;
+    const newRow = {
+      session_id: session.id,
+      item_id: null,
+      item_name: customDraft.name.trim(),
+      category: customDraft.category,
+      store: customDraft.store,
+      unit: customDraft.unit,
+      qty: Number(customDraft.qty) || 1,
+      price: Number(customDraft.price) || 0,
+      purchased_at: session.started_at || new Date().toISOString(),
+    };
+    try {
+      const inserted = await db.insertPurchase(newRow);
+      const row = inserted?.[0] || newRow;
+      const updated = [...purchases, row];
+      setPurchases(updated);
+      recalcTotal(updated);
+      setShowAddCustom(false);
+      setCustomDraft({ name: '', store: '', qty: 1, price: 0, category: 'Other', unit: 'ct' });
+    } catch (e) { alert('Add failed: ' + e.message); }
+  };
+
+  // Group purchases by store
+  const byStore = purchases.reduce((a, p) => {
+    const s = p.store || 'Other';
+    (a[s] = a[s] || []).push(p);
+    return a;
+  }, {});
+
+  const total = purchases.reduce((s, r) => s + Number(r.price || 0) * Number(r.qty || 1), 0);
+
+  // Inventory items not yet in this session
+  const purchasedIds = new Set(purchases.map(p => p.item_id).filter(Boolean));
+  const availableInv = inventoryItems
+    .filter(it => !purchasedIds.has(it.id))
+    .filter(it => !invFilter || it.name.toLowerCase().includes(invFilter.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const inp = { width: '100%', fontSize: 12, padding: '5px 7px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', color: 'var(--tx)', boxSizing: 'border-box' };
+
+  return (
+    <div style={{ marginTop: 12, padding: 12, background: 'var(--card)', borderRadius: 10, border: '1px solid var(--bd)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>Items Purchased ({purchases.length})</div>
+          <div style={{ fontSize: 11, color: 'var(--tx2)' }}>Tap a row to edit</div>
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--pr)' }}>${total.toFixed(2)}</div>
+      </div>
+
+      {loading && <div style={{ fontSize: 11, color: 'var(--mu)', textAlign: 'center', padding: 8 }}>Loading…</div>}
+
+      {!loading && Object.keys(byStore).sort().map(store => (
+        <div key={store} style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--tx2)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{store || 'Unknown store'}</div>
+          {byStore[store].map(p => {
+            const isEditing = editingId === p.id;
+            return (
+              <div key={p.id} style={{ padding: '8px 10px', borderRadius: 8, background: 'var(--bg)', marginBottom: 4 }}>
+                {!isEditing ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => startEdit(p)}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{p.item_name}</div>
+                      <div style={{ fontSize: 10, color: 'var(--tx2)' }}>
+                        {p.qty} {p.unit || 'ct'} × ${Number(p.price).toFixed(2)} = <b>${(Number(p.qty) * Number(p.price)).toFixed(2)}</b>
+                      </div>
+                    </div>
+                    <button onClick={() => removeRow(p)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18, padding: 4, flexShrink: 0 }}>×</button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gap: 6 }}>
+                    <input style={inp} value={draft.name} onChange={e => setDraft(p => ({ ...p, name: e.target.value }))} placeholder="Name" />
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 6 }}>
+                      <select style={inp} value={draft.store} onChange={e => setDraft(p => ({ ...p, store: e.target.value }))}>
+                        <option value="">— Store —</option>
+                        {STORES.map(s => <option key={s}>{s}</option>)}
+                      </select>
+                      <input style={inp} type="number" step="0.5" value={draft.qty} onChange={e => setDraft(p => ({ ...p, qty: e.target.value }))} placeholder="Qty" />
+                      <input style={inp} type="number" step="0.01" value={draft.price} onChange={e => setDraft(p => ({ ...p, price: e.target.value }))} placeholder="Price" />
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn-gh" style={{ flex: 1, fontSize: 11, padding: '5px 8px' }} onClick={() => setEditingId(null)}>Cancel</button>
+                      <button className="btn-pr" style={{ flex: 2, fontSize: 11, padding: '5px 8px' }} onClick={() => saveEdit(p)}>Save</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
+      {!loading && purchases.length === 0 && (
+        <div style={{ fontSize: 11, color: 'var(--mu)', textAlign: 'center', padding: 12 }}>No items recorded for this trip.</div>
+      )}
+
+      {/* Add buttons */}
+      <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+        <button className="btn-outline" style={{ flex: 1, fontSize: 11, padding: '6px 8px' }}
+          onClick={() => { setShowAddInventory(!showAddInventory); setShowAddCustom(false); }}>
+          + From Inventory
+        </button>
+        <button className="btn-outline" style={{ flex: 1, fontSize: 11, padding: '6px 8px' }}
+          onClick={() => { setShowAddCustom(!showAddCustom); setShowAddInventory(false); }}>
+          + Custom Item
+        </button>
+      </div>
+
+      {/* Add from inventory picker */}
+      {showAddInventory && (
+        <div style={{ marginTop: 8, padding: 10, background: 'var(--bg)', borderRadius: 8 }}>
+          <input className="inp" value={invFilter} onChange={e => setInvFilter(e.target.value)}
+            placeholder="Search inventory…" style={{ fontSize: 12, marginBottom: 8 }} />
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {availableInv.length === 0 && <div style={{ fontSize: 11, color: 'var(--mu)', textAlign: 'center', padding: 6 }}>No matches</div>}
+            {availableInv.slice(0, 30).map(it => (
+              <div key={it.id} onClick={() => addFromInventory(it)} style={{
+                padding: '6px 8px', cursor: 'pointer', borderRadius: 6, fontSize: 12,
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--card)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{it.name}</div>
+                  <div style={{ fontSize: 10, color: 'var(--mu)' }}>{it.store} · ${Number(it.price || 0).toFixed(2)}</div>
+                </div>
+                <span style={{ fontSize: 14, color: 'var(--pr)' }}>+</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add custom item form */}
+      {showAddCustom && (
+        <div style={{ marginTop: 8, padding: 10, background: 'var(--bg)', borderRadius: 8, display: 'grid', gap: 6 }}>
+          <input style={inp} value={customDraft.name} onChange={e => setCustomDraft(p => ({ ...p, name: e.target.value }))} placeholder="Item name" autoFocus />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            <select style={inp} value={customDraft.store} onChange={e => setCustomDraft(p => ({ ...p, store: e.target.value }))}>
+              <option value="">— Store —</option>
+              {STORES.map(s => <option key={s}>{s}</option>)}
+            </select>
+            <select style={inp} value={customDraft.category} onChange={e => setCustomDraft(p => ({ ...p, category: e.target.value }))}>
+              {CATS.map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+            <input style={inp} type="number" step="0.5" value={customDraft.qty} onChange={e => setCustomDraft(p => ({ ...p, qty: e.target.value }))} placeholder="Qty" />
+            <select style={inp} value={customDraft.unit} onChange={e => setCustomDraft(p => ({ ...p, unit: e.target.value }))}>
+              {UNITS.map(u => <option key={u}>{u}</option>)}
+            </select>
+            <input style={inp} type="number" step="0.01" value={customDraft.price} onChange={e => setCustomDraft(p => ({ ...p, price: e.target.value }))} placeholder="$ Price" />
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            <button className="btn-gh" style={{ flex: 1, fontSize: 11, padding: '5px 8px' }} onClick={() => setShowAddCustom(false)}>Cancel</button>
+            <button className="btn-pr" style={{ flex: 2, fontSize: 11, padding: '5px 8px' }} onClick={addCustom} disabled={!customDraft.name.trim()}>Add Item</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── SESSION RECEIPTS UPLOADER ─── */
 // Allows uploading multiple receipt photos per session, OCRing each, summing actual totals.
 function SessionReceipts({ sessionId, estimatedTotal, onTotalChange }) {
@@ -2730,7 +2984,7 @@ function SessionReceipts({ sessionId, estimatedTotal, onTotalChange }) {
 }
 
 /* ─── HISTORY ─── */
-function HistoryView({ sessions, onSessionUpdate }) {
+function HistoryView({ sessions, onSessionUpdate, inventoryItems }) {
   const [expandId, setExpandId] = useState(null);
   const [notes, setNotes] = useState({});
   const [payments, setPayments] = useState([]);
@@ -2980,6 +3234,9 @@ function HistoryView({ sessions, onSessionUpdate }) {
                     )}
                   </div>
                 )}
+
+                {/* Editable purchase log */}
+                <SessionPurchaseEditor session={s} inventoryItems={inventoryItems || []} onTotalChange={() => {}} />
 
                 {/* Multi-receipt uploader for actual costs */}
                 <SessionReceipts sessionId={s.id} estimatedTotal={Number(s.total_spent || 0)} onTotalChange={() => {}} />
@@ -3251,13 +3508,21 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
         const autoId = (alias?.inventoryId && items.find(i => i.id === alias.inventoryId))
           ? alias.inventoryId
           : fuzzyMatch(li.name);
+        const matchedItem = autoId ? items.find(i => i.id === autoId) : null;
+        const receiptPrice = Number(li.price) || 0;
+        const currentPrice = Number(matchedItem?.price) || 0;
+        const priceDiffers = matchedItem && receiptPrice > 0 && Math.abs(receiptPrice - currentPrice) > 0.01;
         return {
           name: li.name,
           raw: li.raw || li.name,
           qty: li.qty || 1,
-          price: li.price || 0,
+          price: receiptPrice,
           action: autoId ? 'match' : 'add',
           inventoryId: autoId || '',
+          // Default: don't auto-apply price changes — user must opt in
+          applyPrice: false,
+          priceDiffers,
+          currentPrice,
           // add-new fields pre-filled from alias config or defaults
           addName: alias?.addConfig?.name || li.name,
           addCategory: alias?.addConfig?.category || 'Other',
@@ -3390,6 +3655,19 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
                             Current stock: {matchedItem.current_qty} / {matchedItem.par_level} {matchedItem.unit}
                           </div>
                         )}
+                        {/* Price difference checkbox */}
+                        {l.priceDiffers && (
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '6px 8px', borderRadius: 6, background: 'var(--prl)', cursor: 'pointer', fontSize: 11 }}>
+                            <input type="checkbox" checked={!!l.applyPrice}
+                              onChange={e => setLine(idx, { applyPrice: e.target.checked })} />
+                            <span>
+                              Update inventory price: <b>${l.currentPrice.toFixed(2)}</b> → <b style={{ color: 'var(--pr)' }}>${l.price.toFixed(2)}</b>
+                              {l.price > l.currentPrice
+                                ? <span style={{ color: 'var(--er)', marginLeft: 4 }}>(+{(((l.price - l.currentPrice) / l.currentPrice) * 100).toFixed(0)}%)</span>
+                                : <span style={{ color: 'var(--ok)', marginLeft: 4 }}>(-{(((l.currentPrice - l.price) / l.currentPrice) * 100).toFixed(0)}%)</span>}
+                            </span>
+                          </label>
+                        )}
                       </div>
                     )}
 
@@ -3497,9 +3775,32 @@ function App() {
   }, [flash]);
 
   const updateItem = useCallback(async (id, f, v) => {
+    // Special action: duplicate this item to another store
+    if (f === '__duplicate__') {
+      const orig = items.find(i => i.id === id);
+      if (!orig) return;
+      const copy = {
+        name: orig.name,
+        category: orig.category,
+        store: 'Other',
+        unit: orig.unit,
+        current_qty: 0,
+        par_level: orig.par_level,
+        price: 0,
+        note: '',
+        pack_size: orig.pack_size || 1,
+        photo_url: orig.photo_url || null,
+      };
+      try {
+        const ins = await db.insert(copy);
+        setItems((p) => [...p, ...ins].sort((a, b) => a.name.localeCompare(b.name)));
+        flash(`Duplicate created — set the new store and price`);
+      } catch { flash('Duplicate failed'); }
+      return;
+    }
     setItems((p) => p.map((i) => i.id === id ? { ...i, [f]: v } : i));
     try {await db.update(id, { [f]: v });} catch {flash('Update failed');}
-  }, [flash]);
+  }, [items, flash]);
 
   const deleteItem = useCallback(async (id) => {
     setItems((p) => p.filter((i) => i.id !== id));
@@ -3588,9 +3889,11 @@ function App() {
         if (!it) continue;
         const packSize = Number(it.pack_size || 1);
         const newQty = Math.max(it.current_qty + (Number(l.qty) || 1) * packSize, 0);
+        // Only apply receipt price if user opted in via the checkbox
+        const newPrice = l.applyPrice ? (Number(l.price) || it.price) : it.price;
         try {
-          await db.update(l.inventoryId, { current_qty: newQty, price: Number(l.price) || it.price });
-          setItems((p) => p.map((i) => i.id === l.inventoryId ? { ...i, current_qty: newQty, price: Number(l.price) || i.price } : i));
+          await db.update(l.inventoryId, { current_qty: newQty, price: newPrice });
+          setItems((p) => p.map((i) => i.id === l.inventoryId ? { ...i, current_qty: newQty, price: newPrice } : i));
           updated++;
           await receiptAliasStore.saveMatch(storeGuess, aliasKey(l), l.inventoryId, it.name);
           purchaseRows.push({
@@ -3659,7 +3962,7 @@ function App() {
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
         {view === 'meals' && <MealsView items={items} />}
         {view === 'add' && <AddView onAdd={addItem} busy={syncing} flash={flash} onScanReceipt={() => setShowReceiptScanner(true)} />}
-        {view === 'history' && <HistoryView sessions={sessions} onSessionUpdate={(sid, fields) => setSessions(p => p.map(s => s.id === sid ? { ...s, ...fields } : s))} />}
+        {view === 'history' && <HistoryView sessions={sessions} inventoryItems={items} onSessionUpdate={(sid, fields) => setSessions(p => p.map(s => s.id === sid ? { ...s, ...fields } : s))} />}
       </div>
       <BottomNav view={view} setView={setView} outCt={outCt} />
       {toast && <div className="toast-wrap"><div className="toast">{toast}</div></div>}
