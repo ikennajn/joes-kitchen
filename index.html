@@ -334,6 +334,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .mob-title-block{min-width:0}.mob-kicker{font-size:10px;color:var(--tx2);line-height:1.2;margin-bottom:2px}.mob-sync{width:44px;height:44px;border:0;border-radius:50%;display:grid;place-items:center;background:transparent;color:var(--tx2);cursor:pointer;transition:background .18s,color .18s}.mob-sync:hover{background:var(--prl);color:var(--pr)}.mob-sync svg{width:19px;height:19px}.mob-avatar{width:38px;height:38px;border:0;cursor:pointer}.mob-alert-count{min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:grid;place-items:center;background:var(--wal);color:#7A4D0B;font-size:10px;font-weight:800}
 .today-snapshot{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border:1px solid var(--bd);border-radius:15px;margin-bottom:18px;overflow:hidden}.today-snapshot button{min-height:78px;border:0;border-right:1px solid var(--bd);background:transparent;color:var(--tx);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:12px;cursor:pointer}.today-snapshot button:last-child{border-right:0}.today-snapshot strong{font-size:23px;line-height:1}.today-snapshot strong.warn{color:var(--wa)}.today-snapshot strong.danger{color:var(--er)}.today-snapshot span{font-size:10px;color:var(--tx2);margin-top:7px}.today-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.today-actions button{min-height:116px;padding:14px;border:1px solid var(--bd);border-radius:15px;background:var(--card);color:var(--tx);text-align:left;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;transition:border-color .18s,background .18s}.today-actions button:hover{border-color:var(--pr);background:var(--prl)}.today-actions button>span{width:38px;height:38px;border-radius:10px;background:var(--prl);color:var(--pr);display:grid;place-items:center;margin-bottom:12px}.today-actions svg{width:19px;height:19px}.today-actions strong{font-size:13px}.today-actions small{font-size:10px;color:var(--tx2);margin-top:4px}
 .stock-summary-strip{display:grid;grid-template-columns:repeat(3,1fr);background:var(--prl);border-radius:15px;padding:13px;margin-bottom:14px}.stock-summary-strip>div{padding:2px 10px;border-right:1px solid var(--bd);display:flex;flex-direction:column}.stock-summary-strip>div:last-child{border-right:0}.stock-summary-strip strong{font-size:21px}.stock-summary-strip span{font-size:10px;color:var(--tx2);margin-top:2px}.stock-mobile-results{display:none}
+.plan-overview{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px;background:var(--prl);border-radius:17px;margin-bottom:14px}.plan-overview-copy{display:flex;flex-direction:column}.plan-overview-copy>span{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--pr);font-weight:800}.plan-overview-copy strong{font-size:27px;line-height:1.1;margin-top:5px}.plan-overview-copy small{font-size:11px;color:var(--tx2);margin-top:6px}.plan-ring{--plan-progress:0%;width:66px;height:66px;flex:0 0 66px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--pr) var(--plan-progress),var(--bd) 0);position:relative}.plan-ring:before{content:"";position:absolute;inset:7px;border-radius:inherit;background:var(--prl)}.plan-ring span{position:relative;font-size:12px;font-weight:800;color:var(--pr)}.plan-tabs{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--prl);padding:3px;border-radius:11px;margin-bottom:14px}.plan-tabs button{min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--tx2);font-size:12px;font-weight:700;cursor:pointer}.plan-tabs button[aria-selected="true"]{background:var(--card);color:var(--tx)}.plan-tabs span{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:4px;padding:0 5px;border-radius:99px;background:var(--bd);font-size:9px}.plan-tabs button[aria-selected="true"] span{background:var(--prl);color:var(--pr)}.plan-empty{padding:38px 18px;border:1px dashed var(--bd);border-radius:15px;text-align:center;display:flex;flex-direction:column;align-items:center}.plan-empty>span{width:48px;height:48px;border-radius:14px;background:var(--prl);color:var(--pr);display:grid;place-items:center}.plan-empty svg{width:22px}.plan-empty strong{font-size:15px;margin-top:13px}.plan-empty small{font-size:11px;color:var(--tx2);margin-top:5px}.plan-empty button{min-height:44px;margin-top:14px;padding:0 14px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--pr);font-weight:700;cursor:pointer}.plan-sticky-action{display:none}
 @media(max-width:768px){
   :root{--bg:#F8FAF8;--card:#FFFFFF;--pr:#176B43;--prl:#EEF5EF;--tx:#18221C;--tx2:#657169;--bd:#DBE4DD;--wa:#98691A;--er:#AD3B36}
   body{font-size:16px;background:var(--bg)}
@@ -349,6 +350,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   .page-hdr{align-items:center!important;margin-bottom:20px!important}.page-title{font-size:28px}.page-sub{font-size:14px}.card,.item-row{border-radius:14px}.item-row{margin-bottom:8px}.item-main{padding:14px}.item-name{font-size:15px}.item-qty{font-size:13px}.inp,.sel,.e-inp{min-height:48px;border-radius:11px;font-size:16px}.btn-pr,.btn-gh,.btn-outline,.btn-full{min-height:48px;border-radius:11px}
   .recipe-grid{gap:12px}.recipe-card{padding:17px;border-radius:15px;background:var(--card)}.recipe-card:active{background:var(--prl)}.recipe-name{font-size:18px}.recipe-card .recipe-meta{margin-top:13px}.recipe-chip{padding:6px 9px;background:var(--bg);border-color:transparent}.recipe-status{padding:6px 9px}.recipe-editor{background:var(--bg)}.recipe-editor-shell{padding:0 16px calc(106px + env(safe-area-inset-bottom))}.recipe-editor-head{margin:0 -16px 18px;padding:calc(10px + env(safe-area-inset-top)) 16px 12px;background:color-mix(in srgb,var(--bg) 95%,transparent)}.recipe-section{padding:17px;border-radius:15px;margin-bottom:12px}.recipe-section-title{font-size:17px}.recipe-section-sub{font-size:13px;line-height:1.45}.recipe-field label{font-size:12px}.recipe-field input,.recipe-field textarea,.recipe-field select{min-height:48px;font-size:16px}.recipe-row{min-height:62px}.recipe-row-name{font-size:14px}.recipe-row-meta{font-size:12px;line-height:1.4}.recipe-process{border-radius:13px}.recipe-step{padding:14px 0}.recipe-step-copy{font-size:14px}.recipe-fab{bottom:calc(94px + env(safe-area-inset-bottom));min-height:52px;border-radius:14px;padding:0 20px;box-shadow:0 8px 24px rgba(23,107,67,.2)}
   .stock-desktop-results{display:none}.stock-mobile-results{display:block}.stock-summary-strip{margin-top:-2px}.stock-mobile-group{margin-top:20px}.stock-mobile-group-head{display:flex;justify-content:space-between;align-items:center;margin:0 3px 7px;color:var(--tx2);font-size:11px;text-transform:uppercase;letter-spacing:.07em}.stock-mobile-group-head span:last-child{min-width:23px;height:23px;border-radius:999px;background:var(--prl);color:var(--pr);display:grid;place-items:center;font-weight:700}.stock-mobile-card{background:var(--card);border:1px solid var(--bd);border-radius:15px;overflow:hidden}.stock-mobile-row{width:100%;min-height:82px;padding:12px;border:0;border-bottom:1px solid var(--bd);background:var(--card);color:var(--tx);display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer}.stock-mobile-row:last-child{border-bottom:0}.stock-mobile-row:active{background:var(--prl)}.stock-state{width:40px;height:40px;flex:0 0 40px;border-radius:11px;background:var(--prl);color:var(--pr);display:grid;place-items:center}.stock-state.low{background:var(--wal);color:var(--wa)}.stock-state.out{background:var(--erl);color:var(--er)}.stock-state svg{width:19px;height:19px}.stock-mobile-body{flex:1;min-width:0;display:flex;flex-direction:column}.stock-mobile-body strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stock-mobile-body small{font-size:11px;color:var(--tx2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stock-mobile-meter{height:4px;background:var(--bd);border-radius:99px;margin-top:8px;overflow:hidden}.stock-mobile-meter i{display:block;height:100%;background:var(--pr);border-radius:inherit}.stock-mobile-badge{font-size:9px;font-weight:800;text-transform:uppercase;white-space:nowrap;color:var(--ok)}.stock-mobile-badge.low{color:var(--wa)}.stock-mobile-badge.out{color:var(--er)}.stock-chevron{font-size:22px;color:var(--mu)}.stock-select{width:24px;height:24px;flex:0 0 24px;border:2px solid var(--bd);border-radius:7px}.stock-select.selected{background:var(--pr);border-color:var(--pr);box-shadow:inset 0 0 0 5px var(--card)}
+  .sess-banner{border-radius:15px;padding:14px;border-color:transparent;box-shadow:none}.sess-top{margin-bottom:8px}.sess-meta{font-size:11px}.plan-overview{padding:18px;margin-top:2px}.plan-overview-copy strong{font-size:29px}.plan-overview-copy small{font-size:12px}.plan-tabs{position:sticky;top:72px;z-index:6}.chips{margin:2px -16px 13px;padding:0 16px 4px}.chip{min-height:40px!important;padding:7px 13px;background:var(--card)}.chip.on{background:var(--pr);border-color:var(--pr);color:#fff;box-shadow:none}.stH{margin-top:20px;border:0;padding:0 2px 2px}.stH h3{color:var(--tx)!important;font-size:12px!important;text-transform:uppercase;letter-spacing:.06em}.sh-item{min-height:74px;padding:13px;border-radius:14px;margin-bottom:7px;align-items:center}.sh-check{width:26px;height:26px;border-radius:8px;margin-top:0}.sh-name{font-size:14px}.sh-sub,.sh-warn{font-size:11px}.sh-right{margin-left:auto}.sh-right button{width:36px!important;height:36px!important}.sh-pills{width:100%;padding-left:37px}.sh-pill{min-height:36px}.plan-sticky-action{display:block;position:sticky;bottom:calc(84px + env(safe-area-inset-bottom));z-index:7;margin:20px -2px 0;padding-top:8px;background:linear-gradient(transparent,var(--bg) 24%)}.plan-sticky-action button{width:100%;min-height:52px;border:0;border-radius:13px;background:var(--pr);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;cursor:pointer}.plan-sticky-action svg{width:20px;height:20px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 ::-webkit-scrollbar{width:5px}
@@ -1042,6 +1044,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
   const [showStart, setShowStart] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
   const [elapsed, setElapsed] = useState('');
+  const [planTab, setPlanTab] = useState('planned');
   const timerRef = useRef(null);
   // Smart Route / Price Compare state
   const [shopQty, setShopQty] = useState({}); // { item_id: qty } overrides for current session
@@ -1407,10 +1410,18 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       }
       <div className="page-hdr">
         <div>
-          <div className="page-title">Shopping List</div>
-          <div className="page-sub">{unchecked.length} planned{checked.length > 0 ? ` · ${checked.length} in cart` : ''}</div>
+          <div className="page-title">Shopping plan</div>
+          <div className="page-sub">Generated from stock levels. Cart checks never change inventory.</div>
         </div>
         {!session && <button className="btn-pr" onClick={() => setShowStart(true)}>Start run</button>}
+      </div>
+      <div className="plan-overview">
+        <div className="plan-overview-copy"><span>{session ? 'Run in progress' : 'Ready to shop'}</span><strong>{unchecked.length + checked.length} items</strong><small>{checked.length} in cart · {unchecked.length} still planned</small></div>
+        <div className="plan-ring" style={{'--plan-progress': `${needsList.length ? Math.round(checked.length / needsList.length * 100) : 0}%`}}><span>{needsList.length ? Math.round(checked.length / needsList.length * 100) : 0}%</span></div>
+      </div>
+      <div className="plan-tabs" role="tablist" aria-label="Shopping run items">
+        <button role="tab" aria-selected={planTab === 'planned'} onClick={() => setPlanTab('planned')}>Planned <span>{unchecked.length}</span></button>
+        <button role="tab" aria-selected={planTab === 'cart'} onClick={() => setPlanTab('cart')}>In cart <span>{checked.length}</span></button>
       </div>
       {/* Smart Route / Price Compare */}
       {unchecked.length > 0 &&
@@ -1713,6 +1724,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
           </div>
         </div>
       )}
+      {planTab === 'planned' && <>
       {allStores.length > 1 &&
       <div className="chips">
           <button className={`chip ${storeF === 'All' ? 'on' : ''}`} onClick={() => setStoreF('All')}>All Stores</button>
@@ -1775,6 +1787,8 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
           </div>);
 
       })}
+      </>}
+      {planTab === 'cart' && <>
       {checkedShow.length > 0 &&
       <div>
           <div className="stH" style={{ borderBottomColor: 'var(--ok)' }}>
@@ -1793,6 +1807,9 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       {!session && (unchecked.length > 0 || checked.length > 0) &&
       <p style={{ textAlign: 'center', color: 'var(--mu)', fontSize: 12, marginTop: 20 }}>Start a run to move planned items into your cart</p>
       }
+      {checkedShow.length === 0 && <div className="plan-empty"><span><NavIcon name="cart" /></span><strong>Your cart is empty</strong><small>Check planned items as you place them in your cart.</small><button onClick={() => setPlanTab('planned')}>View planned items</button></div>}
+      </>}
+      {session && <div className="plan-sticky-action"><button onClick={onScanReceipt}><NavIcon name="scan" />Scan store receipt</button></div>}
     </div>);
 
 }
