@@ -6,11 +6,16 @@ but the original security exposure still exists.
 
 ## Stage 1: additive compatibility migration
 
-1. Apply `20260817000100_auth_security_foundation.sql`.
+1. Apply `20260817000100_auth_security_foundation.sql` and `20260817000150_index_households_created_by.sql`.
 2. Verify all ten legacy tables have a nullable, backfilled `household_id`.
 3. Verify the existing anonymous policies and public buckets still exist.
 4. Verify the authenticated household policies and storage policies exist.
 5. Run the security and performance advisors.
+
+Multiple-permissive-policy and newly-unused-index notices are expected during
+this short compatibility window. The enforcement migration removes the legacy
+policies; new indexes should not be judged unused before production traffic has
+had time to exercise them.
 
 ## Stage 2: frontend deployment
 
