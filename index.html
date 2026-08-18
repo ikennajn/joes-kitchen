@@ -260,12 +260,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2.57.4/dist/umd/supabase.js" crossorigin="anonymous"></script>
 
 <script>
 const SB="https://tcpblqxybtcpkfsultxd.supabase.co";
 const SK="sb_publishable_4jSNU5t3x1n6hqC4H0MRAw_ZN4v0Jub";
-const H={"apikey":SK,"Authorization":`Bearer ${SK}`,"Content-Type":"application/json","Prefer":"return=representation"};
-async function q(p,o={}){const r=await fetch(`${SB}/rest/v1/${p}`,{...o,headers:{...H,...(o.headers||{})}});if(!r.ok)throw new Error(await r.text());return r.json();}
+const supabaseClient=window.supabase.createClient(SB,SK,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const H={"apikey":SK,"Content-Type":"application/json","Prefer":"return=representation"};
+async function accessToken(){const {data}=await supabaseClient.auth.getSession();return data.session?.access_token||null;}
+async function authHeaders(extra={}){const token=await accessToken();if(!token)throw new Error('Authentication required');return {...H,"Authorization":`Bearer ${token}`,...extra};}
+async function q(p,o={}){const r=await fetch(`${SB}/rest/v1/${p}`,{...o,headers:await authHeaders(o.headers||{})});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function authFetch(url,options={}){const token=await accessToken();if(!token)throw new Error('Authentication required');return fetch(url,{...options,headers:{...(options.headers||{}),Authorization:`Bearer ${token}`}});}
+window.appAuth={client:supabaseClient,accessToken,authFetch};
 window.db={
   getAll:()=>q("inventory?select=*&order=name.asc"),
   insert:i=>q("inventory",{method:"POST",body:JSON.stringify(i)}),
@@ -304,13 +310,25 @@ window.db={
   insertSessionReceipt:(r)=>q("session_receipts",{method:"POST",body:JSON.stringify(r)}),
   updateSessionReceipt:(id,fields)=>q(`session_receipts?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
   deleteSessionReceipt:(id)=>q(`session_receipts?id=eq.${id}`,{method:"DELETE"}),
+  getHousehold:()=>q("household_members?select=household_id,role&limit=1"),
   uploadFile: async (bucket, path, file) => {
-    const sb = window.SUPABASE_URL || "https://tcpblqxybtcpkfsultxd.supabase.co";
-    const key = window.SUPABASE_KEY || "sb_publishable_4jSNU5t3x1n6hqC4H0MRAw_ZN4v0Jub";
-    const url = `${sb}/storage/v1/object/${bucket}/${path}`;
-    const r = await fetch(url, { method: "POST", headers: { "Authorization": `Bearer ${key}`, "Content-Type": file.type || "image/jpeg", "x-upsert": "true" }, body: file });
-    if (!r.ok) throw new Error("Upload failed: " + r.status);
-    return `${sb}/storage/v1/object/public/${bucket}/${path}`;
+    const membership = await window.db.getHousehold();
+    const householdId = membership?.[0]?.household_id;
+    if (!householdId) throw new Error('No household access');
+    const objectPath = `${householdId}/${path}`;
+    const { error } = await supabaseClient.storage.from(bucket).upload(objectPath, file, {
+      upsert: true,
+      contentType: file.type || 'image/jpeg',
+    });
+    if (error) throw error;
+    return objectPath;
+  },
+  getSignedFileUrl: async (bucket, path, expiresIn = 900) => {
+    if (!path) return null;
+    if (/^https?:\/\//i.test(path)) return path;
+    const { data, error } = await supabaseClient.storage.from(bucket).createSignedUrl(path, expiresIn);
+    if (error) throw error;
+    return data.signedUrl;
   },
 };
 // Hybrid mileage store: prefers Supabase (synced) but reads localStorage as fallback
@@ -427,6 +445,21 @@ const { useState, useEffect, useCallback, useRef, useMemo } = React;
 const { db, mileageStore, userStore, CATS, STORES, UNITS, SEED } = window;
 
 /* ─── SHARED UI ─── */
+function PrivateImage({ bucket, path, openOnClick = false, ...props }) {
+  const [src, setSrc] = useState(null);
+  useEffect(() => {
+    let active = true;
+    let objectUrl = null;
+    if (!path) { setSrc(null); return () => {}; }
+    db.getSignedFileUrl(bucket, path, 900).then((url) => {
+      if (active) setSrc(url);
+    }).catch(() => { if (active) setSrc(null); });
+    return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [bucket, path]);
+  if (!src) return null;
+  return <img {...props} src={src} onClick={openOnClick ? () => window.open(src, '_blank', 'noopener,noreferrer') : props.onClick} />;
+}
+
 function Badge({ status }) {
   if (status === 'out') return <span className="badge b-out">Out</span>;
   if (status === 'low') return <span className="badge b-low">Low</span>;
@@ -542,7 +575,7 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onUpdate, onDelete, 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {item.photo_url && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <img src={item.photo_url} alt="" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--bd)' }} />
+                  <PrivateImage bucket="item-photos" path={item.photo_url} alt="" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--bd)' }} />
                   <button onClick={() => onUpdate(item.id, 'photo_url', null)} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--bd)', background: 'var(--card)', cursor: 'pointer', color: 'var(--er)' }}>Remove</button>
                 </div>
               )}
@@ -920,7 +953,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
     setRouteStep('loading');
     const itemList = unchecked.map(i => ({ id: i.id, name: i.name, trackedStore: i.store, trackedPrice: i.price || 0, category: i.category }));
     try {
-      const resp = await fetch('/api/receipt-ocr', {
+      const resp = await window.appAuth.authFetch('/api/receipt-ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1008,7 +1041,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       });
     });
     try {
-      const resp = await fetch('/api/receipt-ocr', {
+      const resp = await window.appAuth.authFetch('/api/receipt-ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -3003,7 +3036,7 @@ function SessionReceipts({ session, sessionId, estimatedTotal, onTotalChange, in
     }
     // Send all base64 images in one request
     setProgress({ current: baseIdx + 1, total: 0, label: `Reading receipt (${files.length} page${files.length > 1 ? 's' : ''})…` });
-    const ocrResp = await fetch('/api/receipt-ocr', {
+    const ocrResp = await window.appAuth.authFetch('/api/receipt-ocr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -3196,8 +3229,7 @@ function SessionReceipts({ session, sessionId, estimatedTotal, onTotalChange, in
               <div key={r.id} style={{ borderBottom: '1px solid var(--bd)', padding: '8px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   {r.photo_url ? (
-                    <img src={r.photo_url} alt="receipt" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--bd)', cursor: 'pointer' }}
-                      onClick={() => window.open(r.photo_url, '_blank')} />
+                    <PrivateImage bucket="receipts" path={r.photo_url} openOnClick alt="receipt" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--bd)', cursor: 'pointer' }} />
                   ) : (
                     <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>📄</div>
                   )}
@@ -3668,7 +3700,7 @@ const TABS = [
 { k: 'history', l: 'History', i: '' },
 { k: 'add', l: 'Add Item', i: '' }];
 
-function Sidebar({ view, setView, user, outCt, onSync, syncing, lastSync, onUserClick }) {
+function Sidebar({ view, setView, user, outCt, onSync, syncing, lastSync, onUserClick, onSignOut }) {
   return (
     <div className="sidebar">
       <div className="sb-logo"><h1>Joe's Kitchen</h1><p>Inventory</p></div>
@@ -3688,6 +3720,7 @@ function Sidebar({ view, setView, user, outCt, onSync, syncing, lastSync, onUser
           <div className="u-av">{(user || '?')[0].toUpperCase()}</div>
           <div><div className="u-name">{user || 'Set name'}</div><div className="u-sub">Tap to switch user</div></div>
         </div>
+        <button className="sb-sync" onClick={onSignOut}>Sign out</button>
       </div>
     </div>);
 
@@ -3879,7 +3912,7 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
     try {
       const base64 = dataUrl.split(',')[1];
       const mediaType = dataUrl.match(/data:([^;]+);/)?.[1] || 'image/jpeg';
-      const resp = await fetch('/api/receipt-ocr', {
+      const resp = await window.appAuth.authFetch('/api/receipt-ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: base64, mediaType, mode: 'receipt' }),
@@ -4123,7 +4156,64 @@ function ReceiptScanner({ items, onClose, onConfirm, flash }) {
 }
 
 /* ─── APP ─── */
-function App() {
+function AuthScreen() {
+  const [mode, setMode] = useState('signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('Joe');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true); setMessage('');
+    try {
+      if (mode === 'create') {
+        const { data, error } = await supabaseClient.auth.signUp({
+          email: email.trim(), password,
+          options: { data: { display_name: displayName.trim() || 'Joe' } },
+        });
+        if (error) throw error;
+        setMessage(data.session ? 'Owner account created.' : 'Check your email to confirm the account, then sign in.');
+      } else {
+        const { error } = await supabaseClient.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+      }
+    } catch (err) { setMessage(err.message || 'Authentication failed'); }
+    setBusy(false);
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 20, background: 'var(--bg)' }}>
+      <form className="card" onSubmit={submit} style={{ width: '100%', maxWidth: 390, padding: 24 }}>
+        <div className="page-title">Joe's Kitchen</div>
+        <div className="page-sub" style={{ marginBottom: 20 }}>{mode === 'create' ? 'Create the private owner account' : 'Sign in to inventory'}</div>
+        {mode === 'create' && <div className="f-grp"><label className="f-lbl">Name</label><input className="inp" value={displayName} onChange={e => setDisplayName(e.target.value)} autoComplete="name" /></div>}
+        <div className="f-grp"><label className="f-lbl">Email</label><input className="inp" type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required /></div>
+        <div className="f-grp"><label className="f-lbl">Password</label><input className="inp" type="password" minLength="8" value={password} onChange={e => setPassword(e.target.value)} autoComplete={mode === 'create' ? 'new-password' : 'current-password'} required /></div>
+        {message && <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 12 }}>{message}</div>}
+        <button className="btn-full" type="submit" disabled={busy}>{busy ? 'Please wait…' : mode === 'create' ? 'Create owner account' : 'Sign in'}</button>
+        <button className="btn-gh" type="button" style={{ width: '100%', marginTop: 8 }} onClick={() => { setMode(mode === 'signin' ? 'create' : 'signin'); setMessage(''); }}>
+          {mode === 'signin' ? 'First time? Create owner account' : 'Already have an account? Sign in'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function Root() {
+  const [session, setSession] = useState(undefined);
+  useEffect(() => {
+    supabaseClient.auth.getSession().then(({ data }) => setSession(data.session || null));
+    const { data } = supabaseClient.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession || null));
+    return () => data.subscription.unsubscribe();
+  }, []);
+  if (session === undefined) return <div style={{ display: 'grid', placeItems: 'center', height: '100vh' }}><div className="spinner" /></div>;
+  if (!session) return <AuthScreen />;
+  return <App authUser={session.user} onSignOut={() => supabaseClient.auth.signOut()} />;
+}
+
+function App({ authUser, onSignOut }) {
   const [items, setItems] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -4132,7 +4222,7 @@ function App() {
   const [toast, setToast] = useState(null);
   const [session, setSession] = useState(null);
   const [lastSync, setLastSync] = useState(null);
-  const [user, setUser] = useState(() => userStore.get() || 'Joe');
+  const [user, setUser] = useState(() => authUser?.user_metadata?.display_name || authUser?.email?.split('@')[0] || 'Joe');
   const [showUserModal, setShowUserModal] = useState(false);
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const pollRef = useRef(null);
@@ -4350,7 +4440,7 @@ function App() {
   return (
     <div className="app">
       {showUserModal && <UserModal user={user} onClose={() => setShowUserModal(false)} onSelect={handleUserSelect} />}
-      <Sidebar view={view} setView={setView} user={user} outCt={outCt} onSync={refresh} syncing={syncing} lastSync={lastSync} onUserClick={() => setShowUserModal(true)} />
+      <Sidebar view={view} setView={setView} user={user} outCt={outCt} onSync={refresh} syncing={syncing} lastSync={lastSync} onUserClick={() => setShowUserModal(true)} onSignOut={onSignOut} />
       <div className="main">
         <MobileHeader lowCt={lowCt} outCt={outCt} onSync={refresh} user={user} onUserClick={() => setShowUserModal(true)} />
         {view === 'dashboard' && <DashboardView items={items} sessions={sessions} onNavigate={(v) => {setView(v);}} onScanReceipt={() => setShowReceiptScanner(true)} flash={flash} />}
@@ -4368,7 +4458,7 @@ function App() {
 
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
 </script>
 </body>
 </html>
