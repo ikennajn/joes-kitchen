@@ -331,6 +331,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}.recipe-card{padding:18px;border:1px solid var(--bd);background:var(--card);border-radius:16px;cursor:pointer;transition:border-color .18s ease,background .18s ease}.recipe-card:hover{border-color:var(--pr)}.recipe-card:focus-visible,.recipe-action:focus-visible{outline:3px solid color-mix(in srgb,var(--pr) 30%,transparent);outline-offset:2px}.recipe-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.recipe-name{font-size:18px;font-weight:800;line-height:1.25}.recipe-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.recipe-chip{font-size:11px;font-weight:700;color:var(--tx2);border:1px solid var(--bd);border-radius:999px;padding:5px 9px}.recipe-status{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent);border-radius:999px;padding:5px 8px}.recipe-editor{position:fixed;inset:0;z-index:120;background:var(--bg);overflow:auto}.recipe-editor-shell{width:min(920px,100%);margin:0 auto;padding:20px 20px 110px}.recipe-editor-head{position:sticky;top:0;z-index:4;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 16px;border-bottom:1px solid var(--bd);margin-bottom:18px}.recipe-back,.recipe-action{min-height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit;font-size:12px;font-weight:700;padding:9px 12px;cursor:pointer}.recipe-action.primary{border-color:var(--pr);background:var(--pr);color:white}.recipe-section{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px}.recipe-section-title{font-size:15px;font-weight:800;margin-bottom:4px}.recipe-section-sub{font-size:12px;color:var(--tx2);margin-bottom:14px}.recipe-fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}.recipe-field label{display:block;font-size:11px;font-weight:700;color:var(--tx2);margin:0 0 5px}.recipe-field input,.recipe-field textarea,.recipe-field select{width:100%;min-height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit;font-size:14px;padding:10px;box-sizing:border-box}.recipe-field textarea{min-height:86px;resize:vertical}.recipe-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--bd)}.recipe-row:first-of-type{border-top:0}.recipe-row-main{flex:1;min-width:0}.recipe-row-name{font-size:13px;font-weight:750}.recipe-row-meta{font-size:11px;color:var(--tx2);margin-top:3px}.recipe-remove{width:44px;height:44px;border:0;background:transparent;color:var(--er);font-size:20px;cursor:pointer;border-radius:10px}.recipe-inline{display:grid;grid-template-columns:2fr .7fr 1fr auto;gap:8px;margin-top:12px}.recipe-process{border:1px solid var(--bd);border-radius:12px;padding:13px;margin-top:10px}.recipe-process-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.recipe-step{display:flex;gap:10px;padding:11px 0;border-top:1px solid var(--bd);margin-top:10px}.recipe-step-num{width:26px;height:26px;flex:0 0 26px;border-radius:50%;display:grid;place-items:center;background:var(--prl);color:var(--pr);font-size:11px;font-weight:800}.recipe-step-copy{font-size:13px;line-height:1.45;white-space:pre-wrap}.recipe-empty{padding:26px 14px;text-align:center;color:var(--tx2);font-size:13px;border:1px dashed var(--bd);border-radius:12px}.recipe-fab{display:none}
 @media(max-width:640px){.recipe-grid{grid-template-columns:1fr}.recipe-editor-shell{padding:8px 14px 108px}.recipe-editor-head{padding-top:max(10px,env(safe-area-inset-top))}.recipe-fields{grid-template-columns:1fr 1fr}.recipe-fields .wide{grid-column:1/-1}.recipe-inline{grid-template-columns:1fr 1fr}.recipe-inline .wide{grid-column:1/-1}.recipe-action{min-height:48px}.recipe-fab{display:block;position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:8;border:0;border-radius:999px;background:var(--pr);color:white;min-height:50px;padding:0 18px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}}
 .build-mode{position:fixed;inset:0;z-index:180;background:var(--bg);color:var(--tx);overflow:auto}.build-header{position:sticky;top:0;z-index:5;min-height:68px;padding:max(10px,env(safe-area-inset-top)) 16px 10px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--bd)}.build-header button,.build-step-actions button,.build-timer button,.build-note button{min-height:44px;border:1px solid var(--bd);border-radius:11px;background:var(--card);color:var(--tx);font:inherit;font-size:12px;font-weight:800;padding:9px 13px;cursor:pointer}.build-header>div{min-width:0;text-align:center}.build-header span,.build-process-head span,.build-step-body>span{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2)}.build-header strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}.build-shell{width:min(1100px,100%);margin:auto;padding:18px 16px calc(100px + env(safe-area-inset-bottom));box-sizing:border-box}.build-progress,.build-timers,.build-note,.build-timeline{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px}.build-progress{display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:end}.build-progress span{font-size:11px;color:var(--tx2)}.build-progress strong{display:block;font-size:15px;margin-top:3px}.build-progress-value{font-size:24px;font-weight:900;color:var(--pr)}.build-progress-track{grid-column:1/-1;height:7px;border-radius:99px;background:var(--bd);overflow:hidden;margin-top:8px}.build-progress-track i{display:block;height:100%;border-radius:inherit;background:var(--pr)}.build-section-head,.build-process-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.build-section-head>span{font-size:11px;color:var(--tx2)}.build-timer{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--bd)}.build-timer>div span{display:block;color:var(--tx2);font-size:10px;text-transform:capitalize}.build-timer output{font-variant-numeric:tabular-nums;font-size:21px;font-weight:900}.build-timer.overdue output{color:var(--er)}.build-process-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:14px}.build-process{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:15px}.build-process-head strong{display:block;font-size:17px;margin-top:3px}.build-process-head>span{font-size:12px;color:var(--pr)}.build-step{display:flex;gap:11px;padding:14px 0;border-top:1px solid var(--bd)}.build-step-number{width:30px;height:30px;flex:0 0 30px;border-radius:50%;display:grid;place-items:center;background:var(--prl);color:var(--pr);font-size:12px;font-weight:900}.build-step-number svg{width:17px;height:17px}.build-step.active .build-step-number{background:var(--pr);color:white}.build-step.done{opacity:.68}.build-step-body{min-width:0;flex:1}.build-step-body p{font-size:14px;line-height:1.5;margin:4px 0 10px;white-space:pre-wrap}.build-step-ingredients{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.build-step-ingredients span{font-size:11px;padding:5px 8px;border-radius:99px;background:var(--bg);border:1px solid var(--bd)}.build-step-actions{display:flex;flex-wrap:wrap;gap:8px}.build-step-actions button:first-child{border-color:var(--pr);color:var(--pr)}.build-step-actions button:disabled,.build-note button:disabled{opacity:.45;cursor:not-allowed}.build-note textarea{width:100%;min-height:90px;box-sizing:border-box;resize:vertical;border:1px solid var(--bd);border-radius:11px;background:var(--bg);color:var(--tx);font:inherit;font-size:14px;padding:11px;margin-bottom:8px}.build-note>button{border-color:var(--pr);background:var(--pr);color:white}.build-timeline>div:not(.build-section-head){display:grid;grid-template-columns:70px 130px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--bd);font-size:12px}.build-timeline time,.build-timeline small{color:var(--tx2)}.build-timeline>div>span{text-transform:capitalize;font-weight:700}@media(max-width:640px){.build-shell{padding-left:12px;padding-right:12px}.build-header{padding-left:12px;padding-right:12px}.build-process-grid{grid-template-columns:1fr}.build-timer{grid-template-columns:1fr auto}.build-timer output{grid-row:1;grid-column:2}.build-timeline>div:not(.build-section-head){grid-template-columns:62px 1fr}.build-timeline small{grid-column:1/-1}}
+.recipe-stage-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 16px}.recipe-stage-nav button{min-height:58px;padding:8px 6px;border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx2);font:inherit;font-size:10px;font-weight:750;cursor:pointer}.recipe-stage-nav button span{width:23px;height:23px;margin:0 auto 5px;border-radius:50%;display:grid;place-items:center;background:var(--bg);color:var(--tx2);font-size:10px}.recipe-stage-nav button.active{border-color:var(--pr);background:var(--prl);color:var(--pr)}.recipe-stage-nav button.active span,.recipe-stage-nav button.complete span{background:var(--pr);color:white}.recipe-stage-nav button:disabled{cursor:not-allowed;opacity:.48}.recipe-stage-actions{position:sticky;bottom:0;z-index:4;display:flex;gap:10px;justify-content:flex-end;padding:12px 0 calc(12px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--bd)}.recipe-stage-actions .recipe-action{min-width:130px}.recipe-stage-intro{margin-bottom:14px}.recipe-stage-intro strong{display:block;font-size:20px}.recipe-stage-intro span{display:block;color:var(--tx2);font-size:13px;line-height:1.45;margin-top:4px}.recipe-ready-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.recipe-ready-summary div{padding:14px 8px;text-align:center;border:1px solid var(--bd);border-radius:12px;background:var(--bg)}.recipe-ready-summary strong{display:block;font-size:21px}.recipe-ready-summary span{font-size:10px;color:var(--tx2)}@media(max-width:640px){.recipe-stage-nav{gap:5px}.recipe-stage-nav button{min-height:54px;padding-inline:3px;font-size:9px}.recipe-stage-actions{margin:0 -16px;padding-left:16px;padding-right:16px}.recipe-stage-actions .recipe-action{flex:1;min-width:0}.recipe-ready-summary{gap:6px}}
+.recipe-stage-nav svg{width:14px;height:14px}
 /* Approved mobile app shell */
 .mob-title-block{min-width:0}.mob-kicker{font-size:10px;color:var(--tx2);line-height:1.2;margin-bottom:2px}.mob-sync{width:44px;height:44px;border:0;border-radius:50%;display:grid;place-items:center;background:transparent;color:var(--tx2);cursor:pointer;transition:background .18s,color .18s}.mob-sync:hover{background:var(--prl);color:var(--pr)}.mob-sync svg{width:19px;height:19px}.mob-avatar{width:38px;height:38px;border:0;cursor:pointer}.mob-alert-count{min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:grid;place-items:center;background:var(--wal);color:#7A4D0B;font-size:10px;font-weight:800}
 .today-snapshot{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border:1px solid var(--bd);border-radius:15px;margin-bottom:18px;overflow:hidden}.today-snapshot button{min-height:78px;border:0;border-right:1px solid var(--bd);background:transparent;color:var(--tx);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:12px;cursor:pointer}.today-snapshot button:last-child{border-right:0}.today-snapshot strong{font-size:23px;line-height:1}.today-snapshot strong.warn{color:var(--wa)}.today-snapshot strong.danger{color:var(--er)}.today-snapshot span{font-size:10px;color:var(--tx2);margin-top:7px}.today-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.today-actions button{min-height:116px;padding:14px;border:1px solid var(--bd);border-radius:15px;background:var(--card);color:var(--tx);text-align:left;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;transition:border-color .18s,background .18s}.today-actions button:hover{border-color:var(--pr);background:var(--prl)}.today-actions button>span{width:38px;height:38px;border-radius:10px;background:var(--prl);color:var(--pr);display:grid;place-items:center;margin-bottom:12px}.today-actions svg{width:19px;height:19px}.today-actions strong{font-size:13px}.today-actions small{font-size:10px;color:var(--tx2);margin-top:4px}
@@ -2828,6 +2830,7 @@ function RecipeBuilderView({ items, flash }) {
   const [allocationForm, setAllocationForm] = useState({ recipe_ingredient_id: '', quantity: '', unit: '', note: '' });
   const [buildSession, setBuildSession] = useState(null);
   const [startingBuild, setStartingBuild] = useState(false);
+  const [recipeStage, setRecipeStage] = useState(0);
 
   const reload = async () => {
     const [recipes, versions, processes, steps, ingredients, allocations, purchases] = await Promise.all([
@@ -2872,6 +2875,7 @@ function RecipeBuilderView({ items, flash }) {
 
   useEffect(() => {
     if (activeId === 'new') {
+      setRecipeStage(0);
       setForm({ name: '', description: '', yield_quantity: 4, yield_unit: 'servings', notes: '' });
     } else if (activeRecipe && activeVersion) {
       setForm({
@@ -2882,7 +2886,7 @@ function RecipeBuilderView({ items, flash }) {
     }
   }, [activeId, activeRecipe?.updated_at, activeVersion?.updated_at]);
 
-  const saveCore = async () => {
+  const saveCore = async (continueToIngredients = false) => {
     if (!form.name.trim()) return;
     setSaving(true);
     try {
@@ -2895,7 +2899,7 @@ function RecipeBuilderView({ items, flash }) {
             yield_quantity: Number(form.yield_quantity) || 1, yield_unit: form.yield_unit.trim() || 'servings', notes: form.notes.trim() || null
           });
           await db.updateRecipe(createdRecipe.id, { current_version_id: createdVersion.id });
-          await reload(); setActiveId(createdRecipe.id); flash?.('Recipe draft created');
+          await reload(); setActiveId(createdRecipe.id); setRecipeStage(1); flash?.('Recipe created — add the ingredients next');
         } catch (e) {
           if (createdRecipe?.id) await db.deleteRecipe(createdRecipe.id).catch(() => {});
           throw e;
@@ -2906,7 +2910,7 @@ function RecipeBuilderView({ items, flash }) {
           await db.updateRecipeVersion(activeVersion.id, {
             yield_quantity: Number(form.yield_quantity) || 1, yield_unit: form.yield_unit.trim() || 'servings', notes: form.notes.trim() || null
           });
-          await reload(); flash?.('Recipe saved');
+          await reload(); if (continueToIngredients) setRecipeStage(1); flash?.('Recipe details saved');
         } else {
           const nextNumber = Math.max(0, ...data.versions.filter(v => v.recipe_id === activeRecipe.id).map(v => Number(v.version_number) || 0)) + 1;
           const [draftVersion] = await db.insertRecipeVersion({
@@ -2944,7 +2948,7 @@ function RecipeBuilderView({ items, flash }) {
             });
           }
           await db.updateRecipe(activeRecipe.id, { current_version_id: draftVersion.id });
-          await reload(); flash?.(`Draft version ${nextNumber} created`);
+          await reload(); if (continueToIngredients) setRecipeStage(1); flash?.(`Draft version ${nextNumber} created`);
         }
       }
     } catch (e) { console.error(e); flash?.('Could not save recipe'); }
@@ -2976,8 +2980,8 @@ function RecipeBuilderView({ items, flash }) {
   const addProcess = async () => {
     if (!versionId || !processName.trim()) return;
     try {
-      await db.insertRecipeProcess({ recipe_version_id: versionId, name: processName.trim(), position: versionProcesses.length });
-      setProcessName(''); await reload();
+      const [created] = await db.insertRecipeProcess({ recipe_version_id: versionId, name: processName.trim(), position: versionProcesses.length });
+      setProcessName(''); setStepForm(f=>({...f,process_id:created.id})); await reload(); flash?.(`${created.name} added — record its first step`);
     } catch (e) { console.error(e); flash?.('Could not add process'); }
   };
 
@@ -2990,7 +2994,7 @@ function RecipeBuilderView({ items, flash }) {
         instruction: stepForm.instruction.trim(),
         expected_duration_seconds: stepForm.expected_duration_seconds ? Math.max(0, Math.round(Number(stepForm.expected_duration_seconds) * 60)) : null
       });
-      setStepForm({ process_id: '', instruction: '', expected_duration_seconds: '' }); await reload();
+      setStepForm({ process_id: stepForm.process_id, instruction: '', expected_duration_seconds: '' }); await reload();
     } catch (e) { console.error(e); flash?.('Could not add step'); }
   };
 
@@ -3051,10 +3055,14 @@ function RecipeBuilderView({ items, flash }) {
           <div className="recipe-editor-head">
             <button className="recipe-back" onClick={() => setActiveId(null)} aria-label="Back to recipes">Back</button>
             <div style={{minWidth:0,flex:1}}><div style={{fontSize:11,color:'var(--tx2)',fontWeight:700}}>RECIPE BUILDER</div><div style={{fontSize:17,fontWeight:850,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{form.name || 'Untitled recipe'}</div></div>
-            <button className="recipe-action primary" onClick={saveCore} disabled={saving || !form.name.trim()}>{saving ? 'Saving…' : activeId === 'new' ? 'Create draft' : 'Save'}</button>
+            <button className="recipe-action" onClick={() => setActiveId(null)}>Close</button>
           </div>
 
-          <section className="recipe-section">
+          <nav className="recipe-stage-nav" aria-label="Recipe creation progress">
+            {['Basics','Ingredients','Cooking flow','Ready'].map((label,index)=>{const locked=(activeId==='new'&&index>0)||(index>=2&&versionIngredients.length===0)||(index===3&&versionSteps.length===0);return <button key={label} className={recipeStage===index?'active':recipeStage>index?'complete':''} disabled={locked} aria-current={recipeStage===index?'step':undefined} onClick={()=>setRecipeStage(index)}><span>{recipeStage>index?<NavIcon name="check" />:index+1}</span>{label}</button>;})}
+          </nav>
+
+          {recipeStage===0&&<><div className="recipe-stage-intro"><strong>Start with the recipe</strong><span>Give it a name and define what one batch produces. You can refine these details later.</span></div><section className="recipe-section">
             <div className="recipe-section-title">Recipe details</div><div className="recipe-section-sub">Name the recipe and define the batch it produces.</div>
             <div className="recipe-fields">
               <div className="recipe-field wide"><label>Recipe name</label><input value={form.name} onChange={e => setForm({...form,name:e.target.value})} placeholder="e.g. Jollof Rice" autoFocus={activeId==='new'} /></div>
@@ -3063,10 +3071,10 @@ function RecipeBuilderView({ items, flash }) {
               <div className="recipe-field wide"><label>Description</label><textarea value={form.description} onChange={e => setForm({...form,description:e.target.value})} placeholder="What makes this recipe distinct?" /></div>
               <div className="recipe-field wide"><label>Recipe notes</label><textarea value={form.notes} onChange={e => setForm({...form,notes:e.target.value})} placeholder="Batch notes, equipment, or preparation reminders" /></div>
             </div>
-          </section>
+          </section></>}
 
-          {activeId === 'new' ? <div className="recipe-empty">Create the draft first, then add ingredients, processes, and timed steps.</div> : <>
-            <section className="recipe-section">
+          {activeId !== 'new' && <>
+            {recipeStage===1&&<><div className="recipe-stage-intro"><strong>What goes into it?</strong><span>Add ingredients as you prepare them. Link stock items when there is a match, but don’t let that interrupt cooking.</span></div><section className="recipe-section">
               <div className="recipe-section-title">Ingredients</div><div className="recipe-section-sub">Link canonical stock items when possible. Unlinked ingredients are allowed.</div>
               {versionIngredients.length === 0 && <div className="recipe-empty">No ingredients added yet.</div>}
               {versionIngredients.map(ing => <div className="recipe-row" key={ing.id}><div className="recipe-row-main"><div className="recipe-row-name">{ing.ingredient_name}</div><div className="recipe-row-meta">{ing.quantity} {ing.unit}{ing.preparation_note ? ` · ${ing.preparation_note}` : ''}{ing.inventory_item_id ? ' · linked to stock' : ' · not linked'}</div></div><button className="recipe-remove" aria-label={`Remove ${ing.ingredient_name}`} onClick={async()=>{await db.deleteRecipeIngredient(ing.id);await reload();}}>×</button></div>)}
@@ -3076,12 +3084,12 @@ function RecipeBuilderView({ items, flash }) {
                 <div className="recipe-field"><label>Amount</label><input type="number" min="0.01" step="0.01" value={ingredientForm.quantity} onChange={e=>setIngredientForm({...ingredientForm,quantity:e.target.value})} /></div>
                 <div className="recipe-field"><label>Unit</label><input value={ingredientForm.unit} onChange={e=>setIngredientForm({...ingredientForm,unit:e.target.value})} placeholder="lb, cup, ct" /></div>
                 <div className="recipe-field wide"><label>Preparation</label><input value={ingredientForm.preparation_note} onChange={e=>setIngredientForm({...ingredientForm,preparation_note:e.target.value})} placeholder="diced, divided, room temperature" /></div>
-                <button className="recipe-action primary" onClick={addIngredient}>Add</button>
+                <button className="recipe-action primary" onClick={addIngredient} disabled={!ingredientForm.ingredient_name.trim()||Number(ingredientForm.quantity)<=0}>Add ingredient</button>
               </div>
               {versionIngredients.length > 0 && <div style={{marginTop:14,padding:12,borderRadius:12,background:'var(--bg)',display:'flex',justifyContent:'space-between',gap:12}}><span style={{fontSize:12,color:'var(--tx2)'}}>Estimated batch cost from current purchase observations</span><strong>${estimateCost(versionIngredients).toFixed(2)}</strong></div>}
-            </section>
+            </section></>}
 
-            <section className="recipe-section">
+            {recipeStage===2&&<><div className="recipe-stage-intro"><strong>How do you cook it?</strong><span>Create a process for each workstream, then record its steps in order. Separate processes can run at the same time.</span></div><section className="recipe-section">
               <div className="recipe-section-title">Cooking processes</div><div className="recipe-section-sub">Separate parallel workstreams such as sauce, rice, protein, and final assembly.</div>
               {versionProcesses.length === 0 && <div className="recipe-empty">Add a process to begin recording the cooking sequence.</div>}
               {versionProcesses.map(process => {
@@ -3115,23 +3123,30 @@ function RecipeBuilderView({ items, flash }) {
                   })}
                 </div>;
               })}
-              <div className="recipe-inline"><div className="recipe-field wide"><label>New process</label><input value={processName} onChange={e=>setProcessName(e.target.value)} placeholder="e.g. Tomato sauce" /></div><button className="recipe-action primary" onClick={addProcess}>Add process</button></div>
-              {versionProcesses.length > 0 && <div className="recipe-inline"><div className="recipe-field"><label>Process</label><select value={stepForm.process_id} onChange={e=>setStepForm({...stepForm,process_id:e.target.value})}><option value="">Select process</option>{versionProcesses.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div><div className="recipe-field wide"><label>Instruction</label><textarea value={stepForm.instruction} onChange={e=>setStepForm({...stepForm,instruction:e.target.value})} placeholder="Describe exactly what happens in this step" /></div><div className="recipe-field"><label>Expected minutes</label><input type="number" min="0" step="1" value={stepForm.expected_duration_seconds} onChange={e=>setStepForm({...stepForm,expected_duration_seconds:e.target.value})} /></div><button className="recipe-action primary" onClick={addStep}>Add step</button></div>}
-            </section>
+              <div className="recipe-inline"><div className="recipe-field wide"><label>New process</label><input value={processName} onChange={e=>setProcessName(e.target.value)} placeholder="e.g. Tomato sauce" /></div><button className="recipe-action primary" onClick={addProcess} disabled={!processName.trim()}>Add process</button></div>
+              {versionProcesses.length > 0 && <div className="recipe-inline"><div className="recipe-field"><label>Process</label><select value={stepForm.process_id} onChange={e=>setStepForm({...stepForm,process_id:e.target.value})}><option value="">Select process</option>{versionProcesses.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div><div className="recipe-field wide"><label>Instruction</label><textarea value={stepForm.instruction} onChange={e=>setStepForm({...stepForm,instruction:e.target.value})} placeholder="Describe exactly what happens in this step" /></div><div className="recipe-field"><label>Expected minutes</label><input type="number" min="0" step="1" value={stepForm.expected_duration_seconds} onChange={e=>setStepForm({...stepForm,expected_duration_seconds:e.target.value})} /></div><button className="recipe-action primary" onClick={addStep} disabled={!stepForm.process_id||!stepForm.instruction.trim()}>Add step</button></div>}
+            </section></>}
 
-            <section className="recipe-section"><div className="recipe-section-title">Build mode</div><div className="recipe-section-sub">Work through parallel processes, run multiple timers, and capture confirmed observations. Inventory remains unchanged.</div><button className="recipe-action primary" onClick={openBuildMode} disabled={startingBuild || versionSteps.length===0}>{startingBuild?'Opening…':versionSteps.length?'Start or resume build':'Add a cooking step first'}</button></section>
-            {activeRecipe?.status === 'draft' ? <button className="recipe-action" style={{color:'var(--er)',borderColor:'color-mix(in srgb,var(--er) 35%,var(--bd))'}} onClick={removeRecipe}>Delete draft recipe</button> : <button className="recipe-action" onClick={archiveRecipe}>Archive recipe</button>}
+            {recipeStage===3&&<><div className="recipe-stage-intro"><strong>Ready to build while you cook</strong><span>Review the structure, then open a guided session with independent process progress, timers, and notes.</span></div><section className="recipe-section"><div className="recipe-section-title">Recipe snapshot</div><div className="recipe-ready-summary"><div><strong>{versionIngredients.length}</strong><span>Ingredients</span></div><div><strong>{versionProcesses.length}</strong><span>Processes</span></div><div><strong>{versionSteps.length}</strong><span>Steps</span></div></div><div className="recipe-section-sub">Build sessions record what happens without deducting inventory.</div>{versionSteps.length===0&&<div className="recipe-empty">Add at least one cooking step before starting Build Mode.</div>}</section></>}
           </>}
+          <div className="recipe-stage-actions">
+            {recipeStage>0&&<button className="recipe-action" onClick={()=>setRecipeStage(recipeStage-1)}>Back</button>}
+            {recipeStage===0&&<button className="recipe-action primary" onClick={()=>saveCore(true)} disabled={saving||!form.name.trim()}>{saving?'Saving…':activeId==='new'?'Create & add ingredients':'Save & continue'}</button>}
+            {recipeStage===1&&<button className="recipe-action primary" onClick={()=>setRecipeStage(2)} disabled={versionIngredients.length===0}>{versionIngredients.length?'Continue to cooking flow':'Add an ingredient to continue'}</button>}
+            {recipeStage===2&&<button className="recipe-action primary" onClick={()=>setRecipeStage(3)} disabled={versionSteps.length===0}>{versionSteps.length?'Review recipe':'Add a cooking step to continue'}</button>}
+            {recipeStage===3&&<button className="recipe-action primary" onClick={openBuildMode} disabled={startingBuild||versionSteps.length===0}>{startingBuild?'Opening…':'Start or resume build'}</button>}
+          </div>
+          {activeId!=='new'&&recipeStage===0&&(activeRecipe?.status==='draft'?<button className="recipe-action" style={{color:'var(--er)',borderColor:'color-mix(in srgb,var(--er) 35%,var(--bd))'}} onClick={removeRecipe}>Delete draft recipe</button>:<button className="recipe-action" onClick={archiveRecipe}>Archive recipe</button>)}
         </div>
       </div>
     );
   }
 
-  return <div className="page"><div className="page-hdr" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12}}><div><div className="page-title">Recipe library</div><div className="page-sub">Capture repeatable kitchen processes in detail.</div></div><button className="btn-pr" style={{minHeight:44}} onClick={()=>setActiveId('new')}>New recipe</button></div>
+  return <div className="page"><div className="page-hdr" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12}}><div><div className="page-title">Recipe library</div><div className="page-sub">Capture repeatable kitchen processes in detail.</div></div><button className="btn-pr" style={{minHeight:44}} onClick={()=>{setRecipeStage(0);setActiveId('new');}}>New recipe</button></div>
     <div className="recipe-library-summary"><div><strong>{data.recipes.length}</strong><span>Recipes</span></div><div><strong>{data.versions.filter(v=>v.status==='draft').length}</strong><span>Drafts</span></div><div><strong>{data.ingredients.length}</strong><span>Ingredients</span></div></div>
     <div className="recipe-library-head"><strong>Your recipes</strong><span>Newest first</span></div>
-    {loading ? <div style={{padding:40,textAlign:'center',color:'var(--tx2)'}}>Loading recipes…</div> : data.recipes.length === 0 ? <div className="recipe-empty">No recipes yet. Create your first draft while you cook.</div> : <div className="recipe-grid">{data.recipes.map(recipe=>{const version=data.versions.find(v=>v.id===recipe.current_version_id);const ingredients=data.ingredients.filter(i=>i.recipe_version_id===version?.id);const processes=data.processes.filter(p=>p.recipe_version_id===version?.id);return <div key={recipe.id} className="recipe-card" role="button" tabIndex="0" onClick={()=>setActiveId(recipe.id)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setActiveId(recipe.id);}}}><span className="recipe-card-icon"><NavIcon name="meal" /></span><div className="recipe-card-body"><div className="recipe-card-top"><div className="recipe-name">{recipe.name}</div><span className="recipe-status">{version?.status || recipe.status}</span></div>{recipe.description&&<div className="recipe-description">{recipe.description}</div>}<div className="recipe-meta"><span className="recipe-chip">{version?.yield_quantity || '—'} {version?.yield_unit || 'yield'}</span><span className="recipe-chip">{ingredients.length} ingredient{ingredients.length===1?'':'s'}</span><span className="recipe-chip">{processes.length} process{processes.length===1?'':'es'}</span>{ingredients.length>0&&<span className="recipe-chip">~${estimateCost(ingredients).toFixed(2)} batch</span>}</div></div><span className="recipe-card-chevron">›</span></div>;})}</div>}
-    <button className="recipe-fab" onClick={()=>setActiveId('new')}>New recipe</button>
+    {loading ? <div style={{padding:40,textAlign:'center',color:'var(--tx2)'}}>Loading recipes…</div> : data.recipes.length === 0 ? <div className="recipe-empty">No recipes yet. Create your first draft while you cook.</div> : <div className="recipe-grid">{data.recipes.map(recipe=>{const version=data.versions.find(v=>v.id===recipe.current_version_id);const ingredients=data.ingredients.filter(i=>i.recipe_version_id===version?.id);const processes=data.processes.filter(p=>p.recipe_version_id===version?.id);return <div key={recipe.id} className="recipe-card" role="button" tabIndex="0" onClick={()=>{setRecipeStage(0);setActiveId(recipe.id);}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setRecipeStage(0);setActiveId(recipe.id);}}}><span className="recipe-card-icon"><NavIcon name="meal" /></span><div className="recipe-card-body"><div className="recipe-card-top"><div className="recipe-name">{recipe.name}</div><span className="recipe-status">{version?.status || recipe.status}</span></div>{recipe.description&&<div className="recipe-description">{recipe.description}</div>}<div className="recipe-meta"><span className="recipe-chip">{version?.yield_quantity || '—'} {version?.yield_unit || 'yield'}</span><span className="recipe-chip">{ingredients.length} ingredient{ingredients.length===1?'':'s'}</span><span className="recipe-chip">{processes.length} process{processes.length===1?'':'es'}</span>{ingredients.length>0&&<span className="recipe-chip">~${estimateCost(ingredients).toFixed(2)} batch</span>}</div></div><span className="recipe-card-chevron">›</span></div>;})}</div>}
+    <button className="recipe-fab" onClick={()=>{setRecipeStage(0);setActiveId('new');}}>New recipe</button>
   </div>;
 }
 
@@ -4259,6 +4274,7 @@ function NavIcon({ name, className = '' }) {
     meal: <><path d="M6 3v7a3 3 0 0 0 6 0V3M9 3v18M17 3v18M17 3c3 2 3 7 0 9"/></>,
     history: <><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></>,
     add: <><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></>,
+    check: <path d="m5 12 4 4L19 6"/>,
   };
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
