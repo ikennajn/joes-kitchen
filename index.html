@@ -79,6 +79,37 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .mobile-sheet-close{width:100%;min-height:44px;margin-top:8px;border:none;border-radius:13px;background:var(--bg);color:var(--tx2);font-weight:700;cursor:pointer}
 .bn-item:focus-visible,.mobile-sheet-item:focus-visible,.mobile-sheet-close:focus-visible{outline:3px solid rgba(36,122,82,.3);outline-offset:2px}
 .page{padding:24px;max-width:860px;animation:pageIn .25s cubic-bezier(.4,0,.2,1)}
+.today-head{margin-bottom:18px}
+.today-eyebrow{font-size:11px;color:var(--tx2);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.today-title{font-size:28px;font-weight:700;letter-spacing:-.8px;line-height:1.12}
+.today-sub{font-size:13px;color:var(--tx2);margin-top:5px}
+.today-hero{background:var(--prl);border:1px solid #CFE8DA;border-radius:18px;padding:20px;margin-bottom:18px}
+.today-hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.today-hero-label{font-size:11px;color:var(--tx2);font-weight:700;text-transform:uppercase;letter-spacing:.7px}
+.today-hero-count{font-size:34px;font-weight:700;letter-spacing:-1.2px;margin-top:3px}
+.today-auto{display:inline-flex;align-items:center;gap:6px;background:var(--card);color:var(--tx2);border-radius:999px;padding:6px 10px;font-size:10px;font-weight:700;white-space:nowrap}
+.today-auto svg{width:14px;height:14px;color:var(--pr)}
+.today-primary{width:100%;min-height:48px;margin-top:16px;border:0;border-radius:11px;background:var(--pr);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .18s,transform .15s}
+.today-primary:hover{background:#1E6846;transform:translateY(-1px)}
+.today-primary svg{width:18px;height:18px}
+.today-section{margin-top:18px}
+.today-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 8px}
+.today-section-title{font-size:14px;font-weight:700}
+.today-link{border:0;background:none;color:var(--pr);font-size:12px;font-weight:700;cursor:pointer;padding:5px}
+.today-list{background:var(--card);border:1px solid var(--bd);border-radius:14px;overflow:hidden}
+.today-row{display:flex;align-items:center;gap:12px;padding:13px;border-bottom:1px solid var(--bd)}
+.today-row:last-child{border-bottom:0}
+.today-row-icon{width:38px;height:38px;border-radius:10px;background:var(--prl);color:var(--pr);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.today-row-icon.warn{background:var(--wal);color:var(--wa)}
+.today-row-icon svg{width:19px;height:19px}
+.today-row-body{flex:1;min-width:0}
+.today-row-title{font-size:13px;font-weight:700}
+.today-row-meta{font-size:11px;color:var(--tx2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.today-row-count{font-size:14px;font-weight:700;color:var(--tx)}
+.today-receipt{width:100%;border:1px solid var(--bd);border-radius:14px;background:var(--card);padding:14px;display:flex;align-items:center;gap:12px;text-align:left;color:var(--tx);cursor:pointer;transition:border-color .18s,transform .15s}
+.today-receipt:hover{border-color:var(--pr);transform:translateY(-1px)}
+.today-receipt .today-row-icon{background:var(--pr);color:#fff}
+.today-receipt-arrow{color:var(--pr);font-size:18px;font-weight:700}
 .stat-card:nth-child(1){animation:statIn .3s .04s both}
 .stat-card:nth-child(2){animation:statIn .3s .09s both}
 .stat-card:nth-child(3){animation:statIn .3s .14s both}
@@ -638,100 +669,70 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onUpdate, onDelete, 
 function DashboardView({ items, sessions, onNavigate, onScanReceipt, flash }) {
   const lowItems = items.filter((i) => i.current_qty < i.par_level && i.current_qty > 0);
   const outItems = items.filter((i) => i.current_qty === 0);
-  const totalValue = items.reduce((s, i) => s + Number(i.price || 0), 0);
-  const recentSess = sessions.slice(0, 4);
-  const now = new Date();
-  const monthSpend = sessions.filter((s) => {const d = new Date(s.started_at);return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();}).reduce((s, ss) => s + Number(ss.total_spent || 0), 0);
+  const neededItems = items.filter((i) => i.current_qty < i.par_level);
+  const recentSess = sessions.slice(0, 3);
+  const attentionNames = [...outItems, ...lowItems].slice(0, 4).map(i => i.name);
+  const attentionSummary = attentionNames.length > 0
+    ? `${attentionNames.slice(0, 2).join(', ')}${attentionNames.length > 2 ? ` +${attentionNames.length - 2}` : ''}`
+    : 'Everything is currently at or above par';
   return (
     <div className="page">
-      <div className="page-hdr"><div><div className="page-title">Dashboard</div><div className="page-sub">Joe's Kitchen Overview</div></div></div>
-      <div className="stat-grid">
-        <StatCard val={items.length} label="Total Items" />
-        <StatCard val={outItems.length} label="Out of Stock" color={outItems.length > 0 ? 'var(--er)' : undefined} />
-        <StatCard val={lowItems.length} label="Running Low" color={lowItems.length > 0 ? 'var(--wa)' : undefined} />
-        <StatCard val={`$${monthSpend.toFixed(0)}`} label="This Month" color="var(--ok)" />
+      <div className="today-head">
+        <div className="today-eyebrow">Joe's Kitchen</div>
+        <div className="today-title">Good morning.</div>
+        <div className="today-sub">Your kitchen needs a few things.</div>
       </div>
-      {(outItems.length > 0 || lowItems.length > 0) &&
-      <div className="card" style={{ marginBottom: 14 }}>
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--bd)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 13, fontWeight: 700 }}>Reorder Alerts</span>
-            <button className="btn-outline" onClick={() => onNavigate('shopping')}>View List →</button>
+      <div className="today-hero">
+        <div className="today-hero-top">
+          <div><div className="today-hero-label">Ready to review</div><div className="today-hero-count">{neededItems.length} items</div></div>
+          <div className="today-auto"><NavIcon name="stock" />From inventory</div>
+        </div>
+        <button className="today-primary" onClick={() => onNavigate('shopping')}>Review shopping list <NavIcon name="cart" /></button>
+      </div>
+
+      <section className="today-section">
+        <div className="today-section-head"><div className="today-section-title">Inventory attention</div><button className="today-link" onClick={() => onNavigate('inventory')}>View stock</button></div>
+        <div className="today-list">
+          <div className="today-row">
+            <div className="today-row-icon warn"><NavIcon name="stock" /></div>
+            <div className="today-row-body"><div className="today-row-title">Low or out</div><div className="today-row-meta">{attentionSummary}</div></div>
+            <div className="today-row-count">{neededItems.length}</div>
           </div>
-          {outItems.slice(0, 5).map((i) =>
-        <div key={i.id} className="alert-item">
-              <div className="alert-dot a-er" />
-              <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{i.name}</div><div style={{ fontSize: 11, color: 'var(--tx2)' }}>{i.store}</div></div>
-              <Badge status="out" />
-            </div>
-        )}
-          {lowItems.slice(0, 3).map((i) =>
-        <div key={i.id} className="alert-item">
-              <div className="alert-dot a-wa" />
-              <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{i.name}</div><div style={{ fontSize: 11, color: 'var(--tx2)' }}>{i.current_qty}/{i.par_level} {i.unit} remaining</div></div>
-              <Badge status="low" />
-            </div>
-        )}
+          <div className="today-row">
+            <div className="today-row-icon"><NavIcon name="history" /></div>
+            <div className="today-row-body"><div className="today-row-title">Inventory tracked</div><div className="today-row-meta">Review quantities and par levels</div></div>
+            <div className="today-row-count">{items.length}</div>
+          </div>
         </div>
-      }
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-        {[{ k: 'shopping', icon: '', title: 'Start Shopping', sub: `${outItems.length + lowItems.length} items needed` }, { k: 'inventory', icon: '', title: 'Update Stock', sub: 'After a delivery' }].map((a, i) =>
-        <button key={a.k} className="card" style={{ padding: 16, cursor: 'pointer', border: '1px solid var(--bd)', textAlign: 'left', background: 'var(--card)', transition: 'border-color .18s,box-shadow .22s,transform .22s', animationDelay: `${i * .08}s`, display: 'flex', flexDirection: 'column' }} onClick={() => onNavigate(a.k)}
-        onMouseEnter={(e) => {e.currentTarget.style.borderColor = 'var(--pr)';e.currentTarget.style.boxShadow = '0 8px 24px rgba(192,86,33,.14)';e.currentTarget.style.transform = 'translateY(-3px)';}}
-        onMouseLeave={(e) => {e.currentTarget.style.borderColor = 'var(--bd)';e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.transform = 'translateY(0)';}}>
-            <div style={{ fontSize: 22, marginBottom: 8 }}>{a.icon}</div>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>{a.title}</div>
-            <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 3, marginBottom: 12 }}>{a.sub}</div>
-            {a.k === 'shopping' &&
-          <div style={{ marginTop: 'auto', display: 'inline-flex', alignItems: 'center', padding: '6px 12px', background: 'var(--pr)', color: '#fff', borderRadius: 7, fontSize: 12, fontWeight: 700, alignSelf: 'flex-start', transition: 'gap .18s', gap: "5px", textAlign: "right" }}
-          onMouseEnter={(e) => e.currentTarget.style.gap = '8px'} onMouseLeave={(e) => e.currentTarget.style.gap = '5px'}>
-                Shop Now <span style={{ fontSize: 14, lineHeight: 1 }}>→</span>
-              </div>
-          }
-          </button>
-        )}
-      </div>
-      <button className="card" style={{
-        width: '100%', padding: 16, cursor: 'pointer', border: '1px solid var(--bd)', textAlign: 'left', background: 'linear-gradient(135deg, var(--prl), var(--card))',
-        transition: 'border-color .18s,box-shadow .22s,transform .22s', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14,
-      }}
-        onClick={onScanReceipt}
-        onMouseEnter={(e) => {e.currentTarget.style.borderColor = 'var(--pr)';e.currentTarget.style.boxShadow = '0 8px 24px rgba(192,86,33,.14)';e.currentTarget.style.transform = 'translateY(-2px)';}}
-        onMouseLeave={(e) => {e.currentTarget.style.borderColor = 'var(--bd)';e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.transform = 'translateY(0)';}}>
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--pr)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>📷</div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>Scan Receipt</div>
-          <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 2 }}>Snap a photo to update inventory & log purchases</div>
-        </div>
-        <span style={{ fontSize: 18, color: 'var(--pr)' }}>→</span>
-      </button>
+      </section>
+
+      <section className="today-section">
+        <div className="today-section-head"><div className="today-section-title">Receipt workflow</div></div>
+        <button className="today-receipt" onClick={onScanReceipt}>
+          <div className="today-row-icon"><NavIcon name="scan" /></div>
+          <div className="today-row-body"><div className="today-row-title">Scan a store receipt</div><div className="today-row-meta">Review every line before inventory changes</div></div>
+          <span className="today-receipt-arrow">→</span>
+        </button>
+      </section>
+
       {recentSess.length > 0 &&
-      <div className="card">
-          <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--bd)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 13, fontWeight: 700 }}>Recent Trips</span>
-            <button className="btn-outline" onClick={() => onNavigate('history')}>All History →</button>
-          </div>
+      <section className="today-section">
+        <div className="today-section-head"><div className="today-section-title">Recent shopping runs</div><button className="today-link" onClick={() => onNavigate('history')}>View log</button></div>
+        <div className="today-list">
           {recentSess.map((s) => {
-          const miles = mileageStore.get(s);
-          const hrs = s.ended_at ? (new Date(s.ended_at) - new Date(s.started_at)) / 3600000 : null;
-          const milesD = miles.start_miles && miles.end_miles ? Number(miles.end_miles) - Number(miles.start_miles) : null;
-          const payCalc = hrs ? window.calcDriverPay(hrs, milesD) : null;
-          const pay = payCalc ? payCalc.total.toFixed(2) : null;
           return (
-            <div key={s.id} className="alert-item">
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{new Date(s.started_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
-                  <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 1 }}>
-                    {s.item_count > 0 ? `${s.item_count} items` : ''}{s.total_spent > 0 ? ` · $${Number(s.total_spent).toFixed(2)}` : ''}
-                    {pay ? ` · Driver: $${pay}` : ''}
-                    {miles.driver ? ' · ' + miles.driver : ''}
-                  </div>
-                </div>
-                <span style={{ fontSize: 11, color: s.status === 'active' ? 'var(--ok)' : 'var(--mu)', fontWeight: 600 }}>{s.status}</span>
-              </div>);
+            <div key={s.id} className="today-row">
+              <div className="today-row-icon"><NavIcon name="cart" /></div>
+              <div className="today-row-body">
+                <div className="today-row-title">{new Date(s.started_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
+                <div className="today-row-meta">{s.item_count > 0 ? `${s.item_count} confirmed items` : 'No confirmed items'}{s.total_spent > 0 ? ` · $${Number(s.total_spent).toFixed(2)}` : ''}</div>
+              </div>
+              <span className="today-row-count" style={{ color: s.status === 'active' ? 'var(--ok)' : 'var(--mu)', fontSize: 11 }}>{s.status}</span>
+            </div>);
 
         })}
         </div>
-      }
+      </section>}
     </div>);
 
 }
@@ -3715,7 +3716,7 @@ const TABS = [
 { k: 'inventory', l: 'Inventory', i: '' },
 { k: 'shopping', l: 'Shopping', i: '' },
 { k: 'analytics', l: 'Analytics', i: '' },
-{ k: 'meals', l: 'Meals', i: '' },
+{ k: 'meals', l: 'Recipes', i: '' },
 { k: 'history', l: 'History', i: '' },
 { k: 'add', l: 'Add Item', i: '' }];
 
@@ -3791,7 +3792,7 @@ function MobileMoreSheet({ onClose, onNavigate, onSync, onSignOut }) {
   }, [onClose]);
   const actions = [
     { view: 'analytics', label: 'Analytics', icon: 'chart' },
-    { view: 'meals', label: 'Meals', icon: 'meal' },
+    { view: 'meals', label: 'Recipes', icon: 'meal' },
     { view: 'history', label: 'History', icon: 'history' },
     { view: 'add', label: 'Add item', icon: 'add' },
   ];
