@@ -330,6 +330,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 }
 .recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}.recipe-card{padding:18px;border:1px solid var(--bd);background:var(--card);border-radius:16px;cursor:pointer;transition:border-color .18s ease,background .18s ease}.recipe-card:hover{border-color:var(--pr)}.recipe-card:focus-visible,.recipe-action:focus-visible{outline:3px solid color-mix(in srgb,var(--pr) 30%,transparent);outline-offset:2px}.recipe-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.recipe-name{font-size:18px;font-weight:800;line-height:1.25}.recipe-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.recipe-chip{font-size:11px;font-weight:700;color:var(--tx2);border:1px solid var(--bd);border-radius:999px;padding:5px 9px}.recipe-status{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent);border-radius:999px;padding:5px 8px}.recipe-editor{position:fixed;inset:0;z-index:120;background:var(--bg);overflow:auto}.recipe-editor-shell{width:min(920px,100%);margin:0 auto;padding:20px 20px 110px}.recipe-editor-head{position:sticky;top:0;z-index:4;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 16px;border-bottom:1px solid var(--bd);margin-bottom:18px}.recipe-back,.recipe-action{min-height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit;font-size:12px;font-weight:700;padding:9px 12px;cursor:pointer}.recipe-action.primary{border-color:var(--pr);background:var(--pr);color:white}.recipe-section{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px}.recipe-section-title{font-size:15px;font-weight:800;margin-bottom:4px}.recipe-section-sub{font-size:12px;color:var(--tx2);margin-bottom:14px}.recipe-fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}.recipe-field label{display:block;font-size:11px;font-weight:700;color:var(--tx2);margin:0 0 5px}.recipe-field input,.recipe-field textarea,.recipe-field select{width:100%;min-height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit;font-size:14px;padding:10px;box-sizing:border-box}.recipe-field textarea{min-height:86px;resize:vertical}.recipe-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--bd)}.recipe-row:first-of-type{border-top:0}.recipe-row-main{flex:1;min-width:0}.recipe-row-name{font-size:13px;font-weight:750}.recipe-row-meta{font-size:11px;color:var(--tx2);margin-top:3px}.recipe-remove{width:44px;height:44px;border:0;background:transparent;color:var(--er);font-size:20px;cursor:pointer;border-radius:10px}.recipe-inline{display:grid;grid-template-columns:2fr .7fr 1fr auto;gap:8px;margin-top:12px}.recipe-process{border:1px solid var(--bd);border-radius:12px;padding:13px;margin-top:10px}.recipe-process-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.recipe-step{display:flex;gap:10px;padding:11px 0;border-top:1px solid var(--bd);margin-top:10px}.recipe-step-num{width:26px;height:26px;flex:0 0 26px;border-radius:50%;display:grid;place-items:center;background:var(--prl);color:var(--pr);font-size:11px;font-weight:800}.recipe-step-copy{font-size:13px;line-height:1.45;white-space:pre-wrap}.recipe-empty{padding:26px 14px;text-align:center;color:var(--tx2);font-size:13px;border:1px dashed var(--bd);border-radius:12px}.recipe-fab{display:none}
 @media(max-width:640px){.recipe-grid{grid-template-columns:1fr}.recipe-editor-shell{padding:8px 14px 108px}.recipe-editor-head{padding-top:max(10px,env(safe-area-inset-top))}.recipe-fields{grid-template-columns:1fr 1fr}.recipe-fields .wide{grid-column:1/-1}.recipe-inline{grid-template-columns:1fr 1fr}.recipe-inline .wide{grid-column:1/-1}.recipe-action{min-height:48px}.recipe-fab{display:block;position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:8;border:0;border-radius:999px;background:var(--pr);color:white;min-height:50px;padding:0 18px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}}
+.build-mode{position:fixed;inset:0;z-index:180;background:var(--bg);color:var(--tx);overflow:auto}.build-header{position:sticky;top:0;z-index:5;min-height:68px;padding:max(10px,env(safe-area-inset-top)) 16px 10px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--bd)}.build-header button,.build-step-actions button,.build-timer button,.build-note button{min-height:44px;border:1px solid var(--bd);border-radius:11px;background:var(--card);color:var(--tx);font:inherit;font-size:12px;font-weight:800;padding:9px 13px;cursor:pointer}.build-header>div{min-width:0;text-align:center}.build-header span,.build-process-head span,.build-step-body>span{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2)}.build-header strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}.build-shell{width:min(1100px,100%);margin:auto;padding:18px 16px calc(100px + env(safe-area-inset-bottom));box-sizing:border-box}.build-progress,.build-timers,.build-note,.build-timeline{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px}.build-progress{display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:end}.build-progress span{font-size:11px;color:var(--tx2)}.build-progress strong{display:block;font-size:15px;margin-top:3px}.build-progress-value{font-size:24px;font-weight:900;color:var(--pr)}.build-progress-track{grid-column:1/-1;height:7px;border-radius:99px;background:var(--bd);overflow:hidden;margin-top:8px}.build-progress-track i{display:block;height:100%;border-radius:inherit;background:var(--pr)}.build-section-head,.build-process-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.build-section-head>span{font-size:11px;color:var(--tx2)}.build-timer{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--bd)}.build-timer>div span{display:block;color:var(--tx2);font-size:10px;text-transform:capitalize}.build-timer output{font-variant-numeric:tabular-nums;font-size:21px;font-weight:900}.build-timer.overdue output{color:var(--er)}.build-process-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:14px}.build-process{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:15px}.build-process-head strong{display:block;font-size:17px;margin-top:3px}.build-process-head>span{font-size:12px;color:var(--pr)}.build-step{display:flex;gap:11px;padding:14px 0;border-top:1px solid var(--bd)}.build-step-number{width:30px;height:30px;flex:0 0 30px;border-radius:50%;display:grid;place-items:center;background:var(--prl);color:var(--pr);font-size:12px;font-weight:900}.build-step-number svg{width:17px;height:17px}.build-step.active .build-step-number{background:var(--pr);color:white}.build-step.done{opacity:.68}.build-step-body{min-width:0;flex:1}.build-step-body p{font-size:14px;line-height:1.5;margin:4px 0 10px;white-space:pre-wrap}.build-step-ingredients{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.build-step-ingredients span{font-size:11px;padding:5px 8px;border-radius:99px;background:var(--bg);border:1px solid var(--bd)}.build-step-actions{display:flex;flex-wrap:wrap;gap:8px}.build-step-actions button:first-child{border-color:var(--pr);color:var(--pr)}.build-step-actions button:disabled,.build-note button:disabled{opacity:.45;cursor:not-allowed}.build-note textarea{width:100%;min-height:90px;box-sizing:border-box;resize:vertical;border:1px solid var(--bd);border-radius:11px;background:var(--bg);color:var(--tx);font:inherit;font-size:14px;padding:11px;margin-bottom:8px}.build-note>button{border-color:var(--pr);background:var(--pr);color:white}.build-timeline>div:not(.build-section-head){display:grid;grid-template-columns:70px 130px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--bd);font-size:12px}.build-timeline time,.build-timeline small{color:var(--tx2)}.build-timeline>div>span{text-transform:capitalize;font-weight:700}@media(max-width:640px){.build-shell{padding-left:12px;padding-right:12px}.build-header{padding-left:12px;padding-right:12px}.build-process-grid{grid-template-columns:1fr}.build-timer{grid-template-columns:1fr auto}.build-timer output{grid-row:1;grid-column:2}.build-timeline>div:not(.build-section-head){grid-template-columns:62px 1fr}.build-timeline small{grid-column:1/-1}}
 /* Approved mobile app shell */
 .mob-title-block{min-width:0}.mob-kicker{font-size:10px;color:var(--tx2);line-height:1.2;margin-bottom:2px}.mob-sync{width:44px;height:44px;border:0;border-radius:50%;display:grid;place-items:center;background:transparent;color:var(--tx2);cursor:pointer;transition:background .18s,color .18s}.mob-sync:hover{background:var(--prl);color:var(--pr)}.mob-sync svg{width:19px;height:19px}.mob-avatar{width:38px;height:38px;border:0;cursor:pointer}.mob-alert-count{min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:grid;place-items:center;background:var(--wal);color:#7A4D0B;font-size:10px;font-weight:800}
 .today-snapshot{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border:1px solid var(--bd);border-radius:15px;margin-bottom:18px;overflow:hidden}.today-snapshot button{min-height:78px;border:0;border-right:1px solid var(--bd);background:transparent;color:var(--tx);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:12px;cursor:pointer}.today-snapshot button:last-child{border-right:0}.today-snapshot strong{font-size:23px;line-height:1}.today-snapshot strong.warn{color:var(--wa)}.today-snapshot strong.danger{color:var(--er)}.today-snapshot span{font-size:10px;color:var(--tx2);margin-top:7px}.today-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.today-actions button{min-height:116px;padding:14px;border:1px solid var(--bd);border-radius:15px;background:var(--card);color:var(--tx);text-align:left;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;transition:border-color .18s,background .18s}.today-actions button:hover{border-color:var(--pr);background:var(--prl)}.today-actions button>span{width:38px;height:38px;border-radius:10px;background:var(--prl);color:var(--pr);display:grid;place-items:center;margin-bottom:12px}.today-actions svg{width:19px;height:19px}.today-actions strong{font-size:13px}.today-actions small{font-size:10px;color:var(--tx2);margin-top:4px}
@@ -442,6 +443,14 @@ window.db={
   getRecipeStepIngredients:()=>q("recipe_step_ingredients?select=*&order=position.asc"),
   insertRecipeStepIngredient:(row)=>q("recipe_step_ingredients",{method:"POST",body:JSON.stringify(row)}),
   deleteRecipeStepIngredient:(id)=>q(`recipe_step_ingredients?id=eq.${id}`,{method:"DELETE"}),
+  getActiveCookingSessions:(versionId)=>q(`cooking_sessions?recipe_version_id=eq.${versionId}&status=in.(active,paused)&order=started_at.desc`),
+  insertCookingSession:(row)=>q("cooking_sessions",{method:"POST",body:JSON.stringify(row)}),
+  updateCookingSession:(id,fields)=>q(`cooking_sessions?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
+  getCookingEvents:(sessionId)=>q(`cooking_events?cooking_session_id=eq.${sessionId}&order=occurred_at.asc,event_sequence.asc`),
+  insertCookingEvent:(row)=>q("cooking_events",{method:"POST",body:JSON.stringify(row)}),
+  getCookingTimers:(sessionId)=>q(`cooking_timers?cooking_session_id=eq.${sessionId}&order=created_at.asc`),
+  insertCookingTimer:(row)=>q("cooking_timers",{method:"POST",body:JSON.stringify(row)}),
+  updateCookingTimer:(id,fields)=>q(`cooking_timers?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
   getShopQty:(sid)=>q(`shop_quantities?session_id=eq.${sid}`),
   upsertShopQty:(r)=>q("shop_quantities",{method:"POST",headers:{...H,"Prefer":"resolution=merge-duplicates"},body:JSON.stringify(r)}),
   getSessionReceipts:(sid)=>q(`session_receipts?session_id=eq.${sid}&order=uploaded_at.desc`),
@@ -2724,6 +2733,87 @@ function MealsView({ items }) {
   );
 }
 
+/* ─── GUIDED BUILD MODE ─── */
+function RecipeBuildMode({ recipe, version, processes, steps, ingredients, allocations, session, onClose, flash }) {
+  const [events, setEvents] = useState([]);
+  const [timers, setTimers] = useState([]);
+  const [note, setNote] = useState('');
+  const [now, setNow] = useState(Date.now());
+  const [busy, setBusy] = useState(false);
+
+  const reloadSession = async () => {
+    const [eventRows, timerRows] = await Promise.all([db.getCookingEvents(session.id), db.getCookingTimers(session.id)]);
+    setEvents(eventRows || []); setTimers(timerRows || []);
+  };
+  useEffect(() => { reloadSession().catch(e=>{console.error(e);flash?.('Could not load build session');}); }, [session.id]);
+  useEffect(() => { const id=setInterval(()=>setNow(Date.now()),1000); return()=>clearInterval(id); }, []);
+
+  const completedStepIds = new Set(events.filter(e=>e.event_type==='step_completed').map(e=>e.recipe_step_id));
+  const startedStepIds = new Set(events.filter(e=>e.event_type==='step_started').map(e=>e.recipe_step_id));
+  const progress = steps.length ? Math.round(completedStepIds.size / steps.length * 100) : 0;
+  const activeTimers = timers.filter(t=>['running','paused'].includes(t.status));
+  const secondsFor = timer => {
+    const end = timer.status === 'paused' ? new Date(timer.paused_at).getTime() : timer.status === 'stopped' ? new Date(timer.stopped_at).getTime() : now;
+    return Math.max(0, Math.floor((end - new Date(timer.started_at).getTime())/1000) - Number(timer.paused_duration_seconds||0));
+  };
+  const clock = seconds => `${String(Math.floor(Math.abs(seconds)/60)).padStart(2,'0')}:${String(Math.abs(seconds)%60).padStart(2,'0')}`;
+  const writeEvent = async row => { await db.insertCookingEvent({ cooking_session_id:session.id, confirmed_at:new Date().toISOString(), ...row }); };
+
+  const advanceStep = async step => {
+    setBusy(true);
+    try {
+      if (!startedStepIds.has(step.id)) await writeEvent({ event_type:'step_started', process_id:step.process_id, recipe_step_id:step.id });
+      else if (!completedStepIds.has(step.id)) await writeEvent({ event_type:'step_completed', process_id:step.process_id, recipe_step_id:step.id });
+      await reloadSession();
+    } catch(e){console.error(e);flash?.('Could not update step');}
+    setBusy(false);
+  };
+  const startTimer = async (step, process) => {
+    try {
+      const target=Number(step.expected_duration_seconds||0)||null;
+      const [timer]=await db.insertCookingTimer({ cooking_session_id:session.id,process_id:process.id,recipe_step_id:step.id,name:`${process.name} · Step ${step.position+1}`,status:'running',target_duration_seconds:target });
+      await writeEvent({event_type:'timer_started',process_id:process.id,recipe_step_id:step.id,duration_seconds:target,structured_data:{timer_id:timer.id}});
+      await reloadSession();
+    } catch(e){console.error(e);flash?.('Could not start timer');}
+  };
+  const toggleTimer = async timer => {
+    try {
+      if(timer.status==='running'){
+        await db.updateCookingTimer(timer.id,{status:'paused',paused_at:new Date().toISOString()});
+        await writeEvent({event_type:'timer_paused',process_id:timer.process_id,recipe_step_id:timer.recipe_step_id,structured_data:{timer_id:timer.id}});
+      }else{
+        const added=Math.max(0,Math.round((Date.now()-new Date(timer.paused_at).getTime())/1000));
+        await db.updateCookingTimer(timer.id,{status:'running',paused_at:null,paused_duration_seconds:Number(timer.paused_duration_seconds||0)+added});
+        await writeEvent({event_type:'timer_resumed',process_id:timer.process_id,recipe_step_id:timer.recipe_step_id,structured_data:{timer_id:timer.id}});
+      }
+      await reloadSession();
+    } catch(e){console.error(e);flash?.('Could not update timer');}
+  };
+  const stopTimer = async timer => {
+    try { const elapsed=secondsFor(timer);await db.updateCookingTimer(timer.id,{status:'stopped',stopped_at:new Date().toISOString(),final_duration_seconds:elapsed});await writeEvent({event_type:'timer_stopped',process_id:timer.process_id,recipe_step_id:timer.recipe_step_id,duration_seconds:elapsed,structured_data:{timer_id:timer.id}});await reloadSession(); }
+    catch(e){console.error(e);flash?.('Could not stop timer');}
+  };
+  const saveNote = async () => {
+    if(!note.trim())return;
+    try{await writeEvent({event_type:'note',raw_transcript:note.trim()});setNote('');await reloadSession();}catch(e){console.error(e);flash?.('Could not save note');}
+  };
+  const finish = async () => {
+    if(!confirm('Finish this build and move it to review?'))return;
+    try{await db.updateCookingSession(session.id,{status:'review'});onClose();flash?.('Build saved for review');}catch(e){console.error(e);flash?.('Could not finish build');}
+  };
+
+  return <div className="build-mode">
+    <header className="build-header"><button onClick={onClose} aria-label="Leave build mode">Back</button><div><span>Build mode</span><strong>{recipe.name}</strong></div><button onClick={finish}>Finish</button></header>
+    <main className="build-shell">
+      <section className="build-progress"><div><span>Session progress</span><strong>{completedStepIds.size} of {steps.length} steps</strong></div><div className="build-progress-value">{progress}%</div><div className="build-progress-track"><i style={{width:`${progress}%`}} /></div></section>
+      {activeTimers.length>0&&<section className="build-timers"><div className="build-section-head"><strong>Active timers</strong><span>{activeTimers.length}</span></div>{activeTimers.map(timer=>{const elapsed=secondsFor(timer),remaining=timer.target_duration_seconds==null?elapsed:Number(timer.target_duration_seconds)-elapsed;return <div className={`build-timer ${remaining<0?'overdue':''}`} key={timer.id}><div><strong>{timer.name}</strong><span>{timer.status}</span></div><output>{remaining<0?'+':''}{clock(remaining)}</output><button onClick={()=>toggleTimer(timer)}>{timer.status==='running'?'Pause':'Resume'}</button><button onClick={()=>stopTimer(timer)}>Stop</button></div>})}</section>}
+      <div className="build-process-grid">{processes.map(process=>{const processSteps=steps.filter(s=>s.process_id===process.id).sort((a,b)=>a.position-b.position);return <section className="build-process" key={process.id}><div className="build-process-head"><div><span>Parallel process</span><strong>{process.name}</strong></div><span>{processSteps.filter(s=>completedStepIds.has(s.id)).length}/{processSteps.length}</span></div>{processSteps.map((step,index)=>{const done=completedStepIds.has(step.id),started=startedStepIds.has(step.id);const stepAllocations=allocations.filter(a=>a.recipe_step_id===step.id);return <article className={`build-step ${done?'done':started?'active':''}`} key={step.id}><div className="build-step-number">{done?'✓':index+1}</div><div className="build-step-body"><span>{done?'Completed':started?'In progress':'Ready'}</span><p>{step.instruction}</p>{stepAllocations.length>0&&<div className="build-step-ingredients">{stepAllocations.map(a=>{const ing=ingredients.find(i=>i.id===a.recipe_ingredient_id);return <span key={a.id}>{a.quantity} {a.unit} {ing?.ingredient_name}</span>})}</div>}<div className="build-step-actions"><button disabled={busy||done} onClick={()=>advanceStep(step)}>{started?'Complete step':'Start step'}</button>{step.expected_duration_seconds>0&&<button onClick={()=>startTimer(step,process)} disabled={activeTimers.some(t=>t.recipe_step_id===step.id)}>Timer · {Math.round(step.expected_duration_seconds/60)}m</button>}</div></div></article>})}</section>})}</div>
+      <section className="build-note"><div className="build-section-head"><strong>Capture an observation</strong><span>Manual fallback</span></div><textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Record a change, observation, or technique while cooking…" /><button onClick={saveNote} disabled={!note.trim()}>Save note</button></section>
+      {events.length>0&&<section className="build-timeline"><div className="build-section-head"><strong>Recent activity</strong><span>{events.length} events</span></div>{events.slice(-6).reverse().map(event=><div key={event.id}><time>{new Date(event.occurred_at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</time><span>{event.event_type.replaceAll('_',' ')}</span>{event.raw_transcript&&<small>{event.raw_transcript}</small>}</div>)}</section>}
+    </main>
+  </div>;
+}
+
 /* ─── RECIPE BUILDER ─── */
 function RecipeBuilderView({ items, flash }) {
   const [data, setData] = useState({ recipes: [], versions: [], processes: [], steps: [], ingredients: [], allocations: [], purchases: [] });
@@ -2736,6 +2826,8 @@ function RecipeBuilderView({ items, flash }) {
   const [stepForm, setStepForm] = useState({ process_id: '', instruction: '', expected_duration_seconds: '' });
   const [allocatingStepId, setAllocatingStepId] = useState(null);
   const [allocationForm, setAllocationForm] = useState({ recipe_ingredient_id: '', quantity: '', unit: '', note: '' });
+  const [buildSession, setBuildSession] = useState(null);
+  const [startingBuild, setStartingBuild] = useState(false);
 
   const reload = async () => {
     const [recipes, versions, processes, steps, ingredients, allocations, purchases] = await Promise.all([
@@ -2761,6 +2853,22 @@ function RecipeBuilderView({ items, flash }) {
   const versionId = activeVersion?.id;
   const versionIngredients = data.ingredients.filter(i => i.recipe_version_id === versionId);
   const versionProcesses = data.processes.filter(p => p.recipe_version_id === versionId).sort((a,b) => a.position - b.position);
+  const versionSteps = data.steps.filter(s => s.recipe_version_id === versionId).sort((a,b) => a.position - b.position);
+
+  const openBuildMode = async () => {
+    if (!activeRecipe || !activeVersion || versionSteps.length === 0) return;
+    setStartingBuild(true);
+    try {
+      const existing = await db.getActiveCookingSessions(activeVersion.id);
+      let session = existing?.[0];
+      if (!session) {
+        [session] = await db.insertCookingSession({ recipe_id: activeRecipe.id, recipe_version_id: activeVersion.id, mode: 'build', status: 'active' });
+        await db.insertCookingEvent({ cooking_session_id: session.id, event_type: 'session_started', confirmed_at: new Date().toISOString(), structured_data: { source: 'manual' } });
+      }
+      setBuildSession(session);
+    } catch (e) { console.error(e); flash?.('Could not open build mode'); }
+    setStartingBuild(false);
+  };
 
   useEffect(() => {
     if (activeId === 'new') {
@@ -2934,6 +3042,8 @@ function RecipeBuilderView({ items, flash }) {
     return sum + observed * Number(ing.quantity || 0);
   }, 0);
 
+  if (buildSession) return <RecipeBuildMode recipe={activeRecipe} version={activeVersion} processes={versionProcesses} steps={versionSteps} ingredients={versionIngredients} allocations={data.allocations.filter(a=>a.recipe_version_id===versionId)} session={buildSession} onClose={()=>setBuildSession(null)} flash={flash} />;
+
   if (activeId) {
     return (
       <div className="recipe-editor" role="dialog" aria-modal="true" aria-label={activeId === 'new' ? 'New recipe' : `Edit ${activeRecipe?.name || 'recipe'}`}>
@@ -3009,7 +3119,7 @@ function RecipeBuilderView({ items, flash }) {
               {versionProcesses.length > 0 && <div className="recipe-inline"><div className="recipe-field"><label>Process</label><select value={stepForm.process_id} onChange={e=>setStepForm({...stepForm,process_id:e.target.value})}><option value="">Select process</option>{versionProcesses.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div><div className="recipe-field wide"><label>Instruction</label><textarea value={stepForm.instruction} onChange={e=>setStepForm({...stepForm,instruction:e.target.value})} placeholder="Describe exactly what happens in this step" /></div><div className="recipe-field"><label>Expected minutes</label><input type="number" min="0" step="1" value={stepForm.expected_duration_seconds} onChange={e=>setStepForm({...stepForm,expected_duration_seconds:e.target.value})} /></div><button className="recipe-action primary" onClick={addStep}>Add step</button></div>}
             </section>
 
-            <section className="recipe-section"><div className="recipe-section-title">Build mode</div><div className="recipe-section-sub">Live voice capture, multiple timers, ingredient allocations, and post-cook deviations arrive in the cooking-session phase.</div><button className="recipe-action" disabled>Start build session · coming next</button></section>
+            <section className="recipe-section"><div className="recipe-section-title">Build mode</div><div className="recipe-section-sub">Work through parallel processes, run multiple timers, and capture confirmed observations. Inventory remains unchanged.</div><button className="recipe-action primary" onClick={openBuildMode} disabled={startingBuild || versionSteps.length===0}>{startingBuild?'Opening…':versionSteps.length?'Start or resume build':'Add a cooking step first'}</button></section>
             {activeRecipe?.status === 'draft' ? <button className="recipe-action" style={{color:'var(--er)',borderColor:'color-mix(in srgb,var(--er) 35%,var(--bd))'}} onClick={removeRecipe}>Delete draft recipe</button> : <button className="recipe-action" onClick={archiveRecipe}>Archive recipe</button>}
           </>}
         </div>
