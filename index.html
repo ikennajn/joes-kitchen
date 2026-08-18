@@ -328,6 +328,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   .f-row{flex-wrap:wrap}
   .f-row .f-grp{min-width:calc(50% - 6px)}
 }
+.recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}.recipe-card{padding:18px;border:1px solid var(--bd);background:var(--card);border-radius:16px;cursor:pointer;transition:border-color .18s ease,background .18s ease}.recipe-card:hover{border-color:var(--pr)}.recipe-card:focus-visible,.recipe-action:focus-visible{outline:3px solid color-mix(in srgb,var(--pr) 30%,transparent);outline-offset:2px}.recipe-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.recipe-name{font-size:18px;font-weight:800;line-height:1.25}.recipe-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.recipe-chip{font-size:11px;font-weight:700;color:var(--tx2);border:1px solid var(--bd);border-radius:999px;padding:5px 9px}.recipe-status{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent);border-radius:999px;padding:5px 8px}.recipe-editor{position:fixed;inset:0;z-index:120;background:var(--bg);overflow:auto}.recipe-editor-shell{width:min(920px,100%);margin:0 auto;padding:20px 20px 110px}.recipe-editor-head{position:sticky;top:0;z-index:4;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 16px;border-bottom:1px solid var(--bd);margin-bottom:18px}.recipe-back,.recipe-action{min-height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit;font-size:12px;font-weight:700;padding:9px 12px;cursor:pointer}.recipe-action.primary{border-color:var(--pr);background:var(--pr);color:white}.recipe-section{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px}.recipe-section-title{font-size:15px;font-weight:800;margin-bottom:4px}.recipe-section-sub{font-size:12px;color:var(--tx2);margin-bottom:14px}.recipe-fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}.recipe-field label{display:block;font-size:11px;font-weight:700;color:var(--tx2);margin:0 0 5px}.recipe-field input,.recipe-field textarea,.recipe-field select{width:100%;min-height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit;font-size:14px;padding:10px;box-sizing:border-box}.recipe-field textarea{min-height:86px;resize:vertical}.recipe-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--bd)}.recipe-row:first-of-type{border-top:0}.recipe-row-main{flex:1;min-width:0}.recipe-row-name{font-size:13px;font-weight:750}.recipe-row-meta{font-size:11px;color:var(--tx2);margin-top:3px}.recipe-remove{width:44px;height:44px;border:0;background:transparent;color:var(--er);font-size:20px;cursor:pointer;border-radius:10px}.recipe-inline{display:grid;grid-template-columns:2fr .7fr 1fr auto;gap:8px;margin-top:12px}.recipe-process{border:1px solid var(--bd);border-radius:12px;padding:13px;margin-top:10px}.recipe-process-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.recipe-step{display:flex;gap:10px;padding:11px 0;border-top:1px solid var(--bd);margin-top:10px}.recipe-step-num{width:26px;height:26px;flex:0 0 26px;border-radius:50%;display:grid;place-items:center;background:var(--prl);color:var(--pr);font-size:11px;font-weight:800}.recipe-step-copy{font-size:13px;line-height:1.45;white-space:pre-wrap}.recipe-empty{padding:26px 14px;text-align:center;color:var(--tx2);font-size:13px;border:1px dashed var(--bd);border-radius:12px}.recipe-fab{display:none}
+@media(max-width:640px){.recipe-grid{grid-template-columns:1fr}.recipe-editor-shell{padding:8px 14px 108px}.recipe-editor-head{padding-top:max(10px,env(safe-area-inset-top))}.recipe-fields{grid-template-columns:1fr 1fr}.recipe-fields .wide{grid-column:1/-1}.recipe-inline{grid-template-columns:1fr 1fr}.recipe-inline .wide{grid-column:1/-1}.recipe-action{min-height:48px}.recipe-fab{display:block;position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:8;border:0;border-radius:999px;background:var(--pr);color:white;min-height:50px;padding:0 18px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -384,6 +386,28 @@ window.db={
   getMealIngredients:()=>q("meal_ingredients?select=*"),
   upsertMealIngredient:(r)=>q("meal_ingredients",{method:"POST",headers:{...H,"Prefer":"resolution=merge-duplicates,return=representation"},body:JSON.stringify(r)}),
   deleteMealIngredient:(meal_id,item_id)=>q(`meal_ingredients?meal_id=eq.${meal_id}&item_id=eq.${item_id}`,{method:"DELETE"}),
+  getRecipes:()=>q("recipes?select=*&order=updated_at.desc"),
+  insertRecipe:(row)=>q("recipes",{method:"POST",body:JSON.stringify(row)}),
+  updateRecipe:(id,fields)=>q(`recipes?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
+  deleteRecipe:(id)=>q(`recipes?id=eq.${id}`,{method:"DELETE"}),
+  getRecipeVersions:()=>q("recipe_versions?select=*&order=version_number.desc"),
+  insertRecipeVersion:(row)=>q("recipe_versions",{method:"POST",body:JSON.stringify(row)}),
+  updateRecipeVersion:(id,fields)=>q(`recipe_versions?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
+  getRecipeProcesses:()=>q("recipe_processes?select=*&order=position.asc"),
+  insertRecipeProcess:(row)=>q("recipe_processes",{method:"POST",body:JSON.stringify(row)}),
+  updateRecipeProcess:(id,fields)=>q(`recipe_processes?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
+  deleteRecipeProcess:(id)=>q(`recipe_processes?id=eq.${id}`,{method:"DELETE"}),
+  getRecipeSteps:()=>q("recipe_steps?select=*&order=position.asc"),
+  insertRecipeStep:(row)=>q("recipe_steps",{method:"POST",body:JSON.stringify(row)}),
+  updateRecipeStep:(id,fields)=>q(`recipe_steps?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
+  deleteRecipeStep:(id)=>q(`recipe_steps?id=eq.${id}`,{method:"DELETE"}),
+  getRecipeIngredients:()=>q("recipe_ingredients?select=*&order=position.asc"),
+  insertRecipeIngredient:(row)=>q("recipe_ingredients",{method:"POST",body:JSON.stringify(row)}),
+  updateRecipeIngredient:(id,fields)=>q(`recipe_ingredients?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
+  deleteRecipeIngredient:(id)=>q(`recipe_ingredients?id=eq.${id}`,{method:"DELETE"}),
+  getRecipeStepIngredients:()=>q("recipe_step_ingredients?select=*&order=position.asc"),
+  insertRecipeStepIngredient:(row)=>q("recipe_step_ingredients",{method:"POST",body:JSON.stringify(row)}),
+  deleteRecipeStepIngredient:(id)=>q(`recipe_step_ingredients?id=eq.${id}`,{method:"DELETE"}),
   getShopQty:(sid)=>q(`shop_quantities?session_id=eq.${sid}`),
   upsertShopQty:(r)=>q("shop_quantities",{method:"POST",headers:{...H,"Prefer":"resolution=merge-duplicates"},body:JSON.stringify(r)}),
   getSessionReceipts:(sid)=>q(`session_receipts?session_id=eq.${sid}&order=uploaded_at.desc`),
@@ -2633,6 +2657,252 @@ function MealsView({ items }) {
   );
 }
 
+/* ─── RECIPE BUILDER ─── */
+function RecipeBuilderView({ items, flash }) {
+  const [data, setData] = useState({ recipes: [], versions: [], processes: [], steps: [], ingredients: [], allocations: [], purchases: [] });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeId, setActiveId] = useState(null);
+  const [form, setForm] = useState({ name: '', description: '', yield_quantity: 4, yield_unit: 'servings', notes: '' });
+  const [ingredientForm, setIngredientForm] = useState({ inventory_item_id: '', ingredient_name: '', quantity: 1, unit: 'ct', preparation_note: '' });
+  const [processName, setProcessName] = useState('');
+  const [stepForm, setStepForm] = useState({ process_id: '', instruction: '', expected_duration_seconds: '' });
+
+  const reload = async () => {
+    const [recipes, versions, processes, steps, ingredients, allocations, purchases] = await Promise.all([
+      db.getRecipes(), db.getRecipeVersions(), db.getRecipeProcesses(), db.getRecipeSteps(),
+      db.getRecipeIngredients(), db.getRecipeStepIngredients(), db.getPurchaseLog()
+    ]);
+    setData({ recipes: recipes || [], versions: versions || [], processes: processes || [], steps: steps || [], ingredients: ingredients || [], allocations: allocations || [], purchases: purchases || [] });
+  };
+
+  useEffect(() => {
+    (async () => {
+      try { await reload(); }
+      catch (e) { console.error(e); flash?.('Could not load recipes'); }
+      setLoading(false);
+    })();
+  }, []);
+
+  const activeRecipe = activeId && activeId !== 'new' ? data.recipes.find(r => r.id === activeId) : null;
+  const activeVersion = activeRecipe ? (
+    data.versions.find(v => v.id === activeRecipe.current_version_id) ||
+    data.versions.filter(v => v.recipe_id === activeRecipe.id).sort((a,b) => b.version_number - a.version_number)[0]
+  ) : null;
+  const versionId = activeVersion?.id;
+  const versionIngredients = data.ingredients.filter(i => i.recipe_version_id === versionId);
+  const versionProcesses = data.processes.filter(p => p.recipe_version_id === versionId).sort((a,b) => a.position - b.position);
+
+  useEffect(() => {
+    if (activeId === 'new') {
+      setForm({ name: '', description: '', yield_quantity: 4, yield_unit: 'servings', notes: '' });
+    } else if (activeRecipe && activeVersion) {
+      setForm({
+        name: activeRecipe.name || '', description: activeRecipe.description || '',
+        yield_quantity: activeVersion.yield_quantity || 4, yield_unit: activeVersion.yield_unit || 'servings',
+        notes: activeVersion.notes || ''
+      });
+    }
+  }, [activeId, activeRecipe?.updated_at, activeVersion?.updated_at]);
+
+  const saveCore = async () => {
+    if (!form.name.trim()) return;
+    setSaving(true);
+    try {
+      if (activeId === 'new') {
+        let createdRecipe;
+        try {
+          [createdRecipe] = await db.insertRecipe({ name: form.name.trim(), description: form.description.trim() || null, status: 'draft' });
+          const [createdVersion] = await db.insertRecipeVersion({
+            recipe_id: createdRecipe.id, version_number: 1, status: 'draft',
+            yield_quantity: Number(form.yield_quantity) || 1, yield_unit: form.yield_unit.trim() || 'servings', notes: form.notes.trim() || null
+          });
+          await db.updateRecipe(createdRecipe.id, { current_version_id: createdVersion.id });
+          await reload(); setActiveId(createdRecipe.id); flash?.('Recipe draft created');
+        } catch (e) {
+          if (createdRecipe?.id) await db.deleteRecipe(createdRecipe.id).catch(() => {});
+          throw e;
+        }
+      } else {
+        await db.updateRecipe(activeRecipe.id, { name: form.name.trim(), description: form.description.trim() || null });
+        if (activeVersion.status === 'draft') {
+          await db.updateRecipeVersion(activeVersion.id, {
+            yield_quantity: Number(form.yield_quantity) || 1, yield_unit: form.yield_unit.trim() || 'servings', notes: form.notes.trim() || null
+          });
+          await reload(); flash?.('Recipe saved');
+        } else {
+          const nextNumber = Math.max(0, ...data.versions.filter(v => v.recipe_id === activeRecipe.id).map(v => Number(v.version_number) || 0)) + 1;
+          const [draftVersion] = await db.insertRecipeVersion({
+            recipe_id: activeRecipe.id, version_number: nextNumber, status: 'draft',
+            yield_quantity: Number(form.yield_quantity) || 1, yield_unit: form.yield_unit.trim() || 'servings',
+            description: activeVersion.description || null, notes: form.notes.trim() || null
+          });
+          const ingredientMap = {};
+          for (const ing of data.ingredients.filter(i => i.recipe_version_id === activeVersion.id).sort((a,b)=>a.position-b.position)) {
+            const [copy] = await db.insertRecipeIngredient({
+              recipe_version_id: draftVersion.id, inventory_item_id: ing.inventory_item_id,
+              ingredient_name: ing.ingredient_name, quantity: ing.quantity, unit: ing.unit,
+              measurement_dimension: ing.measurement_dimension, preparation_note: ing.preparation_note, position: ing.position
+            });
+            ingredientMap[ing.id] = copy.id;
+          }
+          const processMap = {}, stepMap = {};
+          for (const process of data.processes.filter(p => p.recipe_version_id === activeVersion.id).sort((a,b)=>a.position-b.position)) {
+            const [processCopy] = await db.insertRecipeProcess({ recipe_version_id: draftVersion.id, name: process.name, position: process.position, notes: process.notes });
+            processMap[process.id] = processCopy.id;
+            for (const step of data.steps.filter(s => s.process_id === process.id).sort((a,b)=>a.position-b.position)) {
+              const [stepCopy] = await db.insertRecipeStep({
+                recipe_version_id: draftVersion.id, process_id: processCopy.id, position: step.position,
+                instruction: step.instruction, expected_duration_seconds: step.expected_duration_seconds,
+                temperature_value: step.temperature_value, temperature_unit: step.temperature_unit, notes: step.notes
+              });
+              stepMap[step.id] = stepCopy.id;
+            }
+          }
+          for (const allocation of data.allocations.filter(a => stepMap[a.recipe_step_id] && ingredientMap[a.recipe_ingredient_id])) {
+            await db.insertRecipeStepIngredient({
+              recipe_version_id: draftVersion.id, recipe_step_id: stepMap[allocation.recipe_step_id],
+              recipe_ingredient_id: ingredientMap[allocation.recipe_ingredient_id], quantity: allocation.quantity,
+              unit: allocation.unit, position: allocation.position, note: allocation.note
+            });
+          }
+          await db.updateRecipe(activeRecipe.id, { current_version_id: draftVersion.id });
+          await reload(); flash?.(`Draft version ${nextNumber} created`);
+        }
+      }
+    } catch (e) { console.error(e); flash?.('Could not save recipe'); }
+    setSaving(false);
+  };
+
+  const addIngredient = async () => {
+    if (!versionId || !ingredientForm.ingredient_name.trim() || Number(ingredientForm.quantity) <= 0) return;
+    const unit = ingredientForm.unit.trim() || 'ct';
+    const normalized = unit.toLowerCase();
+    const dimension = ['oz','lb','g','kg'].includes(normalized) ? 'weight' : ['tsp','tbsp','cup','pt','qt','gal','ml','l','fl oz'].includes(normalized) ? 'volume' : ['ct','each','item','items'].includes(normalized) ? 'count' : 'other';
+    try {
+      await db.insertRecipeIngredient({
+        recipe_version_id: versionId, inventory_item_id: ingredientForm.inventory_item_id || null,
+        ingredient_name: ingredientForm.ingredient_name.trim(), quantity: Number(ingredientForm.quantity), unit,
+        measurement_dimension: dimension, preparation_note: ingredientForm.preparation_note.trim() || null,
+        position: versionIngredients.length
+      });
+      setIngredientForm({ inventory_item_id: '', ingredient_name: '', quantity: 1, unit: 'ct', preparation_note: '' });
+      await reload();
+    } catch (e) { console.error(e); flash?.('Could not add ingredient'); }
+  };
+
+  const chooseInventoryIngredient = (id) => {
+    const item = items.find(i => i.id === id);
+    setIngredientForm(f => ({ ...f, inventory_item_id: id, ingredient_name: item?.name || '', unit: item?.unit || 'ct' }));
+  };
+
+  const addProcess = async () => {
+    if (!versionId || !processName.trim()) return;
+    try {
+      await db.insertRecipeProcess({ recipe_version_id: versionId, name: processName.trim(), position: versionProcesses.length });
+      setProcessName(''); await reload();
+    } catch (e) { console.error(e); flash?.('Could not add process'); }
+  };
+
+  const addStep = async () => {
+    if (!versionId || !stepForm.process_id || !stepForm.instruction.trim()) return;
+    const processSteps = data.steps.filter(s => s.process_id === stepForm.process_id);
+    try {
+      await db.insertRecipeStep({
+        recipe_version_id: versionId, process_id: stepForm.process_id, position: processSteps.length,
+        instruction: stepForm.instruction.trim(),
+        expected_duration_seconds: stepForm.expected_duration_seconds ? Math.max(0, Math.round(Number(stepForm.expected_duration_seconds) * 60)) : null
+      });
+      setStepForm({ process_id: '', instruction: '', expected_duration_seconds: '' }); await reload();
+    } catch (e) { console.error(e); flash?.('Could not add step'); }
+  };
+
+  const removeRecipe = async () => {
+    if (!activeRecipe || !confirm(`Delete ${activeRecipe.name} and all of its draft details?`)) return;
+    try { await db.deleteRecipe(activeRecipe.id); setActiveId(null); await reload(); flash?.('Recipe deleted'); }
+    catch (e) { console.error(e); flash?.('Could not delete recipe'); }
+  };
+  const archiveRecipe = async () => {
+    if (!activeRecipe || !confirm(`Archive ${activeRecipe.name}?`)) return;
+    try { await db.updateRecipe(activeRecipe.id, { status: 'archived' }); setActiveId(null); await reload(); flash?.('Recipe archived'); }
+    catch (e) { console.error(e); flash?.('Could not archive recipe'); }
+  };
+
+  const averagePrices = {};
+  data.purchases.forEach(p => {
+    if (!p.item_id) return;
+    const bucket = averagePrices[p.item_id] || (averagePrices[p.item_id] = { total: 0, count: 0 });
+    bucket.total += Number(p.price || 0); bucket.count += 1;
+  });
+  const estimateCost = (ingredients) => ingredients.reduce((sum, ing) => {
+    const inventory = items.find(i => i.id === ing.inventory_item_id);
+    const history = averagePrices[ing.inventory_item_id];
+    const observed = history?.count ? history.total / history.count : Number(inventory?.price || 0);
+    return sum + observed * Number(ing.quantity || 0);
+  }, 0);
+
+  if (activeId) {
+    return (
+      <div className="recipe-editor" role="dialog" aria-modal="true" aria-label={activeId === 'new' ? 'New recipe' : `Edit ${activeRecipe?.name || 'recipe'}`}>
+        <div className="recipe-editor-shell">
+          <div className="recipe-editor-head">
+            <button className="recipe-back" onClick={() => setActiveId(null)} aria-label="Back to recipes">Back</button>
+            <div style={{minWidth:0,flex:1}}><div style={{fontSize:11,color:'var(--tx2)',fontWeight:700}}>RECIPE BUILDER</div><div style={{fontSize:17,fontWeight:850,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{form.name || 'Untitled recipe'}</div></div>
+            <button className="recipe-action primary" onClick={saveCore} disabled={saving || !form.name.trim()}>{saving ? 'Saving…' : activeId === 'new' ? 'Create draft' : 'Save'}</button>
+          </div>
+
+          <section className="recipe-section">
+            <div className="recipe-section-title">Recipe details</div><div className="recipe-section-sub">Name the recipe and define the batch it produces.</div>
+            <div className="recipe-fields">
+              <div className="recipe-field wide"><label>Recipe name</label><input value={form.name} onChange={e => setForm({...form,name:e.target.value})} placeholder="e.g. Jollof Rice" autoFocus={activeId==='new'} /></div>
+              <div className="recipe-field"><label>Yield</label><input type="number" min="0.01" step="0.01" value={form.yield_quantity} onChange={e => setForm({...form,yield_quantity:e.target.value})} /></div>
+              <div className="recipe-field"><label>Yield unit</label><input value={form.yield_unit} onChange={e => setForm({...form,yield_unit:e.target.value})} placeholder="servings" /></div>
+              <div className="recipe-field wide"><label>Description</label><textarea value={form.description} onChange={e => setForm({...form,description:e.target.value})} placeholder="What makes this recipe distinct?" /></div>
+              <div className="recipe-field wide"><label>Recipe notes</label><textarea value={form.notes} onChange={e => setForm({...form,notes:e.target.value})} placeholder="Batch notes, equipment, or preparation reminders" /></div>
+            </div>
+          </section>
+
+          {activeId === 'new' ? <div className="recipe-empty">Create the draft first, then add ingredients, processes, and timed steps.</div> : <>
+            <section className="recipe-section">
+              <div className="recipe-section-title">Ingredients</div><div className="recipe-section-sub">Link canonical stock items when possible. Unlinked ingredients are allowed.</div>
+              {versionIngredients.length === 0 && <div className="recipe-empty">No ingredients added yet.</div>}
+              {versionIngredients.map(ing => <div className="recipe-row" key={ing.id}><div className="recipe-row-main"><div className="recipe-row-name">{ing.ingredient_name}</div><div className="recipe-row-meta">{ing.quantity} {ing.unit}{ing.preparation_note ? ` · ${ing.preparation_note}` : ''}{ing.inventory_item_id ? ' · linked to stock' : ' · not linked'}</div></div><button className="recipe-remove" aria-label={`Remove ${ing.ingredient_name}`} onClick={async()=>{await db.deleteRecipeIngredient(ing.id);await reload();}}>×</button></div>)}
+              <div className="recipe-inline">
+                <div className="recipe-field wide"><label>Inventory item (optional)</label><select value={ingredientForm.inventory_item_id} onChange={e=>chooseInventoryIngredient(e.target.value)}><option value="">Not linked to stock</option>{[...items].sort((a,b)=>a.name.localeCompare(b.name)).map(i=><option key={i.id} value={i.id}>{i.name}</option>)}</select></div>
+                <div className="recipe-field wide"><label>Ingredient name</label><input value={ingredientForm.ingredient_name} onChange={e=>setIngredientForm({...ingredientForm,ingredient_name:e.target.value})} placeholder="Ingredient" /></div>
+                <div className="recipe-field"><label>Amount</label><input type="number" min="0.01" step="0.01" value={ingredientForm.quantity} onChange={e=>setIngredientForm({...ingredientForm,quantity:e.target.value})} /></div>
+                <div className="recipe-field"><label>Unit</label><input value={ingredientForm.unit} onChange={e=>setIngredientForm({...ingredientForm,unit:e.target.value})} placeholder="lb, cup, ct" /></div>
+                <div className="recipe-field wide"><label>Preparation</label><input value={ingredientForm.preparation_note} onChange={e=>setIngredientForm({...ingredientForm,preparation_note:e.target.value})} placeholder="diced, divided, room temperature" /></div>
+                <button className="recipe-action primary" onClick={addIngredient}>Add</button>
+              </div>
+              {versionIngredients.length > 0 && <div style={{marginTop:14,padding:12,borderRadius:12,background:'var(--bg)',display:'flex',justifyContent:'space-between',gap:12}}><span style={{fontSize:12,color:'var(--tx2)'}}>Estimated batch cost from current purchase observations</span><strong>${estimateCost(versionIngredients).toFixed(2)}</strong></div>}
+            </section>
+
+            <section className="recipe-section">
+              <div className="recipe-section-title">Cooking processes</div><div className="recipe-section-sub">Separate parallel workstreams such as sauce, rice, protein, and final assembly.</div>
+              {versionProcesses.length === 0 && <div className="recipe-empty">Add a process to begin recording the cooking sequence.</div>}
+              {versionProcesses.map(process => {
+                const steps = data.steps.filter(s => s.process_id === process.id).sort((a,b)=>a.position-b.position);
+                return <div className="recipe-process" key={process.id}><div className="recipe-process-head"><div><div className="recipe-row-name">{process.name}</div><div className="recipe-row-meta">{steps.length} step{steps.length===1?'':'s'}</div></div><button className="recipe-remove" aria-label={`Remove ${process.name}`} onClick={async()=>{if(confirm(`Remove ${process.name} and its steps?`)){await db.deleteRecipeProcess(process.id);await reload();}}}>×</button></div>{steps.map((step,index)=><div className="recipe-step" key={step.id}><div className="recipe-step-num">{index+1}</div><div className="recipe-row-main"><div className="recipe-step-copy">{step.instruction}</div><div className="recipe-row-meta">{step.expected_duration_seconds ? `${Math.round(step.expected_duration_seconds/60)} min expected` : 'No timer set'}</div></div><button className="recipe-remove" aria-label={`Remove step ${index+1}`} onClick={async()=>{await db.deleteRecipeStep(step.id);await reload();}}>×</button></div>)}</div>;
+              })}
+              <div className="recipe-inline"><div className="recipe-field wide"><label>New process</label><input value={processName} onChange={e=>setProcessName(e.target.value)} placeholder="e.g. Tomato sauce" /></div><button className="recipe-action primary" onClick={addProcess}>Add process</button></div>
+              {versionProcesses.length > 0 && <div className="recipe-inline"><div className="recipe-field"><label>Process</label><select value={stepForm.process_id} onChange={e=>setStepForm({...stepForm,process_id:e.target.value})}><option value="">Select process</option>{versionProcesses.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div><div className="recipe-field wide"><label>Instruction</label><textarea value={stepForm.instruction} onChange={e=>setStepForm({...stepForm,instruction:e.target.value})} placeholder="Describe exactly what happens in this step" /></div><div className="recipe-field"><label>Expected minutes</label><input type="number" min="0" step="1" value={stepForm.expected_duration_seconds} onChange={e=>setStepForm({...stepForm,expected_duration_seconds:e.target.value})} /></div><button className="recipe-action primary" onClick={addStep}>Add step</button></div>}
+            </section>
+
+            <section className="recipe-section"><div className="recipe-section-title">Build mode</div><div className="recipe-section-sub">Live voice capture, multiple timers, ingredient allocations, and post-cook deviations arrive in the cooking-session phase.</div><button className="recipe-action" disabled>Start build session · coming next</button></section>
+            {activeRecipe?.status === 'draft' ? <button className="recipe-action" style={{color:'var(--er)',borderColor:'color-mix(in srgb,var(--er) 35%,var(--bd))'}} onClick={removeRecipe}>Delete draft recipe</button> : <button className="recipe-action" onClick={archiveRecipe}>Archive recipe</button>}
+          </>}
+        </div>
+      </div>
+    );
+  }
+
+  return <div className="page"><div className="page-hdr" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12}}><div><div className="page-title">Recipes</div><div className="page-sub">Build detailed recipes from ingredients, processes, and timed steps</div></div><button className="btn-pr" style={{minHeight:44}} onClick={()=>setActiveId('new')}>New recipe</button></div>
+    {loading ? <div style={{padding:40,textAlign:'center',color:'var(--tx2)'}}>Loading recipes…</div> : data.recipes.length === 0 ? <div className="recipe-empty">No recipes yet. Create your first draft while you cook.</div> : <div className="recipe-grid">{data.recipes.map(recipe=>{const version=data.versions.find(v=>v.id===recipe.current_version_id);const ingredients=data.ingredients.filter(i=>i.recipe_version_id===version?.id);const processes=data.processes.filter(p=>p.recipe_version_id===version?.id);return <div key={recipe.id} className="recipe-card" role="button" tabIndex="0" onClick={()=>setActiveId(recipe.id)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setActiveId(recipe.id);}}}><div className="recipe-card-top"><div className="recipe-name">{recipe.name}</div><span className="recipe-status">{version?.status || recipe.status}</span></div>{recipe.description&&<div style={{fontSize:12,color:'var(--tx2)',marginTop:7,lineHeight:1.45}}>{recipe.description}</div>}<div className="recipe-meta"><span className="recipe-chip">{version?.yield_quantity || '—'} {version?.yield_unit || 'yield'}</span><span className="recipe-chip">{ingredients.length} ingredient{ingredients.length===1?'':'s'}</span><span className="recipe-chip">{processes.length} process{processes.length===1?'':'es'}</span>{ingredients.length>0&&<span className="recipe-chip">~${estimateCost(ingredients).toFixed(2)} batch</span>}</div></div>;})}</div>}
+    <button className="recipe-fab" onClick={()=>setActiveId('new')}>New recipe</button>
+  </div>;
+}
+
 /* ─── ADD ITEM ─── */
 function AddView({ onAdd, busy, flash, onScanReceipt }) {
   const [ni, setNi] = useState({ name: '', category: 'Other', store: 'Other', unit: 'ct', current_qty: 0, par_level: 1, price: 0, note: '' });
@@ -4531,7 +4801,7 @@ function App({ authUser, onSignOut }) {
         {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onDelete={deleteItem} flash={flash} />}
         {view === 'shopping' && <ShoppingView items={items} session={session} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onShopperNote={updateShopperNote} onScanReceipt={() => setShowReceiptScanner(true)} flash={flash} />}
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
-        {view === 'meals' && <MealsView items={items} />}
+        {view === 'meals' && <RecipeBuilderView items={items} flash={flash} />}
         {view === 'add' && <AddView onAdd={addItem} busy={syncing} flash={flash} onScanReceipt={() => setShowReceiptScanner(true)} />}
         {view === 'history' && <HistoryView sessions={sessions} inventoryItems={items} onSessionUpdate={(sid, fields) => setSessions(p => p.map(s => s.id === sid ? { ...s, ...fields } : s))} onInventoryUpdate={(itemId, fields) => setItems(p => p.map(i => i.id === itemId ? { ...i, ...fields } : i))} />}
       </div>
