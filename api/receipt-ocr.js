@@ -4,6 +4,33 @@
 
 // ─────────── HELPERS ───────────
 
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://tcpblqxybtcpkfsultxd.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_4jSNU5t3x1n6hqC4H0MRAw_ZN4v0Jub';
+
+const authenticateRequest = async (authorization) => {
+  if (!authorization?.startsWith('Bearer ')) return null;
+  const authHeaders = {
+    apikey: SUPABASE_PUBLISHABLE_KEY,
+    Authorization: authorization,
+  };
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: authHeaders,
+  });
+  if (!response.ok) return null;
+  const user = await response.json();
+  if (!user?.id) return null;
+
+  const membershipResponse = await fetch(`${SUPABASE_URL}/rest/v1/household_members?select=household_id&limit=1`, {
+    headers: {
+      ...authHeaders,
+      Accept: 'application/json',
+    },
+  });
+  if (!membershipResponse.ok) return null;
+  const memberships = await membershipResponse.json();
+  return memberships?.length ? user : null;
+};
+
 const callAnthropic = async (apiKey, system, userContent, maxTokens = 1024, prefill = null) => {
   const messages = [{ role: 'user', content: userContent }];
   if (prefill) messages.push({ role: 'assistant', content: prefill });
@@ -514,9 +541,11 @@ JSON: {"items":[{"id":"<id>","prices":[{"brand":"<brand>","price":<n>,"note":"<o
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const user = await authenticateRequest(req.headers.authorization);
+  if (!user) return res.status(401).json({ error: 'Authentication required' });
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
   const result = await processRequest(body);
   return res.status(result.status).json(result.data);
@@ -527,11 +556,13 @@ module.exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Content-Type': 'application/json',
   };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+  const user = await authenticateRequest(event.headers?.authorization || event.headers?.Authorization);
+  if (!user) return { statusCode: 401, headers, body: JSON.stringify({ error: 'Authentication required' }) };
   let body;
   try { body = JSON.parse(event.body); } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
   const result = await processRequest(body);
