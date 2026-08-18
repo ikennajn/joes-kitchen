@@ -5,7 +5,8 @@
 select expected.table_name
 from unnest(array[
   'recipes', 'recipe_versions', 'recipe_processes', 'recipe_steps',
-  'recipe_ingredients', 'recipe_step_ingredients'
+  'recipe_ingredients', 'recipe_step_ingredients', 'cooking_sessions',
+  'cooking_events', 'cooking_timers', 'session_ingredient_usage'
 ]) as expected(table_name)
 left join pg_class c on c.relname = expected.table_name
 left join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
@@ -18,14 +19,16 @@ where table_schema = 'public'
   and grantee = 'anon'
   and table_name in (
     'recipes', 'recipe_versions', 'recipe_processes', 'recipe_steps',
-    'recipe_ingredients', 'recipe_step_ingredients'
+    'recipe_ingredients', 'recipe_step_ingredients', 'cooking_sessions',
+    'cooking_events', 'cooking_timers', 'session_ingredient_usage'
   );
 
 -- Exactly one household policy exists on every Recipe Builder table.
 select expected.table_name, count(p.policyname) as policy_count
 from unnest(array[
   'recipes', 'recipe_versions', 'recipe_processes', 'recipe_steps',
-  'recipe_ingredients', 'recipe_step_ingredients'
+  'recipe_ingredients', 'recipe_step_ingredients', 'cooking_sessions',
+  'cooking_events', 'cooking_timers', 'session_ingredient_usage'
 ]) as expected(table_name)
 left join pg_policies p
   on p.schemaname = 'public' and p.tablename = expected.table_name
@@ -78,7 +81,11 @@ where c.contype = 'f'
     'public.recipe_processes'::regclass,
     'public.recipe_steps'::regclass,
     'public.recipe_ingredients'::regclass,
-    'public.recipe_step_ingredients'::regclass
+    'public.recipe_step_ingredients'::regclass,
+    'public.cooking_sessions'::regclass,
+    'public.cooking_events'::regclass,
+    'public.cooking_timers'::regclass,
+    'public.session_ingredient_usage'::regclass
   )
   and not exists (
     select 1
