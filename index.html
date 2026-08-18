@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-:root{--bg:#F7F4EF;--card:#fff;--sb:#18120E;--pr:#C05621;--prl:#FEF0E8;--ok:#15803D;--okl:#F0FDF4;--wa:#D97706;--wal:#FFFBEB;--er:#DC2626;--erl:#FEF2F2;--tx:#1C1410;--tx2:#6B5E57;--bd:#E8E3DC;--mu:#A89080;--sw:220px}
+:root{--bg:#F6F7F4;--card:#fff;--sb:#17211B;--pr:#247A52;--prl:#E9F6EF;--ok:#15803D;--okl:#F0FDF4;--wa:#B96812;--wal:#FFF8E8;--er:#C93636;--erl:#FEF2F2;--tx:#17201A;--tx2:#5C6961;--bd:#E1E7E2;--mu:#87948B;--sw:220px}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased}
 input,select,button,textarea{font-family:inherit}
@@ -51,20 +51,33 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .u-name{font-size:13px;font-weight:600;color:#F5E6D3}
 .u-sub{font-size:10px;color:var(--mu)}
 .main{margin-left:var(--sw);flex:1;min-height:100vh;padding-bottom:24px}
-.mob-hdr{display:none;background:var(--sb);padding:13px 16px;position:sticky;top:0;z-index:100;align-items:center;justify-content:space-between}
-.mob-hdr h1{font-size:15px;font-weight:700;color:#F5E6D3}
+.mob-hdr{display:none;background:rgba(246,247,244,.94);backdrop-filter:blur(14px);padding:12px 16px;position:sticky;top:0;z-index:100;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)}
+.mob-hdr h1{font-size:16px;font-weight:750;color:var(--tx);letter-spacing:-.25px}
 .mob-hdr-r{display:flex;gap:6px;align-items:center}
 .m-chip{padding:3px 8px;border-radius:12px;font-size:10px;font-weight:800}
 .m-chip-er{background:rgba(220,38,38,.3);color:#FCA5A5}
 .m-chip-wa{background:rgba(217,119,6,.3);color:#FCD34D}
-.bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sb);border-top:1px solid rgba(255,255,255,.08);z-index:100;padding:6px 0 max(6px,env(safe-area-inset-bottom))}
-.bn-inner{display:flex;justify-content:space-around}
-.bn-item{display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 8px;cursor:pointer;border:none;background:none;color:rgba(255,255,255,.35);font-size:9px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;min-width:52px;transition:color .18s,transform .15s;position:relative}
-.bn-item:hover{color:rgba(255,255,255,.65);transform:translateY(-2px)}
+.bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);backdrop-filter:blur(16px);border-top:1px solid var(--bd);z-index:100;padding:5px 10px max(5px,env(safe-area-inset-bottom));box-shadow:0 -8px 28px rgba(23,32,26,.08)}
+.bn-inner{display:grid;grid-template-columns:repeat(5,1fr);max-width:520px;margin:0 auto;align-items:end}
+.bn-item{display:flex;min-height:50px;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px;cursor:pointer;border:none;background:none;color:var(--mu);font-size:10px;font-weight:700;letter-spacing:.1px;min-width:0;transition:color .18s,transform .15s;position:relative;border-radius:12px}
+.bn-item:hover{color:var(--tx2);transform:translateY(-1px)}
 .bn-item:active{transform:scale(.9)}
 .bn-item.active{color:var(--pr)}
-.bn-icon{font-size:19px}
-.bn-dot{position:absolute;top:3px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--er);border:2px solid var(--sb)}
+.bn-icon{width:21px;height:21px;display:block}
+.bn-dot{position:absolute;top:5px;left:calc(50% + 7px);min-width:16px;height:16px;padding:0 4px;border-radius:10px;background:var(--er);color:#fff;border:2px solid #fff;font-size:8px;line-height:12px}
+.bn-scan{width:52px;height:52px;min-height:52px;margin:-16px auto 0;border-radius:18px;background:var(--pr);color:#fff;box-shadow:0 7px 20px rgba(36,122,82,.28)}
+.bn-scan:hover,.bn-scan.active{color:#fff;background:#1E6846;transform:translateY(-2px)}
+.bn-scan .bn-icon{width:23px;height:23px}
+.mobile-sheet-backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,18,.42);z-index:140;animation:fadeIn .18s ease}
+.mobile-sheet{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:10px;box-shadow:0 24px 70px rgba(15,23,18,.24);animation:slideUp .22s ease}
+.mobile-sheet-handle{width:36px;height:4px;border-radius:3px;background:var(--bd);margin:2px auto 12px}
+.mobile-sheet-head{padding:0 8px 10px;font-size:12px;font-weight:800;color:var(--tx2);text-transform:uppercase;letter-spacing:.7px}
+.mobile-sheet-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.mobile-sheet-item{min-height:58px;border:1px solid var(--bd);border-radius:14px;background:var(--card);color:var(--tx);display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:13px;font-weight:700;cursor:pointer;text-align:left}
+.mobile-sheet-item:active{transform:scale(.98);background:var(--prl)}
+.mobile-sheet-item svg{width:20px;height:20px;color:var(--pr)}
+.mobile-sheet-close{width:100%;min-height:44px;margin-top:8px;border:none;border-radius:13px;background:var(--bg);color:var(--tx2);font-weight:700;cursor:pointer}
+.bn-item:focus-visible,.mobile-sheet-item:focus-visible,.mobile-sheet-close:focus-visible{outline:3px solid rgba(36,122,82,.3);outline-offset:2px}
 .page{padding:24px;max-width:860px;animation:pageIn .25s cubic-bezier(.4,0,.2,1)}
 .stat-card:nth-child(1){animation:statIn .3s .04s both}
 .stat-card:nth-child(2){animation:statIn .3s .09s both}
@@ -241,14 +254,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .divider{height:1px;background:var(--bd);margin:16px 0}
 @media(max-width:768px){
   .sidebar{display:none}
-  .main{margin-left:0;padding-bottom:72px}
+  .main{margin-left:0;padding-bottom:82px}
   .mob-hdr{display:flex}
   .bot-nav{display:block}
-  .page{padding:14px}
+  .mobile-sheet-backdrop{display:block}
+  .page{padding:16px 14px 22px;max-width:680px;margin:0 auto}
+  .page-title{font-size:24px;line-height:1.15;letter-spacing:-.5px}
+  .page-sub{font-size:13px;line-height:1.45;margin-top:5px}
+  .page-hdr{margin-bottom:16px}
+  button,.item-main,.sh-item{touch-action:manipulation}
+  .btn-pr,.btn-gh,.btn-outline,.chip,.f-tog{min-height:44px}
   .stat-grid{grid-template-columns:repeat(2,1fr)}
   .f-row{flex-wrap:wrap}
   .f-row .f-grp{min-width:calc(50% - 6px)}
 }
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
@@ -459,7 +479,6 @@ function PrivateImage({ bucket, path, openOnClick = false, ...props }) {
   if (!src) return null;
   return <img {...props} src={src} onClick={openOnClick ? () => window.open(src, '_blank', 'noopener,noreferrer') : props.onClick} />;
 }
-
 function Badge({ status }) {
   if (status === 'out') return <span className="badge b-out">Out</span>;
   if (status === 'low') return <span className="badge b-low">Low</span>;
@@ -3700,6 +3719,21 @@ const TABS = [
 { k: 'history', l: 'History', i: '' },
 { k: 'add', l: 'Add Item', i: '' }];
 
+function NavIcon({ name, className = '' }) {
+  const paths = {
+    home: <><path d="M3 10.8 12 3l9 7.8"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-6h5v6"/></>,
+    stock: <><path d="M4 7.5 12 3l8 4.5-8 4.5-8-4.5Z"/><path d="m4 12 8 4.5 8-4.5"/><path d="m4 16.5 8 4.5 8-4.5"/></>,
+    cart: <><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.6L20 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></>,
+    scan: <><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 12h10"/></>,
+    more: <><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></>,
+    chart: <><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></>,
+    meal: <><path d="M6 3v7a3 3 0 0 0 6 0V3M9 3v18M17 3v18M17 3c3 2 3 7 0 9"/></>,
+    history: <><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></>,
+    add: <><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></>,
+  };
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
+}
+
 function Sidebar({ view, setView, user, outCt, onSync, syncing, lastSync, onUserClick, onSignOut }) {
   return (
     <div className="sidebar">
@@ -3725,20 +3759,54 @@ function Sidebar({ view, setView, user, outCt, onSync, syncing, lastSync, onUser
     </div>);
 
 }
-function BottomNav({ view, setView, outCt }) {
+function BottomNav({ view, setView, outCt, onScan, onMore, moreOpen }) {
+  const items = [
+    { k: 'dashboard', label: 'Home', icon: 'home' },
+    { k: 'inventory', label: 'Stock', icon: 'stock' },
+    { k: 'scan', label: 'Scan', icon: 'scan', action: onScan },
+    { k: 'shopping', label: 'Shop', icon: 'cart' },
+    { k: 'more', label: 'More', icon: 'more', action: onMore },
+  ];
   return (
     <div className="bot-nav">
       <div className="bn-inner">
-        {TABS.map((t) =>
-        <button key={t.k} className={`bn-item ${view === t.k ? 'active' : ''}`} onClick={() => setView(t.k)}>
-            
-            {t.k === 'dashboard' ? 'Home' : t.k === 'inventory' ? 'Stock' : t.k === 'shopping' ? 'Shop' : t.k === 'analytics' ? 'Stats' : t.k === 'meals' ? 'Meals' : t.k === 'history' ? 'Log' : 'Add'}
-            {t.k === 'shopping' && outCt > 0 && <span className="bn-dot" />}
+        {items.map((t) =>
+        <button key={t.k} aria-label={t.label} aria-current={view === t.k ? 'page' : undefined} aria-haspopup={t.k === 'more' ? 'dialog' : undefined} aria-expanded={t.k === 'more' ? moreOpen : undefined} className={`bn-item ${t.k === 'scan' ? 'bn-scan' : ''} ${view === t.k ? 'active' : ''}`} onClick={() => t.action ? t.action() : setView(t.k)}>
+            <NavIcon name={t.icon} className="bn-icon" />
+            {t.k !== 'scan' && <span>{t.label}</span>}
+            {t.k === 'shopping' && outCt > 0 && <span className="bn-dot">{outCt > 9 ? '9+' : outCt}</span>}
           </button>
         )}
       </div>
     </div>);
 
+}
+function MobileMoreSheet({ onClose, onNavigate, onSync, onSignOut }) {
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    const onKeyDown = e => { if (e.key === 'Escape') onClose(); };
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKeyDown);
+    return () => { document.body.style.overflow = previous; document.removeEventListener('keydown', onKeyDown); };
+  }, [onClose]);
+  const actions = [
+    { view: 'analytics', label: 'Analytics', icon: 'chart' },
+    { view: 'meals', label: 'Meals', icon: 'meal' },
+    { view: 'history', label: 'History', icon: 'history' },
+    { view: 'add', label: 'Add item', icon: 'add' },
+  ];
+  return <div className="mobile-sheet-backdrop" role="presentation" onClick={onClose}>
+    <section className="mobile-sheet" role="dialog" aria-modal="true" aria-label="More tools" onClick={e => e.stopPropagation()}>
+      <div className="mobile-sheet-handle" />
+      <div className="mobile-sheet-head">More tools</div>
+      <div className="mobile-sheet-grid">
+        {actions.map(a => <button key={a.view} className="mobile-sheet-item" onClick={() => { onNavigate(a.view); onClose(); }}><NavIcon name={a.icon} />{a.label}</button>)}
+        <button className="mobile-sheet-item" onClick={() => { onSync(); onClose(); }}><NavIcon name="history" />Sync now</button>
+        <button className="mobile-sheet-item" onClick={onSignOut}><NavIcon name="more" />Sign out</button>
+      </div>
+      <button className="mobile-sheet-close" onClick={onClose}>Close</button>
+    </section>
+  </div>;
 }
 function MobileHeader({ lowCt, outCt, onSync, user, onUserClick }) {
   return (
@@ -4225,6 +4293,7 @@ function App({ authUser, onSignOut }) {
   const [user, setUser] = useState(() => authUser?.user_metadata?.display_name || authUser?.email?.split('@')[0] || 'Joe');
   const [showUserModal, setShowUserModal] = useState(false);
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
+  const [showMobileMore, setShowMobileMore] = useState(false);
   const pollRef = useRef(null);
 
   const flash = useCallback((m) => {setToast(m);setTimeout(() => setToast(null), 2500);}, []);
@@ -4440,6 +4509,7 @@ function App({ authUser, onSignOut }) {
   return (
     <div className="app">
       {showUserModal && <UserModal user={user} onClose={() => setShowUserModal(false)} onSelect={handleUserSelect} />}
+      {showMobileMore && <MobileMoreSheet onClose={() => setShowMobileMore(false)} onNavigate={setView} onSync={refresh} onSignOut={onSignOut} />}
       <Sidebar view={view} setView={setView} user={user} outCt={outCt} onSync={refresh} syncing={syncing} lastSync={lastSync} onUserClick={() => setShowUserModal(true)} onSignOut={onSignOut} />
       <div className="main">
         <MobileHeader lowCt={lowCt} outCt={outCt} onSync={refresh} user={user} onUserClick={() => setShowUserModal(true)} />
@@ -4451,7 +4521,7 @@ function App({ authUser, onSignOut }) {
         {view === 'add' && <AddView onAdd={addItem} busy={syncing} flash={flash} onScanReceipt={() => setShowReceiptScanner(true)} />}
         {view === 'history' && <HistoryView sessions={sessions} inventoryItems={items} onSessionUpdate={(sid, fields) => setSessions(p => p.map(s => s.id === sid ? { ...s, ...fields } : s))} onInventoryUpdate={(itemId, fields) => setItems(p => p.map(i => i.id === itemId ? { ...i, ...fields } : i))} />}
       </div>
-      <BottomNav view={view} setView={setView} outCt={outCt} />
+      <BottomNav view={view} setView={setView} outCt={outCt} onScan={() => setShowReceiptScanner(true)} onMore={() => setShowMobileMore(true)} moreOpen={showMobileMore} />
       {toast && <div className="toast-wrap"><div className="toast">{toast}</div></div>}
       {showReceiptScanner && <ReceiptScanner items={items} onClose={() => setShowReceiptScanner(false)} onConfirm={handleReceiptConfirm} flash={flash} />}
     </div>);
