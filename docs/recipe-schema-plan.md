@@ -1,6 +1,6 @@
 # Recipe Builder schema and migration plan
 
-Status: approved for migration-file implementation on 2026-08-18. No production database changes have been applied.
+Status: Recipe foundation applied to production on 2026-08-18 as Supabase migration `20260818193427_recipe_foundation`.
 
 ## Goals
 
