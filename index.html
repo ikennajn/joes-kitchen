@@ -330,6 +330,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 }
 .recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}.recipe-card{padding:18px;border:1px solid var(--bd);background:var(--card);border-radius:16px;cursor:pointer;transition:border-color .18s ease,background .18s ease}.recipe-card:hover{border-color:var(--pr)}.recipe-card:focus-visible,.recipe-action:focus-visible{outline:3px solid color-mix(in srgb,var(--pr) 30%,transparent);outline-offset:2px}.recipe-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.recipe-name{font-size:18px;font-weight:800;line-height:1.25}.recipe-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.recipe-chip{font-size:11px;font-weight:700;color:var(--tx2);border:1px solid var(--bd);border-radius:999px;padding:5px 9px}.recipe-status{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent);border-radius:999px;padding:5px 8px}.recipe-editor{position:fixed;inset:0;z-index:120;background:var(--bg);overflow:auto}.recipe-editor-shell{width:min(920px,100%);margin:0 auto;padding:20px 20px 110px}.recipe-editor-head{position:sticky;top:0;z-index:4;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 16px;border-bottom:1px solid var(--bd);margin-bottom:18px}.recipe-back,.recipe-action{min-height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit;font-size:12px;font-weight:700;padding:9px 12px;cursor:pointer}.recipe-action.primary{border-color:var(--pr);background:var(--pr);color:white}.recipe-section{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px}.recipe-section-title{font-size:15px;font-weight:800;margin-bottom:4px}.recipe-section-sub{font-size:12px;color:var(--tx2);margin-bottom:14px}.recipe-fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}.recipe-field label{display:block;font-size:11px;font-weight:700;color:var(--tx2);margin:0 0 5px}.recipe-field input,.recipe-field textarea,.recipe-field select{width:100%;min-height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit;font-size:14px;padding:10px;box-sizing:border-box}.recipe-field textarea{min-height:86px;resize:vertical}.recipe-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--bd)}.recipe-row:first-of-type{border-top:0}.recipe-row-main{flex:1;min-width:0}.recipe-row-name{font-size:13px;font-weight:750}.recipe-row-meta{font-size:11px;color:var(--tx2);margin-top:3px}.recipe-remove{width:44px;height:44px;border:0;background:transparent;color:var(--er);font-size:20px;cursor:pointer;border-radius:10px}.recipe-inline{display:grid;grid-template-columns:2fr .7fr 1fr auto;gap:8px;margin-top:12px}.recipe-process{border:1px solid var(--bd);border-radius:12px;padding:13px;margin-top:10px}.recipe-process-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.recipe-step{display:flex;gap:10px;padding:11px 0;border-top:1px solid var(--bd);margin-top:10px}.recipe-step-num{width:26px;height:26px;flex:0 0 26px;border-radius:50%;display:grid;place-items:center;background:var(--prl);color:var(--pr);font-size:11px;font-weight:800}.recipe-step-copy{font-size:13px;line-height:1.45;white-space:pre-wrap}.recipe-empty{padding:26px 14px;text-align:center;color:var(--tx2);font-size:13px;border:1px dashed var(--bd);border-radius:12px}.recipe-fab{display:none}
 @media(max-width:640px){.recipe-grid{grid-template-columns:1fr}.recipe-editor-shell{padding:8px 14px 108px}.recipe-editor-head{padding-top:max(10px,env(safe-area-inset-top))}.recipe-fields{grid-template-columns:1fr 1fr}.recipe-fields .wide{grid-column:1/-1}.recipe-inline{grid-template-columns:1fr 1fr}.recipe-inline .wide{grid-column:1/-1}.recipe-action{min-height:48px}.recipe-fab{display:block;position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:8;border:0;border-radius:999px;background:var(--pr);color:white;min-height:50px;padding:0 18px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}}
+/* Approved mobile app shell */
+.mob-title-block{min-width:0}.mob-kicker{font-size:10px;color:var(--tx2);line-height:1.2;margin-bottom:2px}.mob-sync{width:44px;height:44px;border:0;border-radius:50%;display:grid;place-items:center;background:transparent;color:var(--tx2);cursor:pointer;transition:background .18s,color .18s}.mob-sync:hover{background:var(--prl);color:var(--pr)}.mob-sync svg{width:19px;height:19px}.mob-avatar{width:38px;height:38px;border:0;cursor:pointer}.mob-alert-count{min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:grid;place-items:center;background:var(--wal);color:#7A4D0B;font-size:10px;font-weight:800}
+@media(max-width:768px){
+  :root{--bg:#F8FAF8;--card:#FFFFFF;--pr:#176B43;--prl:#EEF5EF;--tx:#18221C;--tx2:#657169;--bd:#DBE4DD;--wa:#98691A;--er:#AD3B36}
+  body{font-size:16px;background:var(--bg)}
+  .main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+  .mob-hdr{min-height:72px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:color-mix(in srgb,var(--bg) 94%,transparent);box-shadow:none}
+  .mob-hdr h1{font-size:22px;font-weight:700;line-height:1.05;letter-spacing:-.55px}
+  .mob-hdr-r{gap:2px}.page{padding:20px 16px 28px}
+  .bot-nav{min-height:78px;padding:6px 8px max(8px,env(safe-area-inset-bottom));background:color-mix(in srgb,var(--bg) 95%,transparent);box-shadow:none}
+  .bn-inner{height:64px}.bn-item{min-height:58px;font-size:9px;font-weight:600;gap:4px;border-radius:10px}.bn-icon{width:20px;height:20px}.bn-scan{width:auto;height:64px;min-height:64px;margin:0;background:transparent;color:var(--mu);box-shadow:none}.bn-scan:hover,.bn-scan.active{background:transparent;color:var(--pr);transform:none}.bn-scan .bn-icon{box-sizing:content-box;width:21px;height:21px;padding:11px;border-radius:50%;margin-top:-24px;background:var(--pr);color:#fff;border:4px solid var(--bg);box-shadow:none}.bn-scan span{margin-top:-5px}.bn-dot{top:2px}
+  .mobile-sheet{left:12px;right:12px;padding:10px 12px 14px;border-radius:20px}.mobile-sheet-grid{grid-template-columns:1fr;gap:0;border:1px solid var(--bd);border-radius:14px;overflow:hidden}.mobile-sheet-item{min-height:56px;border:0;border-bottom:1px solid var(--bd);border-radius:0;padding:12px 14px;background:var(--card);font-size:14px}.mobile-sheet-item:last-child{border-bottom:0}.mobile-sheet-head{text-transform:none;letter-spacing:0;font-size:20px;color:var(--tx)}
+  .today-head{margin-bottom:20px}.today-eyebrow{display:none}.today-title{font-size:30px}.today-sub{font-size:14px;line-height:1.5}.today-hero{padding:19px;border-radius:17px;background:var(--prl);border-color:transparent}.today-hero-count{font-size:36px}.today-primary{min-height:52px;border-radius:12px}.today-section{margin-top:22px}.today-section-title{font-size:15px}.today-list,.today-receipt{border-radius:15px}.today-row{padding:14px 13px;min-height:64px}.today-row-title{font-size:14px}.today-row-meta{font-size:12px}.today-row-icon{width:40px;height:40px;border-radius:11px}
+  .page-hdr{align-items:center!important;margin-bottom:20px!important}.page-title{font-size:28px}.page-sub{font-size:14px}.card,.item-row{border-radius:14px}.item-row{margin-bottom:8px}.item-main{padding:14px}.item-name{font-size:15px}.item-qty{font-size:13px}.inp,.sel,.e-inp{min-height:48px;border-radius:11px;font-size:16px}.btn-pr,.btn-gh,.btn-outline,.btn-full{min-height:48px;border-radius:11px}
+  .recipe-grid{gap:12px}.recipe-card{padding:17px;border-radius:15px;background:var(--card)}.recipe-card:active{background:var(--prl)}.recipe-name{font-size:18px}.recipe-card .recipe-meta{margin-top:13px}.recipe-chip{padding:6px 9px;background:var(--bg);border-color:transparent}.recipe-status{padding:6px 9px}.recipe-editor{background:var(--bg)}.recipe-editor-shell{padding:0 16px calc(106px + env(safe-area-inset-bottom))}.recipe-editor-head{margin:0 -16px 18px;padding:calc(10px + env(safe-area-inset-top)) 16px 12px;background:color-mix(in srgb,var(--bg) 95%,transparent)}.recipe-section{padding:17px;border-radius:15px;margin-bottom:12px}.recipe-section-title{font-size:17px}.recipe-section-sub{font-size:13px;line-height:1.45}.recipe-field label{font-size:12px}.recipe-field input,.recipe-field textarea,.recipe-field select{min-height:48px;font-size:16px}.recipe-row{min-height:62px}.recipe-row-name{font-size:14px}.recipe-row-meta{font-size:12px;line-height:1.4}.recipe-process{border-radius:13px}.recipe-step{padding:14px 0}.recipe-step-copy{font-size:14px}.recipe-fab{bottom:calc(94px + env(safe-area-inset-bottom));min-height:52px;border-radius:14px;padding:0 20px;box-shadow:0 8px 24px rgba(23,107,67,.2)}
+}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -4058,10 +4074,10 @@ function Sidebar({ view, setView, user, outCt, onSync, syncing, lastSync, onUser
 }
 function BottomNav({ view, setView, outCt, onScan, onMore, moreOpen }) {
   const items = [
-    { k: 'dashboard', label: 'Home', icon: 'home' },
-    { k: 'inventory', label: 'Stock', icon: 'stock' },
+    { k: 'dashboard', label: 'Today', icon: 'home' },
+    { k: 'shopping', label: 'Plan', icon: 'cart' },
     { k: 'scan', label: 'Scan', icon: 'scan', action: onScan },
-    { k: 'shopping', label: 'Shop', icon: 'cart' },
+    { k: 'inventory', label: 'Stock', icon: 'stock' },
     { k: 'more', label: 'More', icon: 'more', action: onMore },
   ];
   return (
@@ -4070,7 +4086,7 @@ function BottomNav({ view, setView, outCt, onScan, onMore, moreOpen }) {
         {items.map((t) =>
         <button key={t.k} aria-label={t.label} aria-current={view === t.k ? 'page' : undefined} aria-haspopup={t.k === 'more' ? 'dialog' : undefined} aria-expanded={t.k === 'more' ? moreOpen : undefined} className={`bn-item ${t.k === 'scan' ? 'bn-scan' : ''} ${view === t.k ? 'active' : ''}`} onClick={() => t.action ? t.action() : setView(t.k)}>
             <NavIcon name={t.icon} className="bn-icon" />
-            {t.k !== 'scan' && <span>{t.label}</span>}
+            <span>{t.label}</span>
             {t.k === 'shopping' && outCt > 0 && <span className="bn-dot">{outCt > 9 ? '9+' : outCt}</span>}
           </button>
         )}
@@ -4087,9 +4103,9 @@ function MobileMoreSheet({ onClose, onNavigate, onSync, onSignOut }) {
     return () => { document.body.style.overflow = previous; document.removeEventListener('keydown', onKeyDown); };
   }, [onClose]);
   const actions = [
-    { view: 'analytics', label: 'Analytics', icon: 'chart' },
     { view: 'meals', label: 'Recipes', icon: 'meal' },
-    { view: 'history', label: 'History', icon: 'history' },
+    { view: 'analytics', label: 'Stats', icon: 'chart' },
+    { view: 'history', label: 'Log', icon: 'history' },
     { view: 'add', label: 'Add item', icon: 'add' },
   ];
   return <div className="mobile-sheet-backdrop" role="presentation" onClick={onClose}>
@@ -4105,17 +4121,18 @@ function MobileMoreSheet({ onClose, onNavigate, onSync, onSignOut }) {
     </section>
   </div>;
 }
-function MobileHeader({ lowCt, outCt, onSync, user, onUserClick }) {
+function MobileHeader({ view, lowCt, outCt, onSync, user, onUserClick }) {
+  const titles = { dashboard: 'Today', shopping: 'Plan', inventory: 'Stock', analytics: 'Stats', meals: 'Recipes', history: 'Log', add: 'Add item' };
   return (
     <div className="mob-hdr">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div className="u-av" style={{ width: 26, height: 26, fontSize: 11, cursor: 'pointer' }} onClick={onUserClick}>{(user || '?')[0].toUpperCase()}</div>
-        <h1>Joe's Kitchen</h1>
+      <div className="mob-title-block">
+        <div className="mob-kicker">Joe's Kitchen</div>
+        <h1>{titles[view] || "Joe's Kitchen"}</h1>
       </div>
       <div className="mob-hdr-r">
-        {outCt > 0 && <span className="m-chip m-chip-er">{outCt} out</span>}
-        {lowCt > 0 && <span className="m-chip m-chip-wa">{lowCt} low</span>}
-        <button style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.4)', fontSize: 18, cursor: 'pointer', padding: '4px' }} onClick={onSync}>↻</button>
+        {(outCt > 0 || lowCt > 0) && <span className="mob-alert-count" aria-label={`${outCt} out of stock and ${lowCt} low stock`}>{outCt + lowCt}</span>}
+        <button className="mob-sync" aria-label="Sync inventory" onClick={onSync}><NavIcon name="history" /></button>
+        <button className="u-av mob-avatar" aria-label="Open user menu" onClick={onUserClick}>{(user || '?')[0].toUpperCase()}</button>
       </div>
     </div>);
 
@@ -4796,7 +4813,7 @@ function App({ authUser, onSignOut }) {
       {showMobileMore && <MobileMoreSheet onClose={() => setShowMobileMore(false)} onNavigate={setView} onSync={refresh} onSignOut={onSignOut} />}
       <Sidebar view={view} setView={setView} user={user} outCt={outCt} onSync={refresh} syncing={syncing} lastSync={lastSync} onUserClick={() => setShowUserModal(true)} onSignOut={onSignOut} />
       <div className="main">
-        <MobileHeader lowCt={lowCt} outCt={outCt} onSync={refresh} user={user} onUserClick={() => setShowUserModal(true)} />
+        <MobileHeader view={view} lowCt={lowCt} outCt={outCt} onSync={refresh} user={user} onUserClick={() => setShowUserModal(true)} />
         {view === 'dashboard' && <DashboardView items={items} sessions={sessions} onNavigate={(v) => {setView(v);}} onScanReceipt={() => setShowReceiptScanner(true)} flash={flash} />}
         {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onDelete={deleteItem} flash={flash} />}
         {view === 'shopping' && <ShoppingView items={items} session={session} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onShopperNote={updateShopperNote} onScanReceipt={() => setShowReceiptScanner(true)} flash={flash} />}
