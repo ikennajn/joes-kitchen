@@ -110,6 +110,35 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .today-receipt:hover{border-color:var(--pr);transform:translateY(-1px)}
 .today-receipt .today-row-icon{background:var(--pr);color:#fff}
 .today-receipt-arrow{color:var(--pr);font-size:18px;font-weight:700}
+.stock-detail-modal{max-width:560px;max-height:92vh;overflow-y:auto}
+.stock-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.stock-detail-kicker{font-size:10px;color:var(--tx2);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+.stock-detail-name{font-size:24px;font-weight:700;letter-spacing:-.5px}
+.stock-detail-close{width:38px;height:38px;border:0;border-radius:50%;background:var(--bg);color:var(--tx);font-size:20px;cursor:pointer;flex-shrink:0}
+.stock-level-card{padding:16px;background:var(--prl);border:1px solid #CFE8DA;border-radius:15px}
+.stock-level-value{font-size:32px;font-weight:700;letter-spacing:-1px;margin-top:3px}
+.stock-meter{height:7px;border-radius:999px;background:var(--bd);overflow:hidden;margin:12px 0}
+.stock-meter-fill{height:100%;border-radius:inherit;background:var(--pr)}
+.stock-level-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stock-level-grid>div{border-right:1px solid #CFE0D5;padding-right:8px}
+.stock-level-grid>div:last-child{border-right:0}
+.stock-detail-label{font-size:10px;color:var(--tx2);font-weight:600}
+.stock-detail-value{font-size:16px;font-weight:700;margin-top:3px}
+.stock-detail-section{margin-top:18px}
+.stock-detail-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.stock-detail-section-title{font-size:13px;font-weight:700}
+.stock-price-row{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--bd)}
+.stock-price-row:last-child{border-bottom:0}
+.stock-price-store{font-size:13px;font-weight:700}
+.stock-price-pack{font-size:11px;color:var(--tx2)}
+.stock-price-main{grid-row:1/3;grid-column:2;text-align:right;font-size:13px;font-weight:700}
+.stock-price-main span{display:block;font-size:10px;color:var(--tx2);font-weight:500;margin-top:3px}
+.stock-legacy-note{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--wal);color:#7A4D0B;font-size:10px;line-height:1.45}
+.stock-history-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.stock-history-row:last-child{border-bottom:0}
+.stock-history-date{font-size:10px;color:var(--tx2);min-width:72px}
+.stock-history-body{flex:1;min-width:0}
+.stock-history-price{font-size:12px;font-weight:700}
 .stat-card:nth-child(1){animation:statIn .3s .04s both}
 .stat-card:nth-child(2){animation:statIn .3s .09s both}
 .stat-card:nth-child(3){animation:statIn .3s .14s both}
@@ -554,7 +583,7 @@ function BarChartSVG({ data, color = 'var(--pr)', fmt = '' }) {
     </div>);
 
 }
-function ItemRow({ item, editing, bulk, selected, onToggle, onUpdate, onDelete, onBulkToggle }) {
+function ItemRow({ item, editing, bulk, selected, onToggle, onDetails, onUpdate, onDelete, onBulkToggle }) {
   const pct = item.par_level > 0 ? Math.min(item.current_qty / item.par_level * 100, 100) : 0;
   const status = item.current_qty === 0 ? 'out' : item.current_qty < item.par_level ? 'low' : 'ok';
   const bc = status === 'out' ? 'var(--er)' : status === 'low' ? 'var(--wa)' : 'var(--ok)';
@@ -586,6 +615,7 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onUpdate, onDelete, 
       </div>
       {editing && !bulk &&
       <div className="edit-panel">
+          <button className="btn-pr" style={{ width: '100%', marginBottom: 13 }} onClick={() => onDetails(item)}>View stock details & store prices</button>
           <div style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
               <label className="e-lbl">Stock Level</label>
@@ -738,6 +768,73 @@ function DashboardView({ items, sessions, onNavigate, onScanReceipt, flash }) {
 }
 
 /* ─── INVENTORY ─── */
+function StockDetailModal({ item, relatedItems, purchases, loading, onClose }) {
+  const par = Number(item.par_level || 0);
+  const current = Number(item.current_qty || 0);
+  const need = Math.max(0, par - current);
+  const pct = par > 0 ? Math.min(100, current / par * 100) : 0;
+  const matchingPurchases = purchases
+    .filter(p => p.item_id === item.id || String(p.item_name || '').trim().toLowerCase() === String(item.name || '').trim().toLowerCase())
+    .sort((a, b) => new Date(b.purchased_at || 0) - new Date(a.purchased_at || 0));
+  const latestByStore = matchingPurchases.reduce((map, purchase) => {
+    const store = purchase.store || 'Unknown store';
+    if (!map[store]) map[store] = purchase;
+    return map;
+  }, {});
+  const storeListings = relatedItems.length > 0 ? relatedItems : [item];
+  return <div className="overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <section className="modal stock-detail-modal" role="dialog" aria-modal="true" aria-label={`${item.name} stock details`}>
+      <div className="stock-detail-head">
+        <div><div className="stock-detail-kicker">{item.category || 'Inventory item'} · {item.store || 'No preferred store'}</div><div className="stock-detail-name">{item.name}</div></div>
+        <button className="stock-detail-close" aria-label="Close stock details" onClick={onClose}>×</button>
+      </div>
+      <div className="stock-level-card">
+        <div className="stock-detail-label">Current stock</div><div className="stock-level-value">{current} {item.unit}</div>
+        <div className="stock-meter" role="progressbar" aria-label="Current stock compared with par" aria-valuenow={current} aria-valuemin="0" aria-valuemax={Math.max(par, current, 1)}><div className="stock-meter-fill" style={{ width: `${pct}%` }} /></div>
+        <div className="stock-level-grid">
+          <div><div className="stock-detail-label">Par level</div><div className="stock-detail-value">{par} {item.unit}</div></div>
+          <div><div className="stock-detail-label">Reorder at</div><div className="stock-detail-value">{par} {item.unit}</div></div>
+          <div><div className="stock-detail-label">Planned need</div><div className="stock-detail-value">{need} {item.unit}</div></div>
+        </div>
+      </div>
+
+      <div className="stock-detail-section">
+        <div className="stock-detail-section-head"><div className="stock-detail-section-title">Store listings</div><span className="stock-detail-label">Current tracked prices</span></div>
+        <div className="today-list">
+          {storeListings.map(listing => {
+            const packSize = Number(listing.pack_size || 1);
+            const price = Number(listing.price || 0);
+            const normalized = price > 0 && packSize > 1 ? price / packSize : null;
+            const observed = latestByStore[listing.store || 'Unknown store'];
+            return <div className="stock-price-row" key={listing.id} style={{ paddingLeft: 13, paddingRight: 13 }}>
+              <div className="stock-price-store">{listing.store || 'Other'}</div>
+              <div className="stock-price-pack">{packSize > 1 ? `${packSize} ${listing.unit} per package` : 'Package details not recorded'}</div>
+              <div className="stock-price-main">{price > 0 ? `$${price.toFixed(2)}/package` : 'No price'}
+                <span>{normalized ? `$${normalized.toFixed(2)}/${listing.unit}` : 'Normalized price unavailable'}</span>
+                <span>{observed?.purchased_at ? `Observed ${new Date(observed.purchased_at).toLocaleDateString()}` : 'Observation date unavailable'}</span>
+              </div>
+            </div>;
+          })}
+        </div>
+        <div className="stock-legacy-note">Normalized comparisons appear only when a package size is recorded. Historical receipt rows do not yet preserve package details, so the app does not guess conversions.</div>
+      </div>
+
+      <div className="stock-detail-section">
+        <div className="stock-detail-section-head"><div className="stock-detail-section-title">Receipt price observations</div><span className="stock-detail-label">Newest first</span></div>
+        <div className="today-list" style={{ padding: '0 13px' }}>
+          {loading && <div className="stock-history-row"><div className="stock-history-body">Loading price history…</div></div>}
+          {!loading && matchingPurchases.slice(0, 8).map(purchase => <div className="stock-history-row" key={purchase.id}>
+            <div className="stock-history-date">{purchase.purchased_at ? new Date(purchase.purchased_at).toLocaleDateString() : 'No date'}</div>
+            <div className="stock-history-body"><div className="today-row-title">{purchase.store || 'Unknown store'}</div><div className="today-row-meta">{purchase.qty || 1} recorded package{Number(purchase.qty || 1) === 1 ? '' : 's'} · package details unavailable</div></div>
+            <div className="stock-history-price">${Number(purchase.price || 0).toFixed(2)}</div>
+          </div>)}
+          {!loading && matchingPurchases.length === 0 && <div className="stock-history-row"><div className="stock-history-body"><div className="today-row-title">No confirmed receipt history yet</div><div className="today-row-meta">Future confirmed receipts will appear here.</div></div></div>}
+        </div>
+      </div>
+    </section>
+  </div>;
+}
+
 function InventoryView({ items, onUpdate, onDelete, flash }) {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
@@ -748,6 +845,17 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
   const [selected, setSelected] = useState(new Set());
   const [bulkQty, setBulkQty] = useState('');
   const [groupBy, setGroupBy] = useState('category'); // 'category' | 'store'
+  const [detailItem, setDetailItem] = useState(null);
+  const [purchases, setPurchases] = useState([]);
+  const [pricesLoading, setPricesLoading] = useState(false);
+
+  const openDetails = async (item) => {
+    setDetailItem(item);
+    if (purchases.length > 0) return;
+    setPricesLoading(true);
+    try { setPurchases(await db.getPurchaseLog()); } catch { flash('Could not load price history'); }
+    setPricesLoading(false);
+  };
 
   const filtered = items.filter((i) => {
     if (search && !i.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -771,6 +879,7 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
   };
   return (
     <div className="page">
+      {detailItem && <StockDetailModal item={detailItem} relatedItems={items.filter(i => String(i.name || '').trim().toLowerCase() === String(detailItem.name || '').trim().toLowerCase())} purchases={purchases} loading={pricesLoading} onClose={() => setDetailItem(null)} />}
       <div className="page-hdr">
         <div><div className="page-title">Inventory</div><div className="page-sub">{items.length} items tracked</div></div>
         <button className={`f-tog ${bulkMode ? 'on' : ''}`} onClick={() => {setBulkMode(!bulkMode);setSelected(new Set());}}>
@@ -841,6 +950,7 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
           editing={!bulkMode && editingId === item.id}
           bulk={bulkMode} selected={selected.has(item.id)}
           onToggle={() => setEditingId(editingId === item.id ? null : item.id)}
+          onDetails={openDetails}
           onUpdate={onUpdate} onDelete={onDelete} onBulkToggle={toggleSel} />
             </div>
         )}
