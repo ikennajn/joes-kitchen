@@ -332,6 +332,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 @media(max-width:640px){.recipe-grid{grid-template-columns:1fr}.recipe-editor-shell{padding:8px 14px 108px}.recipe-editor-head{padding-top:max(10px,env(safe-area-inset-top))}.recipe-fields{grid-template-columns:1fr 1fr}.recipe-fields .wide{grid-column:1/-1}.recipe-inline{grid-template-columns:1fr 1fr}.recipe-inline .wide{grid-column:1/-1}.recipe-action{min-height:48px}.recipe-fab{display:block;position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:8;border:0;border-radius:999px;background:var(--pr);color:white;min-height:50px;padding:0 18px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}}
 /* Approved mobile app shell */
 .mob-title-block{min-width:0}.mob-kicker{font-size:10px;color:var(--tx2);line-height:1.2;margin-bottom:2px}.mob-sync{width:44px;height:44px;border:0;border-radius:50%;display:grid;place-items:center;background:transparent;color:var(--tx2);cursor:pointer;transition:background .18s,color .18s}.mob-sync:hover{background:var(--prl);color:var(--pr)}.mob-sync svg{width:19px;height:19px}.mob-avatar{width:38px;height:38px;border:0;cursor:pointer}.mob-alert-count{min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:grid;place-items:center;background:var(--wal);color:#7A4D0B;font-size:10px;font-weight:800}
+.today-snapshot{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border:1px solid var(--bd);border-radius:15px;margin-bottom:18px;overflow:hidden}.today-snapshot button{min-height:78px;border:0;border-right:1px solid var(--bd);background:transparent;color:var(--tx);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:12px;cursor:pointer}.today-snapshot button:last-child{border-right:0}.today-snapshot strong{font-size:23px;line-height:1}.today-snapshot strong.warn{color:var(--wa)}.today-snapshot strong.danger{color:var(--er)}.today-snapshot span{font-size:10px;color:var(--tx2);margin-top:7px}.today-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.today-actions button{min-height:116px;padding:14px;border:1px solid var(--bd);border-radius:15px;background:var(--card);color:var(--tx);text-align:left;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;transition:border-color .18s,background .18s}.today-actions button:hover{border-color:var(--pr);background:var(--prl)}.today-actions button>span{width:38px;height:38px;border-radius:10px;background:var(--prl);color:var(--pr);display:grid;place-items:center;margin-bottom:12px}.today-actions svg{width:19px;height:19px}.today-actions strong{font-size:13px}.today-actions small{font-size:10px;color:var(--tx2);margin-top:4px}
+.stock-summary-strip{display:grid;grid-template-columns:repeat(3,1fr);background:var(--prl);border-radius:15px;padding:13px;margin-bottom:14px}.stock-summary-strip>div{padding:2px 10px;border-right:1px solid var(--bd);display:flex;flex-direction:column}.stock-summary-strip>div:last-child{border-right:0}.stock-summary-strip strong{font-size:21px}.stock-summary-strip span{font-size:10px;color:var(--tx2);margin-top:2px}.stock-mobile-results{display:none}
 @media(max-width:768px){
   :root{--bg:#F8FAF8;--card:#FFFFFF;--pr:#176B43;--prl:#EEF5EF;--tx:#18221C;--tx2:#657169;--bd:#DBE4DD;--wa:#98691A;--er:#AD3B36}
   body{font-size:16px;background:var(--bg)}
@@ -343,8 +345,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   .bn-inner{height:64px}.bn-item{min-height:58px;font-size:9px;font-weight:600;gap:4px;border-radius:10px}.bn-icon{width:20px;height:20px}.bn-scan{width:auto;height:64px;min-height:64px;margin:0;background:transparent;color:var(--mu);box-shadow:none}.bn-scan:hover,.bn-scan.active{background:transparent;color:var(--pr);transform:none}.bn-scan .bn-icon{box-sizing:content-box;width:21px;height:21px;padding:11px;border-radius:50%;margin-top:-24px;background:var(--pr);color:#fff;border:4px solid var(--bg);box-shadow:none}.bn-scan span{margin-top:-5px}.bn-dot{top:2px}
   .mobile-sheet{left:12px;right:12px;padding:10px 12px 14px;border-radius:20px}.mobile-sheet-grid{grid-template-columns:1fr;gap:0;border:1px solid var(--bd);border-radius:14px;overflow:hidden}.mobile-sheet-item{min-height:56px;border:0;border-bottom:1px solid var(--bd);border-radius:0;padding:12px 14px;background:var(--card);font-size:14px}.mobile-sheet-item:last-child{border-bottom:0}.mobile-sheet-head{text-transform:none;letter-spacing:0;font-size:20px;color:var(--tx)}
   .today-head{margin-bottom:20px}.today-eyebrow{display:none}.today-title{font-size:30px}.today-sub{font-size:14px;line-height:1.5}.today-hero{padding:19px;border-radius:17px;background:var(--prl);border-color:transparent}.today-hero-count{font-size:36px}.today-primary{min-height:52px;border-radius:12px}.today-section{margin-top:22px}.today-section-title{font-size:15px}.today-list,.today-receipt{border-radius:15px}.today-row{padding:14px 13px;min-height:64px}.today-row-title{font-size:14px}.today-row-meta{font-size:12px}.today-row-icon{width:40px;height:40px;border-radius:11px}
+  .today-snapshot button{min-height:82px}.today-snapshot span{font-size:11px}.today-actions button{min-height:124px}.today-actions strong{font-size:14px}.today-actions small{font-size:11px;line-height:1.35}
   .page-hdr{align-items:center!important;margin-bottom:20px!important}.page-title{font-size:28px}.page-sub{font-size:14px}.card,.item-row{border-radius:14px}.item-row{margin-bottom:8px}.item-main{padding:14px}.item-name{font-size:15px}.item-qty{font-size:13px}.inp,.sel,.e-inp{min-height:48px;border-radius:11px;font-size:16px}.btn-pr,.btn-gh,.btn-outline,.btn-full{min-height:48px;border-radius:11px}
   .recipe-grid{gap:12px}.recipe-card{padding:17px;border-radius:15px;background:var(--card)}.recipe-card:active{background:var(--prl)}.recipe-name{font-size:18px}.recipe-card .recipe-meta{margin-top:13px}.recipe-chip{padding:6px 9px;background:var(--bg);border-color:transparent}.recipe-status{padding:6px 9px}.recipe-editor{background:var(--bg)}.recipe-editor-shell{padding:0 16px calc(106px + env(safe-area-inset-bottom))}.recipe-editor-head{margin:0 -16px 18px;padding:calc(10px + env(safe-area-inset-top)) 16px 12px;background:color-mix(in srgb,var(--bg) 95%,transparent)}.recipe-section{padding:17px;border-radius:15px;margin-bottom:12px}.recipe-section-title{font-size:17px}.recipe-section-sub{font-size:13px;line-height:1.45}.recipe-field label{font-size:12px}.recipe-field input,.recipe-field textarea,.recipe-field select{min-height:48px;font-size:16px}.recipe-row{min-height:62px}.recipe-row-name{font-size:14px}.recipe-row-meta{font-size:12px;line-height:1.4}.recipe-process{border-radius:13px}.recipe-step{padding:14px 0}.recipe-step-copy{font-size:14px}.recipe-fab{bottom:calc(94px + env(safe-area-inset-bottom));min-height:52px;border-radius:14px;padding:0 20px;box-shadow:0 8px 24px rgba(23,107,67,.2)}
+  .stock-desktop-results{display:none}.stock-mobile-results{display:block}.stock-summary-strip{margin-top:-2px}.stock-mobile-group{margin-top:20px}.stock-mobile-group-head{display:flex;justify-content:space-between;align-items:center;margin:0 3px 7px;color:var(--tx2);font-size:11px;text-transform:uppercase;letter-spacing:.07em}.stock-mobile-group-head span:last-child{min-width:23px;height:23px;border-radius:999px;background:var(--prl);color:var(--pr);display:grid;place-items:center;font-weight:700}.stock-mobile-card{background:var(--card);border:1px solid var(--bd);border-radius:15px;overflow:hidden}.stock-mobile-row{width:100%;min-height:82px;padding:12px;border:0;border-bottom:1px solid var(--bd);background:var(--card);color:var(--tx);display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer}.stock-mobile-row:last-child{border-bottom:0}.stock-mobile-row:active{background:var(--prl)}.stock-state{width:40px;height:40px;flex:0 0 40px;border-radius:11px;background:var(--prl);color:var(--pr);display:grid;place-items:center}.stock-state.low{background:var(--wal);color:var(--wa)}.stock-state.out{background:var(--erl);color:var(--er)}.stock-state svg{width:19px;height:19px}.stock-mobile-body{flex:1;min-width:0;display:flex;flex-direction:column}.stock-mobile-body strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stock-mobile-body small{font-size:11px;color:var(--tx2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stock-mobile-meter{height:4px;background:var(--bd);border-radius:99px;margin-top:8px;overflow:hidden}.stock-mobile-meter i{display:block;height:100%;background:var(--pr);border-radius:inherit}.stock-mobile-badge{font-size:9px;font-weight:800;text-transform:uppercase;white-space:nowrap;color:var(--ok)}.stock-mobile-badge.low{color:var(--wa)}.stock-mobile-badge.out{color:var(--er)}.stock-chevron{font-size:22px;color:var(--mu)}.stock-select{width:24px;height:24px;flex:0 0 24px;border:2px solid var(--bd);border-radius:7px}.stock-select.selected{background:var(--pr);border-color:var(--pr);box-shadow:inset 0 0 0 5px var(--card)}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 ::-webkit-scrollbar{width:5px}
@@ -748,9 +752,14 @@ function DashboardView({ items, sessions, onNavigate, onScanReceipt, flash }) {
   return (
     <div className="page">
       <div className="today-head">
-        <div className="today-eyebrow">Joe's Kitchen</div>
-        <div className="today-title">Good morning.</div>
-        <div className="today-sub">Your kitchen needs a few things.</div>
+        <div className="today-eyebrow">Kitchen overview</div>
+        <div className="today-title">Good morning, Joe.</div>
+        <div className="today-sub">Here is what needs your attention today.</div>
+      </div>
+      <div className="today-snapshot" aria-label="Inventory summary">
+        <button onClick={() => onNavigate('inventory')}><strong>{items.length}</strong><span>Tracked</span></button>
+        <button onClick={() => onNavigate('inventory')}><strong className="warn">{lowItems.length}</strong><span>Running low</span></button>
+        <button onClick={() => onNavigate('inventory')}><strong className="danger">{outItems.length}</strong><span>Out of stock</span></button>
       </div>
       <div className="today-hero">
         <div className="today-hero-top">
@@ -777,12 +786,11 @@ function DashboardView({ items, sessions, onNavigate, onScanReceipt, flash }) {
       </section>
 
       <section className="today-section">
-        <div className="today-section-head"><div className="today-section-title">Receipt workflow</div></div>
-        <button className="today-receipt" onClick={onScanReceipt}>
-          <div className="today-row-icon"><NavIcon name="scan" /></div>
-          <div className="today-row-body"><div className="today-row-title">Scan a store receipt</div><div className="today-row-meta">Review every line before inventory changes</div></div>
-          <span className="today-receipt-arrow">→</span>
-        </button>
+        <div className="today-section-head"><div className="today-section-title">Quick actions</div></div>
+        <div className="today-actions">
+          <button onClick={onScanReceipt}><span><NavIcon name="scan" /></span><strong>Scan receipt</strong><small>Confirm purchases</small></button>
+          <button onClick={() => onNavigate('meals')}><span><NavIcon name="meal" /></span><strong>Build recipe</strong><small>Record while cooking</small></button>
+        </div>
       </section>
 
       {recentSess.length > 0 &&
@@ -921,10 +929,15 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
     <div className="page">
       {detailItem && <StockDetailModal item={detailItem} relatedItems={items.filter(i => String(i.name || '').trim().toLowerCase() === String(detailItem.name || '').trim().toLowerCase())} purchases={purchases} loading={pricesLoading} onClose={() => setDetailItem(null)} />}
       <div className="page-hdr">
-        <div><div className="page-title">Inventory</div><div className="page-sub">{items.length} items tracked</div></div>
+        <div><div className="page-title">Stock</div><div className="page-sub">Know what you have and what needs replenishing.</div></div>
         <button className={`f-tog ${bulkMode ? 'on' : ''}`} onClick={() => {setBulkMode(!bulkMode);setSelected(new Set());}}>
-          {bulkMode ? '✕ Cancel' : 'Bulk Update'}
+          {bulkMode ? 'Cancel' : 'Count stock'}
         </button>
+      </div>
+      <div className="stock-summary-strip">
+        <div><strong>{items.length}</strong><span>items</span></div>
+        <div><strong>{items.filter(i => i.current_qty > 0 && i.current_qty < i.par_level).length}</strong><span>low</span></div>
+        <div><strong>{items.filter(i => i.current_qty === 0).length}</strong><span>out</span></div>
       </div>
       {bulkMode &&
       <div className="bulk-bar">
@@ -958,6 +971,26 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
           ))}
         </div>
       </div>
+      <div className="stock-mobile-results">
+        {Object.keys(grouped).sort().map(grpKey => <section className="stock-mobile-group" key={grpKey}>
+          <div className="stock-mobile-group-head"><span>{grpKey}</span><span>{grouped[grpKey].length}</span></div>
+          <div className="stock-mobile-card">
+            {grouped[grpKey].map(item => {
+              const qty = Number(item.current_qty || 0), par = Number(item.par_level || 0);
+              const pct = par > 0 ? Math.min(100, Math.max(0, qty / par * 100)) : 100;
+              const state = qty === 0 ? 'out' : qty < par ? 'low' : 'good';
+              return <button className="stock-mobile-row" key={item.id} onClick={() => bulkMode ? toggleSel(item.id) : openDetails(item)} aria-label={`${item.name}, ${qty} ${item.unit || 'units'} on hand, par ${par}`}>
+                {bulkMode && <span className={`stock-select ${selected.has(item.id) ? 'selected' : ''}`} aria-hidden="true" />}
+                <span className={`stock-state ${state}`}><NavIcon name="stock" /></span>
+                <span className="stock-mobile-body"><strong>{item.name}</strong><small>{item.store || 'No preferred store'} · {qty} {item.unit || ''} of {par} par</small><span className="stock-mobile-meter"><i style={{width:`${pct}%`}} /></span></span>
+                <span className={`stock-mobile-badge ${state}`}>{state === 'good' ? 'In stock' : state}</span>
+                <span className="stock-chevron">›</span>
+              </button>;
+            })}
+          </div>
+        </section>)}
+      </div>
+      <div className="stock-desktop-results">
       {groupBy === 'store' && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
           {Object.entries(grouped).sort().map(([store, its]) => {
@@ -996,6 +1029,7 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
         )}
         </div>
       )}
+      </div>
       {filtered.length === 0 && <div className="empty"><div className="empty-icon"></div><p>No items match your filters</p></div>}
     </div>);
 
