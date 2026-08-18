@@ -852,13 +852,11 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
 }
 
 /* ─── SHOPPING ─── */
-function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, onShopperNote, flash }) {
+function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, onShopperNote, onScanReceipt, flash }) {
   const [storeF, setStoreF] = useState('All');
   const [expandNote, setExpandNote] = useState(null);
   const [showStart, setShowStart] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
-  const [startData, setStartData] = useState({ name: userStore.get(), miles: '', role: userStore.getRole() });
-  const [endMiles, setEndMiles] = useState('');
   const [elapsed, setElapsed] = useState('');
   const timerRef = useRef(null);
   // Smart Route / Price Compare state
@@ -904,13 +902,6 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
   const allStores = [...new Set([...unchecked, ...checked].map((i) => i.store || 'Other'))].sort();
   const showStore = storeF === 'All' ? byStore : { [storeF]: byStore[storeF] || [] };
   const checkedShow = storeF === 'All' ? checked : checked.filter((i) => (i.store || 'Other') === storeF);
-  const total = [...unchecked, ...checked].reduce((s, i) => s + Number(i.price || 0), 0);
-
-  // Auto-prompt end when all items checked
-  useEffect(() => {
-    if (session && unchecked.length === 0 && checked.length > 0 && !showEnd) setShowEnd(true);
-  }, [session, unchecked.length, checked.length]);
-
   const updateShopQty = async (itemId, qty) => {
     const q = Math.max(1, Number(qty) || 1);
     setShopQty(p => ({ ...p, [itemId]: q }));
@@ -920,28 +911,13 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
   };
 
   const handleStart = async () => {
-    if (startData.role === 'shopper' && !startData.miles) return;
-    // Pass mileage straight into createSession so it's persisted to Supabase
-    const sess = await onStartSession(startData.name, startData.role, startData.miles);
-    if (sess) {
-      // Also write to localStorage so reads work immediately even if Supabase is slow
-      const data = { driver: startData.name };
-      if (startData.role === 'shopper' && startData.miles) data.start_miles = Number(startData.miles);
-      await mileageStore.save(sess.id, data);
-      userStore.set(startData.name);
-      userStore.setRole(startData.role);
-    }
+    await onStartSession();
     setShowStart(false);
   };
 
   const handleEnd = async () => {
-    if (session) {
-      const data = { end_time: new Date().toISOString() };
-      if (session.driver_role !== 'owner' && endMiles) data.end_miles = Number(endMiles);
-      await mileageStore.save(session.id, data);
-    }
     await onEndSession();
-    setShowEnd(false);setEndMiles('');
+    setShowEnd(false);
   };
 
   // ── Smart Route / Price Compare ──
@@ -1193,59 +1169,21 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
     };
   }, [routeStep, routeViewMode, routeData]);
 
-  const mileData = session ? mileageStore.get(session) : {};
-  const sessionHrs = session ? (Date.now() - new Date(session.started_at).getTime()) / 3600000 : 0;
-  const tripPayCalc = window.calcDriverPay(sessionHrs, milesDriven);
-  const tripPay = tripPayCalc.total.toFixed(2);
-  const tripTimePay = tripPayCalc.timePay.toFixed(2);
-  const tripGasPay = tripPayCalc.gasPay.toFixed(2);
-  const milesDriven = endMiles && mileData.start_miles ? Number(endMiles) - Number(mileData.start_miles) : null;
-
   return (
     <div className="page">
       {/* Start Session Modal */}
       {showStart &&
       <div className="overlay">
           <div className="modal">
-            <div className="modal-title">Start Shopping Trip</div>
-            <div className="modal-sub">{startData.role === 'owner' ? "Owner mode: just track grocery cost, no timer or pay." : "Hired shopper: tracks time, mileage, and driver pay."}</div>
-
-            <div className="f-grp">
-              <label className="f-lbl">Who's shopping?</label>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => setStartData({ ...startData, role: 'owner' })} style={{
-                  flex: 1, padding: '10px 8px', fontSize: 12, fontWeight: 700, borderRadius: 8, cursor: 'pointer',
-                  border: '1px solid ' + (startData.role === 'owner' ? 'var(--pr)' : 'var(--bd)'),
-                  background: startData.role === 'owner' ? 'var(--pr)' : 'var(--card)',
-                  color: startData.role === 'owner' ? '#fff' : 'var(--tx2)',
-                }}>Me (Owner)</button>
-                <button onClick={() => setStartData({ ...startData, role: 'shopper' })} style={{
-                  flex: 1, padding: '10px 8px', fontSize: 12, fontWeight: 700, borderRadius: 8, cursor: 'pointer',
-                  border: '1px solid ' + (startData.role === 'shopper' ? 'var(--pr)' : 'var(--bd)'),
-                  background: startData.role === 'shopper' ? 'var(--pr)' : 'var(--card)',
-                  color: startData.role === 'shopper' ? '#fff' : 'var(--tx2)',
-                }}>Hired Shopper</button>
-              </div>
+            <div className="modal-title">Start shopping run</div>
+            <div className="modal-sub">Items checked during the run move into your cart. Inventory changes only after you review and confirm a receipt.</div>
+            <div className="trip-box">
+              <div className="trip-row"><span className="trip-lbl">Planned items</span><span className="trip-val">{unchecked.length}</span></div>
+              <div className="trip-row"><span className="trip-lbl">Current inventory</span><span className="trip-val">Unchanged</span></div>
             </div>
-
-            <div className="f-grp">
-              <label className="f-lbl">{startData.role === 'owner' ? 'Your name' : 'Driver name'}</label>
-              <input className="inp" value={startData.name} onChange={(e) => setStartData({ ...startData, name: e.target.value })} placeholder="Name" />
-            </div>
-
-            {startData.role === 'shopper' && (
-              <div className="f-grp">
-                <label className="f-lbl">Starting odometer (miles)</label>
-                <input className="inp inp-big" type="number" value={startData.miles} onChange={(e) => setStartData({ ...startData, miles: e.target.value })} placeholder="e.g. 42350" />
-              </div>
-            )}
-
             <div className="m-acts">
               <button className="btn-gh" onClick={() => setShowStart(false)}>Cancel</button>
-              <button className="btn-pr" style={{ flex: 1 }} onClick={handleStart}
-                disabled={!startData.name.trim() || (startData.role === 'shopper' && !startData.miles)}>
-                Start Trip
-              </button>
+              <button className="btn-pr" style={{ flex: 1 }} onClick={handleStart}>Start run</button>
             </div>
           </div>
         </div>
@@ -1254,38 +1192,17 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       {showEnd && session &&
       <div className="overlay">
           <div className="modal">
-            <div className="modal-title">End Shopping Trip</div>
-            {session.driver_role === 'owner' ? (
-              <>
-                <div className="modal-sub">Owner mode — no mileage or pay needed.</div>
-                <div className="trip-box">
-                  <div className="trip-row"><span className="trip-lbl">Items Purchased</span><span className="trip-val">{checked.length}</span></div>
-                  <div className="trip-row"><span className="trip-lbl">Groceries Total</span><span className="trip-total">${checked.reduce((s, i) => s + Number(i.price || 0), 0).toFixed(2)}</span></div>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="modal-sub">Enter your current odometer to complete the trip summary.</div>
-                <div className="f-grp">
-                  <label className="f-lbl">Ending Odometer (miles)</label>
-                  <input className="inp inp-big" type="number" value={endMiles} onChange={(e) => setEndMiles(e.target.value)} placeholder="e.g. 42398" autoFocus />
-                </div>
-                {endMiles &&
-                  <div className="trip-box">
-                    <div className="trip-row"><span className="trip-lbl">Duration</span><span className="trip-val">{elapsed}</span></div>
-                    <div className="trip-row"><span className="trip-lbl">Items Purchased</span><span className="trip-val">{checked.length}</span></div>
-                    {mileData.start_miles && <div className="trip-row"><span className="trip-lbl">Miles Driven</span><span className="trip-val">{(Number(endMiles) - Number(mileData.start_miles)).toFixed(1)} mi</span></div>}
-                    <div className="trip-row"><span className="trip-lbl">Groceries Total</span><span className="trip-val">${checked.reduce((s, i) => s + Number(i.price || 0), 0).toFixed(2)}</span></div>
-                    <div className="trip-row"><span className="trip-lbl">Time Pay (@$20/hr)</span><span className="trip-val">${tripTimePay}</span></div>
-                    {milesDriven && <div className="trip-row"><span className="trip-lbl">Gas ({(Number(endMiles) - Number(mileData.start_miles)).toFixed(1)} mi)</span><span className="trip-val">${tripGasPay}</span></div>}
-                    <div className="trip-row"><span className="trip-lbl">Total Driver Pay</span><span className="trip-total">${tripPay}</span></div>
-                  </div>
-                }
-              </>
-            )}
+            <div className="modal-title">Finish shopping run?</div>
+            <div className="modal-sub">Cart checks are intent, not proof of purchase. Scan every store receipt before finishing so confirmed purchases update inventory.</div>
+            <div className="trip-box">
+              <div className="trip-row"><span className="trip-lbl">In cart</span><span className="trip-val">{checked.length}</span></div>
+              <div className="trip-row"><span className="trip-lbl">Still planned</span><span className="trip-val">{unchecked.length}</span></div>
+              <div className="trip-row"><span className="trip-lbl">Duration</span><span className="trip-val">{elapsed}</span></div>
+            </div>
+            <button className="btn-full" onClick={() => { setShowEnd(false); onScanReceipt(); }}>Scan another receipt</button>
             <div className="m-acts">
               <button className="btn-gh" onClick={() => setShowEnd(false)}>Keep Shopping</button>
-              <button className="btn-pr" style={{ flex: 1 }} onClick={handleEnd}>End Trip ✓</button>
+              <button className="btn-pr" style={{ flex: 1 }} onClick={handleEnd}>Finish run</button>
             </div>
           </div>
         </div>
@@ -1294,23 +1211,22 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       {session &&
       <div className="sess-banner">
           <div className="sess-top">
-            <span className="sess-lbl">{session.driver_role === 'owner' ? 'Owner Shopping' : 'Trip In Progress'}</span>
-            <button className="btn-er" onClick={() => setShowEnd(true)}>End Trip</button>
+            <span className="sess-lbl">Shopping run active</span>
+            <button className="btn-er" onClick={() => setShowEnd(true)}>Finish run</button>
           </div>
           <div className="sess-meta">
-            {session.driver_role !== 'owner' && <span className="sess-timer">{elapsed}</span>}
-            {mileData.driver && <span>{mileData.driver}</span>}
-            {session.driver_role !== 'owner' && mileData.start_miles && <span>Started at {mileData.start_miles} mi</span>}
-            {session.driver_role === 'owner' && <span>Tracking groceries only</span>}
+            <span className="sess-timer">{elapsed}</span>
+            <span>{checked.length} in cart</span>
+            <span>Inventory unchanged</span>
           </div>
         </div>
       }
       <div className="page-hdr">
         <div>
           <div className="page-title">Shopping List</div>
-          <div className="page-sub">{unchecked.length} to buy{checked.length > 0 ? ` · ${checked.length} done` : ''}{total > 0 ? ` · $${total.toFixed(2)}` : ''}</div>
+          <div className="page-sub">{unchecked.length} planned{checked.length > 0 ? ` · ${checked.length} in cart` : ''}</div>
         </div>
-        {!session && <button className="btn-pr" onClick={() => setShowStart(true)}>Start Trip</button>}
+        {!session && <button className="btn-pr" onClick={() => setShowStart(true)}>Start run</button>}
       </div>
       {/* Smart Route / Price Compare */}
       {unchecked.length > 0 &&
@@ -1678,8 +1594,8 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
       {checkedShow.length > 0 &&
       <div>
           <div className="stH" style={{ borderBottomColor: 'var(--ok)' }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--ok)', margin: 0 }}>Purchased ({checkedShow.length})</h3>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ok)' }}>${checkedShow.reduce((s, i) => s + Number(i.price || 0), 0).toFixed(2)}</span>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--ok)', margin: 0 }}>In cart ({checkedShow.length})</h3>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--tx2)' }}>Inventory unchanged</span>
           </div>
           {checkedShow.map((item) =>
         <div key={item.id} className="sh-item sh-done" onClick={() => onCheck(item.id)}>
@@ -1691,7 +1607,7 @@ function ShoppingView({ items, session, onCheck, onStartSession, onEndSession, o
         </div>
       }
       {!session && (unchecked.length > 0 || checked.length > 0) &&
-      <p style={{ textAlign: 'center', color: 'var(--mu)', fontSize: 12, marginTop: 20 }}>Tap "Start Trip" above to begin tracking your session</p>
+      <p style={{ textAlign: 'center', color: 'var(--mu)', fontSize: 12, marginTop: 20 }}>Start a run to move planned items into your cart</p>
       }
     </div>);
 
@@ -4372,16 +4288,13 @@ function App({ authUser, onSignOut }) {
     setSyncing(false);
   }, [flash]);
 
-  const startSession = useCallback(async (driverName, role, startMiles) => {
+  const startSession = useCallback(async () => {
     try {
-      const payload = { status: 'active', driver_role: role || 'shopper' };
-      if (driverName) payload.driver_name = driverName;
-      if (startMiles != null && role === 'shopper') payload.start_miles = Number(startMiles);
-      const created = await db.createSession(payload);
+      const created = await db.createSession({ status: 'active' });
       const sess = created[0];
       setSession(sess);
       setSessions((prev) => [sess, ...prev]);
-      flash(role === 'owner' ? 'Owner trip started!' : 'Shopping trip started!');
+      flash('Shopping run started');
       return sess;
     } catch {flash('Session start failed');return null;}
   }, [flash]);
@@ -4393,37 +4306,25 @@ function App({ authUser, onSignOut }) {
       setItems((p) => p.map((i) => i.id === id ? { ...i, checked_at: null, session_id: null } : i));
       try {await db.update(id, { checked_at: null, session_id: null });} catch {}
     } else {
-      if (!session) {flash('Tap "Start Trip" to begin!');return;}
-      const newQty = item.par_level;
-      setItems((p) => p.map((i) => i.id === id ? { ...i, current_qty: newQty, checked_at: new Date().toISOString(), session_id: session.id } : i));
-      try {await db.update(id, { current_qty: newQty, checked_at: new Date().toISOString(), session_id: session.id });} catch {flash('Update failed');}
+      if (!session) {flash('Start a shopping run first');return;}
+      const checkedAt = new Date().toISOString();
+      setItems((p) => p.map((i) => i.id === id ? { ...i, checked_at: checkedAt, session_id: session.id } : i));
+      try {await db.update(id, { checked_at: checkedAt, session_id: session.id });} catch {flash('Update failed');}
     }
   }, [items, session, flash]);
 
   const endSession = useCallback(async () => {
     if (!session) return;
-    const checkedItems = items.filter((i) => i.session_id === session.id && i.checked_at);
-    const total = checkedItems.reduce((s, i) => s + Number(i.price || 0), 0);
+    const cartItems = items.filter((i) => i.session_id === session.id && i.checked_at);
     const notedItems = items.filter((i) => i.session_id === session.id && i.shopper_note);
     for (const ni of notedItems) {try {await db.archiveNote({ session_id: session.id, item_name: ni.name, store: ni.store, note: ni.shopper_note });} catch {}}
-    // Log each purchase to purchase_log for analytics
-    if (checkedItems.length > 0) {
-      const purchaseRows = checkedItems.map(i => ({
-        session_id: session.id,
-        item_id: i.id,
-        item_name: i.name,
-        category: i.category,
-        store: i.store,
-        unit: i.unit,
-        qty: Math.max(1, i.par_level - (i.current_qty || 0)),
-        price: Number(i.price || 0),
-      }));
-      try {await db.logPurchases(purchaseRows);} catch (e) {console.error('Purchase log failed', e);}
-    }
-    for (const ci of checkedItems) {try {await db.update(ci.id, { checked_at: null, session_id: null, shopper_note: '' });} catch {}}
-    try {await db.endSession(session.id, { total_spent: total, item_count: checkedItems.length });} catch {}
+    let confirmedPurchases = [];
+    try {confirmedPurchases = await db.getSessionPurchases(session.id);} catch {}
+    const total = confirmedPurchases.reduce((sum, purchase) => sum + Number(purchase.price || 0), 0);
+    for (const ci of cartItems) {try {await db.update(ci.id, { checked_at: null, session_id: null, shopper_note: '' });} catch {}}
+    try {await db.endSession(session.id, { total_spent: total, item_count: confirmedPurchases.length });} catch {}
     setSession(null);
-    flash(`Trip done! ${checkedItems.length} items · $${total.toFixed(2)}`);
+    flash(`Shopping run finished · ${confirmedPurchases.length} confirmed purchase${confirmedPurchases.length === 1 ? '' : 's'}`);
     refresh();
   }, [session, items, flash, refresh]);
 
@@ -4454,6 +4355,7 @@ function App({ authUser, onSignOut }) {
           updated++;
           await receiptAliasStore.saveMatch(storeGuess, aliasKey(l), l.inventoryId, it.name);
           purchaseRows.push({
+            session_id: session?.id || null,
             item_id: l.inventoryId, item_name: it.name, category: it.category,
             store: storeGuess || it.store, unit: it.unit,
             qty: Number(l.qty) || 1, price: Number(l.price) || 0,
@@ -4480,6 +4382,7 @@ function App({ authUser, onSignOut }) {
               name: invName, category: invCategory, store: invStore, unit: invUnit, packSize: invPackSize,
             });
             purchaseRows.push({
+              session_id: session?.id || null,
               item_id: ins[0].id, item_name: ins[0].name, category: invCategory,
               store: invStore, unit: invUnit,
               qty: Number(l.qty) || 1, price: Number(l.price) || 0,
@@ -4493,7 +4396,7 @@ function App({ authUser, onSignOut }) {
     }
     flash(`Receipt processed: ${updated} updated, ${added} added`);
     setShowReceiptScanner(false);
-  }, [items, flash]);
+  }, [items, session, flash]);
 
   const handleUserSelect = (name) => {setUser(name);userStore.set(name);setShowUserModal(false);};
 
@@ -4516,7 +4419,7 @@ function App({ authUser, onSignOut }) {
         <MobileHeader lowCt={lowCt} outCt={outCt} onSync={refresh} user={user} onUserClick={() => setShowUserModal(true)} />
         {view === 'dashboard' && <DashboardView items={items} sessions={sessions} onNavigate={(v) => {setView(v);}} onScanReceipt={() => setShowReceiptScanner(true)} flash={flash} />}
         {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onDelete={deleteItem} flash={flash} />}
-        {view === 'shopping' && <ShoppingView items={items} session={session} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onShopperNote={updateShopperNote} flash={flash} />}
+        {view === 'shopping' && <ShoppingView items={items} session={session} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onShopperNote={updateShopperNote} onScanReceipt={() => setShowReceiptScanner(true)} flash={flash} />}
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
         {view === 'meals' && <MealsView items={items} />}
         {view === 'add' && <AddView onAdd={addItem} busy={syncing} flash={flash} onScanReceipt={() => setShowReceiptScanner(true)} />}
