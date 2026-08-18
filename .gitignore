@@ -1,0 +1,4 @@
+.tools/
+.local-migration-test/
+supabase/.temp/
+migration-test.log
