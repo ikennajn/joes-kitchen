@@ -332,7 +332,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 @media(max-width:640px){.recipe-grid{grid-template-columns:1fr}.recipe-editor-shell{padding:8px 14px 108px}.recipe-editor-head{padding-top:max(10px,env(safe-area-inset-top))}.recipe-fields{grid-template-columns:1fr 1fr}.recipe-fields .wide{grid-column:1/-1}.recipe-inline{grid-template-columns:1fr 1fr}.recipe-inline .wide{grid-column:1/-1}.recipe-action{min-height:48px}.recipe-fab{display:block;position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:8;border:0;border-radius:999px;background:var(--pr);color:white;min-height:50px;padding:0 18px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}}
 .build-mode{position:fixed;inset:0;z-index:180;background:var(--bg);color:var(--tx);overflow:auto}.build-header{position:sticky;top:0;z-index:5;min-height:68px;padding:max(10px,env(safe-area-inset-top)) 16px 10px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--bd)}.build-header button,.build-step-actions button,.build-timer button,.build-note button{min-height:44px;border:1px solid var(--bd);border-radius:11px;background:var(--card);color:var(--tx);font:inherit;font-size:12px;font-weight:800;padding:9px 13px;cursor:pointer}.build-header>div{min-width:0;text-align:center}.build-header span,.build-process-head span,.build-step-body>span{display:block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2)}.build-header strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}.build-shell{width:min(1100px,100%);margin:auto;padding:18px 16px calc(100px + env(safe-area-inset-bottom));box-sizing:border-box}.build-progress,.build-timers,.build-note,.build-timeline{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px}.build-progress{display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:end}.build-progress span{font-size:11px;color:var(--tx2)}.build-progress strong{display:block;font-size:15px;margin-top:3px}.build-progress-value{font-size:24px;font-weight:900;color:var(--pr)}.build-progress-track{grid-column:1/-1;height:7px;border-radius:99px;background:var(--bd);overflow:hidden;margin-top:8px}.build-progress-track i{display:block;height:100%;border-radius:inherit;background:var(--pr)}.build-section-head,.build-process-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.build-section-head>span{font-size:11px;color:var(--tx2)}.build-timer{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--bd)}.build-timer>div span{display:block;color:var(--tx2);font-size:10px;text-transform:capitalize}.build-timer output{font-variant-numeric:tabular-nums;font-size:21px;font-weight:900}.build-timer.overdue output{color:var(--er)}.build-process-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:14px}.build-process{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:15px}.build-process-head strong{display:block;font-size:17px;margin-top:3px}.build-process-head>span{font-size:12px;color:var(--pr)}.build-step{display:flex;gap:11px;padding:14px 0;border-top:1px solid var(--bd)}.build-step-number{width:30px;height:30px;flex:0 0 30px;border-radius:50%;display:grid;place-items:center;background:var(--prl);color:var(--pr);font-size:12px;font-weight:900}.build-step-number svg{width:17px;height:17px}.build-step.active .build-step-number{background:var(--pr);color:white}.build-step.done{opacity:.68}.build-step-body{min-width:0;flex:1}.build-step-body p{font-size:14px;line-height:1.5;margin:4px 0 10px;white-space:pre-wrap}.build-step-ingredients{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.build-step-ingredients span{font-size:11px;padding:5px 8px;border-radius:99px;background:var(--bg);border:1px solid var(--bd)}.build-step-actions{display:flex;flex-wrap:wrap;gap:8px}.build-step-actions button:first-child{border-color:var(--pr);color:var(--pr)}.build-step-actions button:disabled,.build-note button:disabled{opacity:.45;cursor:not-allowed}.build-note textarea{width:100%;min-height:90px;box-sizing:border-box;resize:vertical;border:1px solid var(--bd);border-radius:11px;background:var(--bg);color:var(--tx);font:inherit;font-size:14px;padding:11px;margin-bottom:8px}.build-note>button{border-color:var(--pr);background:var(--pr);color:white}.build-timeline>div:not(.build-section-head){display:grid;grid-template-columns:70px 130px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--bd);font-size:12px}.build-timeline time,.build-timeline small{color:var(--tx2)}.build-timeline>div>span{text-transform:capitalize;font-weight:700}@media(max-width:640px){.build-shell{padding-left:12px;padding-right:12px}.build-header{padding-left:12px;padding-right:12px}.build-process-grid{grid-template-columns:1fr}.build-timer{grid-template-columns:1fr auto}.build-timer output{grid-row:1;grid-column:2}.build-timeline>div:not(.build-section-head){grid-template-columns:62px 1fr}.build-timeline small{grid-column:1/-1}}
 .recipe-stage-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 16px}.recipe-stage-nav button{min-height:58px;padding:8px 6px;border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx2);font:inherit;font-size:10px;font-weight:750;cursor:pointer}.recipe-stage-nav button span{width:23px;height:23px;margin:0 auto 5px;border-radius:50%;display:grid;place-items:center;background:var(--bg);color:var(--tx2);font-size:10px}.recipe-stage-nav button.active{border-color:var(--pr);background:var(--prl);color:var(--pr)}.recipe-stage-nav button.active span,.recipe-stage-nav button.complete span{background:var(--pr);color:white}.recipe-stage-nav button:disabled{cursor:not-allowed;opacity:.48}.recipe-stage-actions{position:sticky;bottom:0;z-index:4;display:flex;gap:10px;justify-content:flex-end;padding:12px 0 calc(12px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--bd)}.recipe-stage-actions .recipe-action{min-width:130px}.recipe-stage-intro{margin-bottom:14px}.recipe-stage-intro strong{display:block;font-size:20px}.recipe-stage-intro span{display:block;color:var(--tx2);font-size:13px;line-height:1.45;margin-top:4px}.recipe-ready-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.recipe-ready-summary div{padding:14px 8px;text-align:center;border:1px solid var(--bd);border-radius:12px;background:var(--bg)}.recipe-ready-summary strong{display:block;font-size:21px}.recipe-ready-summary span{font-size:10px;color:var(--tx2)}@media(max-width:640px){.recipe-stage-nav{gap:5px}.recipe-stage-nav button{min-height:54px;padding-inline:3px;font-size:9px}.recipe-stage-actions{margin:0 -16px;padding-left:16px;padding-right:16px}.recipe-stage-actions .recipe-action{flex:1;min-width:0}.recipe-ready-summary{gap:6px}}
-.recipe-stage-nav svg{width:14px;height:14px}
+.recipe-stage-nav svg{width:14px;height:14px}.inventory-pick svg{width:18px;height:18px;flex:0 0 18px}.build-process-grid{position:relative;grid-template-columns:1fr;padding-left:18px}.build-process-grid:before{content:"";position:absolute;left:7px;top:28px;bottom:28px;width:2px;background:var(--bd)}.build-process{position:relative}.build-process:before{content:"";position:absolute;left:-18px;top:28px;width:12px;height:12px;border:3px solid var(--bg);border-radius:50%;background:var(--pr)}
+.ingredient-picker-search{position:sticky;top:72px;z-index:2;background:var(--card);padding-bottom:10px}.ingredient-picker-search input{width:100%;min-height:48px;box-sizing:border-box;border:1px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--tx);font:inherit;font-size:16px;padding:11px 13px}.ingredient-shortlist{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 16px}.ingredient-shortlist span{min-height:36px;display:flex;align-items:center;gap:5px;border-radius:999px;background:var(--prl);color:var(--pr);font-size:12px;font-weight:750;padding:4px 6px 4px 11px}.ingredient-shortlist button{width:30px;height:30px;border:0;border-radius:50%;background:transparent;color:inherit;font-size:18px;cursor:pointer}.inventory-pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;max-height:390px;overflow:auto;overscroll-behavior:contain;padding:2px}.inventory-pick{min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;border:1px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--tx);font:inherit;padding:9px 11px;cursor:pointer}.inventory-pick strong{display:block;font-size:13px}.inventory-pick small{display:block;font-size:10px;color:var(--tx2);margin-top:3px}.inventory-pick.selected{border-color:var(--pr);background:var(--prl);color:var(--pr)}.ingredient-add-missing{margin-top:12px;padding:12px;border:1px dashed var(--bd);border-radius:12px}.ingredient-add-missing>button{width:100%}.ingredient-new-fields{display:grid;grid-template-columns:1fr 120px auto;gap:8px;margin-top:10px}.ingredient-new-fields input,.ingredient-new-fields select{min-height:46px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit;font-size:16px;padding:9px}.process-timeline{position:relative;display:grid;gap:12px;margin:14px 0 18px;padding-left:18px}.process-timeline:before{content:"";position:absolute;left:7px;top:24px;bottom:24px;width:2px;background:var(--bd)}.process-node{position:relative;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;min-height:66px;border:1px solid var(--bd);border-radius:14px;background:var(--bg);padding:10px 10px 10px 15px}.process-node:before{content:"";position:absolute;left:-17px;top:27px;width:12px;height:12px;border:3px solid var(--card);border-radius:50%;background:var(--bd)}.process-node.active{border-color:var(--pr);background:var(--prl)}.process-node.active:before{background:var(--pr)}.process-node-main{border:0;background:transparent;color:var(--tx);font:inherit;text-align:left;cursor:pointer;min-height:44px;padding:3px}.process-node-main strong{display:block;font-size:15px}.process-node-main span{display:block;color:var(--tx2);font-size:11px;margin-top:4px}.process-node-actions{display:flex;gap:4px}.process-node-actions button{width:44px;height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font-size:17px;cursor:pointer}.process-focus{border:1px solid var(--pr);border-radius:14px;padding:14px;background:color-mix(in srgb,var(--prl) 45%,var(--card))}.process-focus-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}.process-focus-head strong{font-size:17px}.process-focus-head span{display:block;font-size:11px;color:var(--tx2);margin-top:3px}@media(max-width:640px){.inventory-pick-grid{grid-template-columns:1fr 1fr;max-height:330px}.ingredient-new-fields{grid-template-columns:1fr 95px}.ingredient-new-fields button{grid-column:1/-1}.process-node{grid-template-columns:1fr}.process-node-actions{justify-content:flex-end}.process-node-actions button{flex:1;width:auto}}
 /* Approved mobile app shell */
 .mob-title-block{min-width:0}.mob-kicker{font-size:10px;color:var(--tx2);line-height:1.2;margin-bottom:2px}.mob-sync{width:44px;height:44px;border:0;border-radius:50%;display:grid;place-items:center;background:transparent;color:var(--tx2);cursor:pointer;transition:background .18s,color .18s}.mob-sync:hover{background:var(--prl);color:var(--pr)}.mob-sync svg{width:19px;height:19px}.mob-avatar{width:38px;height:38px;border:0;cursor:pointer}.mob-alert-count{min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:grid;place-items:center;background:var(--wal);color:#7A4D0B;font-size:10px;font-weight:800}
 .today-snapshot{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border:1px solid var(--bd);border-radius:15px;margin-bottom:18px;overflow:hidden}.today-snapshot button{min-height:78px;border:0;border-right:1px solid var(--bd);background:transparent;color:var(--tx);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:12px;cursor:pointer}.today-snapshot button:last-child{border-right:0}.today-snapshot strong{font-size:23px;line-height:1}.today-snapshot strong.warn{color:var(--wa)}.today-snapshot strong.danger{color:var(--er)}.today-snapshot span{font-size:10px;color:var(--tx2);margin-top:7px}.today-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.today-actions button{min-height:116px;padding:14px;border:1px solid var(--bd);border-radius:15px;background:var(--card);color:var(--tx);text-align:left;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;transition:border-color .18s,background .18s}.today-actions button:hover{border-color:var(--pr);background:var(--prl)}.today-actions button>span{width:38px;height:38px;border-radius:10px;background:var(--prl);color:var(--pr);display:grid;place-items:center;margin-bottom:12px}.today-actions svg{width:19px;height:19px}.today-actions strong{font-size:13px}.today-actions small{font-size:10px;color:var(--tx2);margin-top:4px}
@@ -533,6 +534,7 @@ window.calcDriverPay = function(hrs, miles) {
   return { timePay, gasPay, total: timePay + gasPay };
 };
 window.CATS=["Proteins","Produce","Spices & Seasonings","Oils & Sauces","Grains & Starches","Dairy & Eggs","Canned & Dry Goods","Packaging & Supplies","Other"];
+const CATEGORIES=window.CATS;
 window.STORES=["Restaurant Depot","US Chef Store","QFC","Costco","Trader Joe's","Plaza Latina","Imrans","African Store","Amazon","Other"];
 window.UNITS=["lbs","oz","kg","g","gal","qt","L","ml","ct","bags","boxes","cans","bunches","heads","packs"];
 window.SEED=[
@@ -2736,12 +2738,13 @@ function MealsView({ items }) {
 }
 
 /* ─── GUIDED BUILD MODE ─── */
-function RecipeBuildMode({ recipe, version, processes, steps, ingredients, allocations, session, onClose, flash }) {
+function RecipeBuildMode({ recipe, version, processes, steps, ingredients, allocations, session, onClose, onAddIngredient, flash }) {
   const [events, setEvents] = useState([]);
   const [timers, setTimers] = useState([]);
   const [note, setNote] = useState('');
   const [now, setNow] = useState(Date.now());
   const [busy, setBusy] = useState(false);
+  const [focusedProcessId, setFocusedProcessId] = useState(processes[0]?.id||null);
 
   const reloadSession = async () => {
     const [eventRows, timerRows] = await Promise.all([db.getCookingEvents(session.id), db.getCookingTimers(session.id)]);
@@ -2801,7 +2804,10 @@ function RecipeBuildMode({ recipe, version, processes, steps, ingredients, alloc
   };
   const finish = async () => {
     if(!confirm('Finish this build and move it to review?'))return;
-    try{await db.updateCookingSession(session.id,{status:'review'});onClose();flash?.('Build saved for review');}catch(e){console.error(e);flash?.('Could not finish build');}
+    try{
+      for(const timer of activeTimers){const elapsed=secondsFor(timer);await db.updateCookingTimer(timer.id,{status:'stopped',stopped_at:new Date().toISOString(),final_duration_seconds:elapsed});await writeEvent({event_type:'timer_stopped',process_id:timer.process_id,recipe_step_id:timer.recipe_step_id,duration_seconds:elapsed,structured_data:{timer_id:timer.id,reason:'session_finished'}});}
+      await db.updateCookingSession(session.id,{status:'review'});onClose();flash?.('All timers stopped and build saved for review');
+    }catch(e){console.error(e);flash?.('Could not finish build');}
   };
 
   return <div className="build-mode">
@@ -2809,7 +2815,8 @@ function RecipeBuildMode({ recipe, version, processes, steps, ingredients, alloc
     <main className="build-shell">
       <section className="build-progress"><div><span>Session progress</span><strong>{completedStepIds.size} of {steps.length} steps</strong></div><div className="build-progress-value">{progress}%</div><div className="build-progress-track"><i style={{width:`${progress}%`}} /></div></section>
       {activeTimers.length>0&&<section className="build-timers"><div className="build-section-head"><strong>Active timers</strong><span>{activeTimers.length}</span></div>{activeTimers.map(timer=>{const elapsed=secondsFor(timer),remaining=timer.target_duration_seconds==null?elapsed:Number(timer.target_duration_seconds)-elapsed;return <div className={`build-timer ${remaining<0?'overdue':''}`} key={timer.id}><div><strong>{timer.name}</strong><span>{timer.status}</span></div><output>{remaining<0?'+':''}{clock(remaining)}</output><button onClick={()=>toggleTimer(timer)}>{timer.status==='running'?'Pause':'Resume'}</button><button onClick={()=>stopTimer(timer)}>Stop</button></div>})}</section>}
-      <div className="build-process-grid">{processes.map(process=>{const processSteps=steps.filter(s=>s.process_id===process.id).sort((a,b)=>a.position-b.position);return <section className="build-process" key={process.id}><div className="build-process-head"><div><span>Parallel process</span><strong>{process.name}</strong></div><span>{processSteps.filter(s=>completedStepIds.has(s.id)).length}/{processSteps.length}</span></div>{processSteps.map((step,index)=>{const done=completedStepIds.has(step.id),started=startedStepIds.has(step.id);const stepAllocations=allocations.filter(a=>a.recipe_step_id===step.id);return <article className={`build-step ${done?'done':started?'active':''}`} key={step.id}><div className="build-step-number">{done?'✓':index+1}</div><div className="build-step-body"><span>{done?'Completed':started?'In progress':'Ready'}</span><p>{step.instruction}</p>{stepAllocations.length>0&&<div className="build-step-ingredients">{stepAllocations.map(a=>{const ing=ingredients.find(i=>i.id===a.recipe_ingredient_id);return <span key={a.id}>{a.quantity} {a.unit} {ing?.ingredient_name}</span>})}</div>}<div className="build-step-actions"><button disabled={busy||done} onClick={()=>advanceStep(step)}>{started?'Complete step':'Start step'}</button>{step.expected_duration_seconds>0&&<button onClick={()=>startTimer(step,process)} disabled={activeTimers.some(t=>t.recipe_step_id===step.id)}>Timer · {Math.round(step.expected_duration_seconds/60)}m</button>}</div></div></article>})}</section>})}</div>
+      <section className="recipe-section"><div className="build-section-head"><strong>Choose a process</strong><button className="recipe-action" onClick={onAddIngredient}>Add forgotten ingredient</button></div><div className="process-timeline">{processes.map((process,index)=>{const processSteps=steps.filter(step=>step.process_id===process.id),done=processSteps.filter(step=>completedStepIds.has(step.id)).length;return <div className={`process-node ${focusedProcessId===process.id?'active':''}`} key={process.id}><button className="process-node-main" onClick={()=>setFocusedProcessId(process.id)}><strong>{index+1}. {process.name}</strong><span>{done}/{processSteps.length} steps complete</span></button></div>})}</div></section>
+      <div className="build-process-grid">{processes.filter(process=>process.id===(focusedProcessId||processes[0]?.id)).map(process=>{const processSteps=steps.filter(s=>s.process_id===process.id).sort((a,b)=>a.position-b.position);return <section className="build-process" key={process.id}><div className="build-process-head"><div><span>Selected process</span><strong>{process.name}</strong></div><span>{processSteps.filter(s=>completedStepIds.has(s.id)).length}/{processSteps.length}</span></div>{processSteps.map((step,index)=>{const done=completedStepIds.has(step.id),started=startedStepIds.has(step.id);const stepAllocations=allocations.filter(a=>a.recipe_step_id===step.id);return <article className={`build-step ${done?'done':started?'active':''}`} key={step.id}><div className="build-step-number">{done?<NavIcon name="check" />:index+1}</div><div className="build-step-body"><span>{done?'Completed':started?'In progress':'Ready'}</span><p>{step.instruction}</p>{stepAllocations.length>0&&<div className="build-step-ingredients">{stepAllocations.map(a=>{const ing=ingredients.find(i=>i.id===a.recipe_ingredient_id);return <span key={a.id}>{a.quantity} {a.unit} {ing?.ingredient_name}</span>})}</div>}<div className="build-step-actions"><button disabled={busy||done} onClick={()=>advanceStep(step)}>{started?'Complete step':'Start step'}</button>{step.expected_duration_seconds>0&&<button onClick={()=>startTimer(step,process)} disabled={activeTimers.some(t=>t.recipe_step_id===step.id)}>Timer · {Math.round(step.expected_duration_seconds/60)}m</button>}</div></div></article>})}</section>})}</div>
       <section className="build-note"><div className="build-section-head"><strong>Capture an observation</strong><span>Manual fallback</span></div><textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Record a change, observation, or technique while cooking…" /><button onClick={saveNote} disabled={!note.trim()}>Save note</button></section>
       {events.length>0&&<section className="build-timeline"><div className="build-section-head"><strong>Recent activity</strong><span>{events.length} events</span></div>{events.slice(-6).reverse().map(event=><div key={event.id}><time>{new Date(event.occurred_at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</time><span>{event.event_type.replaceAll('_',' ')}</span>{event.raw_transcript&&<small>{event.raw_transcript}</small>}</div>)}</section>}
     </main>
@@ -2817,7 +2824,7 @@ function RecipeBuildMode({ recipe, version, processes, steps, ingredients, alloc
 }
 
 /* ─── RECIPE BUILDER ─── */
-function RecipeBuilderView({ items, flash }) {
+function RecipeBuilderView({ items, flash, onCreateInventoryItem }) {
   const [data, setData] = useState({ recipes: [], versions: [], processes: [], steps: [], ingredients: [], allocations: [], purchases: [] });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -2831,6 +2838,10 @@ function RecipeBuilderView({ items, flash }) {
   const [buildSession, setBuildSession] = useState(null);
   const [startingBuild, setStartingBuild] = useState(false);
   const [recipeStage, setRecipeStage] = useState(0);
+  const [ingredientSearch, setIngredientSearch] = useState('');
+  const [showNewInventory, setShowNewInventory] = useState(false);
+  const [newInventory, setNewInventory] = useState({ name:'', category:'Other' });
+  const [activeProcessId, setActiveProcessId] = useState(null);
 
   const reload = async () => {
     const [recipes, versions, processes, steps, ingredients, allocations, purchases] = await Promise.all([
@@ -2857,6 +2868,8 @@ function RecipeBuilderView({ items, flash }) {
   const versionIngredients = data.ingredients.filter(i => i.recipe_version_id === versionId);
   const versionProcesses = data.processes.filter(p => p.recipe_version_id === versionId).sort((a,b) => a.position - b.position);
   const versionSteps = data.steps.filter(s => s.recipe_version_id === versionId).sort((a,b) => a.position - b.position);
+  const focusedProcess = versionProcesses.find(process=>process.id===activeProcessId)||versionProcesses[0]||null;
+  const focusedSteps = focusedProcess ? data.steps.filter(step=>step.process_id===focusedProcess.id).sort((a,b)=>a.position-b.position) : [];
 
   const openBuildMode = async () => {
     if (!activeRecipe || !activeVersion || versionSteps.length === 0) return;
@@ -2972,6 +2985,34 @@ function RecipeBuilderView({ items, flash }) {
     } catch (e) { console.error(e); flash?.('Could not add ingredient'); }
   };
 
+  const toggleInventoryIngredient = async (item) => {
+    const existing = versionIngredients.find(ingredient=>ingredient.inventory_item_id===item.id);
+    try {
+      if (existing) {
+        const used=data.allocations.filter(allocation=>allocation.recipe_ingredient_id===existing.id).length;
+        if(used&&!confirm(`${existing.ingredient_name} is used in ${used} step${used===1?'':'s'}. Remove it and those step amounts?`))return;
+        await db.deleteRecipeIngredient(existing.id);
+      }
+      else await db.insertRecipeIngredient({ recipe_version_id:versionId, inventory_item_id:item.id, ingredient_name:item.name, quantity:1, unit:item.unit||'ct', measurement_dimension:'other', position:versionIngredients.length });
+      await reload();
+    } catch(e){console.error(e);flash?.('Could not update ingredient shortlist');}
+  };
+
+  const removeShortlistIngredient = async (ingredient) => {
+    const used=data.allocations.filter(allocation=>allocation.recipe_ingredient_id===ingredient.id).length;
+    if(used&&!confirm(`${ingredient.ingredient_name} is used in ${used} step${used===1?'':'s'}. Remove it and those step amounts?`))return;
+    try{await db.deleteRecipeIngredient(ingredient.id);await reload();}catch(e){console.error(e);flash?.('Could not remove ingredient');}
+  };
+
+  const createInventoryIngredient = async () => {
+    if(!newInventory.name.trim()||!onCreateInventoryItem)return;
+    try{
+      const item=await onCreateInventoryItem(newInventory);
+      await db.insertRecipeIngredient({ recipe_version_id:versionId, inventory_item_id:item.id, ingredient_name:item.name, quantity:1, unit:item.unit||'ct', measurement_dimension:'other', position:versionIngredients.length });
+      setNewInventory({name:'',category:'Other'});setShowNewInventory(false);setIngredientSearch('');await reload();flash?.(`${item.name} added to inventory and this recipe`);
+    }catch(e){console.error(e);flash?.('Could not create inventory ingredient');}
+  };
+
   const chooseInventoryIngredient = (id) => {
     const item = items.find(i => i.id === id);
     setIngredientForm(f => ({ ...f, inventory_item_id: id, ingredient_name: item?.name || '', unit: item?.unit || 'ct' }));
@@ -2981,8 +3022,20 @@ function RecipeBuilderView({ items, flash }) {
     if (!versionId || !processName.trim()) return;
     try {
       const [created] = await db.insertRecipeProcess({ recipe_version_id: versionId, name: processName.trim(), position: versionProcesses.length });
-      setProcessName(''); setStepForm(f=>({...f,process_id:created.id})); await reload(); flash?.(`${created.name} added — record its first step`);
+      setProcessName(''); setActiveProcessId(created.id); setStepForm(f=>({...f,process_id:created.id})); await reload(); flash?.(`${created.name} added — record its first step`);
     } catch (e) { console.error(e); flash?.('Could not add process'); }
+  };
+
+  const moveProcess = async (process, direction) => {
+    const currentIndex=versionProcesses.findIndex(p=>p.id===process.id), targetIndex=currentIndex+direction;
+    if(targetIndex<0||targetIndex>=versionProcesses.length)return;
+    const other=versionProcesses[targetIndex], temporary=Math.max(...versionProcesses.map(item=>Number(item.position)||0))+1000;
+    try{
+      await db.updateRecipeProcess(process.id,{position:temporary});
+      await db.updateRecipeProcess(other.id,{position:process.position});
+      await db.updateRecipeProcess(process.id,{position:other.position});
+      await reload();
+    }catch(e){console.error(e);flash?.('Could not move process');}
   };
 
   const addStep = async () => {
@@ -3000,9 +3053,8 @@ function RecipeBuilderView({ items, flash }) {
 
   const chooseAllocationIngredient = (ingredientId) => {
     const ingredient = versionIngredients.find(i => i.id === ingredientId);
-    const alreadyAllocated = data.allocations.filter(a => a.recipe_ingredient_id === ingredientId).reduce((sum,a)=>sum+Number(a.quantity||0),0);
-    const remaining = ingredient ? Math.max(0, Number(ingredient.quantity) - alreadyAllocated) : 0;
-    setAllocationForm({ recipe_ingredient_id: ingredientId, quantity: remaining || ingredient?.quantity || '', unit: ingredient?.unit || '', note: '' });
+    const inventoryItem = items.find(item=>item.id===ingredient?.inventory_item_id);
+    setAllocationForm({ recipe_ingredient_id: ingredientId, quantity: '', unit: inventoryItem?.unit || ingredient?.unit || '', note: '' });
   };
 
   const addStepAllocation = async (stepId) => {
@@ -3046,7 +3098,7 @@ function RecipeBuilderView({ items, flash }) {
     return sum + observed * Number(ing.quantity || 0);
   }, 0);
 
-  if (buildSession) return <RecipeBuildMode recipe={activeRecipe} version={activeVersion} processes={versionProcesses} steps={versionSteps} ingredients={versionIngredients} allocations={data.allocations.filter(a=>a.recipe_version_id===versionId)} session={buildSession} onClose={()=>setBuildSession(null)} flash={flash} />;
+  if (buildSession) return <RecipeBuildMode recipe={activeRecipe} version={activeVersion} processes={versionProcesses} steps={versionSteps} ingredients={versionIngredients} allocations={data.allocations.filter(a=>a.recipe_version_id===versionId)} session={buildSession} onClose={()=>setBuildSession(null)} onAddIngredient={()=>{setBuildSession(null);setRecipeStage(1);}} flash={flash} />;
 
   if (activeId) {
     return (
@@ -3074,29 +3126,21 @@ function RecipeBuilderView({ items, flash }) {
           </section></>}
 
           {activeId !== 'new' && <>
-            {recipeStage===1&&<><div className="recipe-stage-intro"><strong>What goes into it?</strong><span>Add ingredients as you prepare them. Link stock items when there is a match, but don’t let that interrupt cooking.</span></div><section className="recipe-section">
-              <div className="recipe-section-title">Ingredients</div><div className="recipe-section-sub">Link canonical stock items when possible. Unlinked ingredients are allowed.</div>
-              {versionIngredients.length === 0 && <div className="recipe-empty">No ingredients added yet.</div>}
-              {versionIngredients.map(ing => <div className="recipe-row" key={ing.id}><div className="recipe-row-main"><div className="recipe-row-name">{ing.ingredient_name}</div><div className="recipe-row-meta">{ing.quantity} {ing.unit}{ing.preparation_note ? ` · ${ing.preparation_note}` : ''}{ing.inventory_item_id ? ' · linked to stock' : ' · not linked'}</div></div><button className="recipe-remove" aria-label={`Remove ${ing.ingredient_name}`} onClick={async()=>{await db.deleteRecipeIngredient(ing.id);await reload();}}>×</button></div>)}
-              <div className="recipe-inline">
-                <div className="recipe-field wide"><label>Inventory item (optional)</label><select value={ingredientForm.inventory_item_id} onChange={e=>chooseInventoryIngredient(e.target.value)}><option value="">Not linked to stock</option>{[...items].sort((a,b)=>a.name.localeCompare(b.name)).map(i=><option key={i.id} value={i.id}>{i.name}</option>)}</select></div>
-                <div className="recipe-field wide"><label>Ingredient name</label><input value={ingredientForm.ingredient_name} onChange={e=>setIngredientForm({...ingredientForm,ingredient_name:e.target.value})} placeholder="Ingredient" /></div>
-                <div className="recipe-field"><label>Amount</label><input type="number" min="0.01" step="0.01" value={ingredientForm.quantity} onChange={e=>setIngredientForm({...ingredientForm,quantity:e.target.value})} /></div>
-                <div className="recipe-field"><label>Unit</label><input value={ingredientForm.unit} onChange={e=>setIngredientForm({...ingredientForm,unit:e.target.value})} placeholder="lb, cup, ct" /></div>
-                <div className="recipe-field wide"><label>Preparation</label><input value={ingredientForm.preparation_note} onChange={e=>setIngredientForm({...ingredientForm,preparation_note:e.target.value})} placeholder="diced, divided, room temperature" /></div>
-                <button className="recipe-action primary" onClick={addIngredient} disabled={!ingredientForm.ingredient_name.trim()||Number(ingredientForm.quantity)<=0}>Add ingredient</button>
-              </div>
-              {versionIngredients.length > 0 && <div style={{marginTop:14,padding:12,borderRadius:12,background:'var(--bg)',display:'flex',justifyContent:'space-between',gap:12}}><span style={{fontSize:12,color:'var(--tx2)'}}>Estimated batch cost from current purchase observations</span><strong>${estimateCost(versionIngredients).toFixed(2)}</strong></div>}
+            {recipeStage===1&&<><div className="recipe-stage-intro"><strong>Choose your ingredient shortlist</strong><span>Select everything this recipe may use. Amounts are recorded later inside the exact step where you use them.</span></div><section className="recipe-section">
+              <div className="recipe-section-title">Selected ingredients</div><div className="recipe-section-sub">This shortlist follows you into every cooking process.</div>
+              {versionIngredients.length===0?<div className="recipe-empty">Select ingredients from inventory below.</div>:<div className="ingredient-shortlist">{versionIngredients.map(ingredient=><span key={ingredient.id}>{ingredient.ingredient_name}<button aria-label={`Remove ${ingredient.ingredient_name}`} onClick={()=>removeShortlistIngredient(ingredient)}>×</button></span>)}</div>}
+              <div className="ingredient-picker-search"><label className="recipe-row-name" htmlFor="inventory-ingredient-search">Find in inventory</label><input id="inventory-ingredient-search" value={ingredientSearch} onChange={e=>setIngredientSearch(e.target.value)} placeholder="Search inventory by name or category" /></div>
+              <div className="inventory-pick-grid">{[...items].filter(item=>`${item.name} ${item.category}`.toLowerCase().includes(ingredientSearch.trim().toLowerCase())).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,60).map(item=>{const selected=versionIngredients.some(ingredient=>ingredient.inventory_item_id===item.id);return <button className={`inventory-pick ${selected?'selected':''}`} key={item.id} onClick={()=>toggleInventoryIngredient(item)} aria-pressed={selected}><span><strong>{item.name}</strong><small>{item.category||'Other'} · in stock {item.current_qty} {item.unit}</small></span><NavIcon name={selected?'check':'add'} /></button>})}</div>
+              <div className="ingredient-add-missing">{!showNewInventory?<button className="recipe-action" onClick={()=>{setShowNewInventory(true);setNewInventory({name:ingredientSearch,category:'Other'});}}>Can’t find it? Add it to inventory</button>:<div className="ingredient-new-fields"><input aria-label="New inventory item name" value={newInventory.name} onChange={e=>setNewInventory({...newInventory,name:e.target.value})} placeholder="Ingredient name" autoFocus /><select aria-label="Inventory category" value={newInventory.category} onChange={e=>setNewInventory({...newInventory,category:e.target.value})}>{CATEGORIES.map(category=><option key={category}>{category}</option>)}</select><button className="recipe-action primary" onClick={createInventoryIngredient} disabled={!newInventory.name.trim()}>Add to inventory</button></div>}</div>
             </section></>}
 
             {recipeStage===2&&<><div className="recipe-stage-intro"><strong>How do you cook it?</strong><span>Create a process for each workstream, then record its steps in order. Separate processes can run at the same time.</span></div><section className="recipe-section">
               <div className="recipe-section-title">Cooking processes</div><div className="recipe-section-sub">Separate parallel workstreams such as sauce, rice, protein, and final assembly.</div>
-              {versionProcesses.length === 0 && <div className="recipe-empty">Add a process to begin recording the cooking sequence.</div>}
-              {versionProcesses.map(process => {
-                const steps = data.steps.filter(s => s.process_id === process.id).sort((a,b)=>a.position-b.position);
-                return <div className="recipe-process" key={process.id}>
-                  <div className="recipe-process-head"><div><div className="recipe-row-name">{process.name}</div><div className="recipe-row-meta">{steps.length} step{steps.length===1?'':'s'}</div></div><button className="recipe-remove" aria-label={`Remove ${process.name}`} onClick={async()=>{if(confirm(`Remove ${process.name} and its steps?`)){await db.deleteRecipeProcess(process.id);await reload();}}}>×</button></div>
-                  {steps.map((step,index) => {
+              {versionProcesses.length === 0 && <div className="recipe-empty">Add your first process to start the connected timeline.</div>}
+              {versionProcesses.length>0&&<div className="process-timeline">{versionProcesses.map((process,processIndex)=>{const processSteps=data.steps.filter(step=>step.process_id===process.id);return <div className={`process-node ${focusedProcess?.id===process.id?'active':''}`} key={process.id}><button className="process-node-main" onClick={()=>{setActiveProcessId(process.id);setStepForm(form=>({...form,process_id:process.id}));}}><strong>{process.name}</strong><span>{processSteps.length} step{processSteps.length===1?'':'s'} · position {processIndex+1}</span></button><div className="process-node-actions"><button aria-label={`Move ${process.name} up`} disabled={processIndex===0} onClick={()=>moveProcess(process,-1)}>↑</button><button aria-label={`Move ${process.name} down`} disabled={processIndex===versionProcesses.length-1} onClick={()=>moveProcess(process,1)}>↓</button></div></div>})}</div>}
+              {focusedProcess&&<div className="process-focus"><div className="process-focus-head"><div><strong>{focusedProcess.name}</strong><span>Add its steps and the exact ingredient amounts used in each one.</span></div><div style={{display:'flex',gap:6}}><button className="recipe-action" onClick={()=>setRecipeStage(1)}>Add forgotten ingredient</button><button className="recipe-remove" aria-label={`Remove ${focusedProcess.name}`} onClick={async()=>{if(confirm(`Remove ${focusedProcess.name} and its steps?`)){await db.deleteRecipeProcess(focusedProcess.id);setActiveProcessId(null);await reload();}}}>×</button></div></div>
+                  {focusedSteps.length===0&&<div className="recipe-empty">No steps yet. Record the first action below.</div>}
+                  {focusedSteps.map((step,index) => {
                     const allocations = data.allocations.filter(a => a.recipe_step_id === step.id).sort((a,b)=>a.position-b.position);
                     return <div className="recipe-step" key={step.id}>
                       <div className="recipe-step-num">{index+1}</div>
@@ -3111,7 +3155,7 @@ function RecipeBuilderView({ items, flash }) {
                           {activeVersion?.status === 'draft' && <button className="step-add-ingredient" onClick={()=>{setAllocatingStepId(allocatingStepId===step.id?null:step.id);setAllocationForm({recipe_ingredient_id:'',quantity:'',unit:'',note:''});}}>Assign ingredient</button>}
                         </div>
                         {allocatingStepId === step.id && <div className="step-allocation-form">
-                          <div className="recipe-field wide"><label>Ingredient</label><select value={allocationForm.recipe_ingredient_id} onChange={e=>chooseAllocationIngredient(e.target.value)}><option value="">Select ingredient</option>{versionIngredients.map(ingredient=><option key={ingredient.id} value={ingredient.id}>{ingredient.ingredient_name} · {ingredient.quantity} {ingredient.unit} total</option>)}</select></div>
+                          <div className="recipe-field wide"><label>Ingredient</label><select value={allocationForm.recipe_ingredient_id} onChange={e=>chooseAllocationIngredient(e.target.value)}><option value="">Select from shortlist</option>{versionIngredients.map(ingredient=><option key={ingredient.id} value={ingredient.id}>{ingredient.ingredient_name}</option>)}</select></div>
                           <div className="recipe-field"><label>Amount used</label><input type="number" min="0.01" step="0.01" value={allocationForm.quantity} onChange={e=>setAllocationForm({...allocationForm,quantity:e.target.value})} /></div>
                           <div className="recipe-field"><label>Unit</label><input value={allocationForm.unit} onChange={e=>setAllocationForm({...allocationForm,unit:e.target.value})} /></div>
                           <div className="recipe-field wide"><label>Step note</label><input value={allocationForm.note} onChange={e=>setAllocationForm({...allocationForm,note:e.target.value})} placeholder="Optional: divided, reserve half…" /></div>
@@ -3121,13 +3165,12 @@ function RecipeBuilderView({ items, flash }) {
                       <button className="recipe-remove" aria-label={`Remove step ${index+1}`} onClick={async()=>{await db.deleteRecipeStep(step.id);await reload();}}>×</button>
                     </div>;
                   })}
-                </div>;
-              })}
+                <div className="recipe-inline"><div className="recipe-field wide"><label>Next step in {focusedProcess.name}</label><textarea value={stepForm.instruction} onChange={e=>setStepForm({...stepForm,process_id:focusedProcess.id,instruction:e.target.value})} placeholder="Describe what you do in this step" /></div><div className="recipe-field"><label>Timer minutes (optional)</label><input type="number" min="0" step="1" inputMode="numeric" value={stepForm.expected_duration_seconds} onChange={e=>setStepForm({...stepForm,process_id:focusedProcess.id,expected_duration_seconds:e.target.value})} /></div><button className="recipe-action primary" onClick={addStep} disabled={!stepForm.instruction.trim()}>Add step</button></div>
+                </div>}
               <div className="recipe-inline"><div className="recipe-field wide"><label>New process</label><input value={processName} onChange={e=>setProcessName(e.target.value)} placeholder="e.g. Tomato sauce" /></div><button className="recipe-action primary" onClick={addProcess} disabled={!processName.trim()}>Add process</button></div>
-              {versionProcesses.length > 0 && <div className="recipe-inline"><div className="recipe-field"><label>Process</label><select value={stepForm.process_id} onChange={e=>setStepForm({...stepForm,process_id:e.target.value})}><option value="">Select process</option>{versionProcesses.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div><div className="recipe-field wide"><label>Instruction</label><textarea value={stepForm.instruction} onChange={e=>setStepForm({...stepForm,instruction:e.target.value})} placeholder="Describe exactly what happens in this step" /></div><div className="recipe-field"><label>Expected minutes</label><input type="number" min="0" step="1" value={stepForm.expected_duration_seconds} onChange={e=>setStepForm({...stepForm,expected_duration_seconds:e.target.value})} /></div><button className="recipe-action primary" onClick={addStep} disabled={!stepForm.process_id||!stepForm.instruction.trim()}>Add step</button></div>}
             </section></>}
 
-            {recipeStage===3&&<><div className="recipe-stage-intro"><strong>Ready to build while you cook</strong><span>Review the structure, then open a guided session with independent process progress, timers, and notes.</span></div><section className="recipe-section"><div className="recipe-section-title">Recipe snapshot</div><div className="recipe-ready-summary"><div><strong>{versionIngredients.length}</strong><span>Ingredients</span></div><div><strong>{versionProcesses.length}</strong><span>Processes</span></div><div><strong>{versionSteps.length}</strong><span>Steps</span></div></div><div className="recipe-section-sub">Build sessions record what happens without deducting inventory.</div>{versionSteps.length===0&&<div className="recipe-empty">Add at least one cooking step before starting Build Mode.</div>}</section></>}
+            {recipeStage===3&&<><div className="recipe-stage-intro"><strong>Ready to build while you cook</strong><span>Your processes stay connected in timeline order. Build Mode keeps every active timer visible even when you work in another process.</span></div><section className="recipe-section"><div className="recipe-section-title">Recipe timeline</div><div className="recipe-ready-summary"><div><strong>{versionIngredients.length}</strong><span>Shortlist</span></div><div><strong>{versionProcesses.length}</strong><span>Processes</span></div><div><strong>{versionSteps.length}</strong><span>Steps</span></div></div><div className="process-timeline">{versionProcesses.map((process,index)=>{const processSteps=data.steps.filter(step=>step.process_id===process.id);return <div className="process-node" key={process.id}><button className="process-node-main" onClick={()=>{setActiveProcessId(process.id);setRecipeStage(2);}}><strong>{index+1}. {process.name}</strong><span>{processSteps.length} step{processSteps.length===1?'':'s'} · tap to edit</span></button></div>})}</div><div className="recipe-section-sub">Build sessions record observations and timers without deducting inventory.</div></section></>}
           </>}
           <div className="recipe-stage-actions">
             {recipeStage>0&&<button className="recipe-action" onClick={()=>setRecipeStage(recipeStage-1)}>Back</button>}
@@ -4940,6 +4983,12 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
     } catch {flash('Session start failed');return null;}
   }, [flash]);
 
+  const createRecipeInventoryItem = useCallback(async ({name,category}) => {
+    const [created] = await db.insert({ name:name.trim(), category:category||'Other', store:'Other', unit:'ct', current_qty:0, par_level:0, price:0, note:'Added from Recipe Builder' });
+    setItems(previous=>[...previous,created].sort((a,b)=>a.name.localeCompare(b.name)));
+    return created;
+  }, []);
+
   const checkItem = useCallback(async (id) => {
     const item = items.find((i) => i.id === id);if (!item) return;
     const isChecked = !!item.checked_at;
@@ -5062,7 +5111,7 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
         {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onDelete={deleteItem} flash={flash} />}
         {view === 'shopping' && <ShoppingView items={items} session={session} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onShopperNote={updateShopperNote} onScanReceipt={() => setShowReceiptScanner(true)} flash={flash} />}
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
-        {view === 'meals' && <RecipeBuilderView items={items} flash={flash} />}
+        {view === 'meals' && <RecipeBuilderView items={items} flash={flash} onCreateInventoryItem={createRecipeInventoryItem} />}
         {view === 'add' && <AddView onAdd={addItem} busy={syncing} flash={flash} onScanReceipt={() => setShowReceiptScanner(true)} />}
         {view === 'history' && <HistoryView sessions={sessions} inventoryItems={items} onSessionUpdate={(sid, fields) => setSessions(p => p.map(s => s.id === sid ? { ...s, ...fields } : s))} onInventoryUpdate={(itemId, fields) => setItems(p => p.map(i => i.id === itemId ? { ...i, ...fields } : i))} />}
       </div>
