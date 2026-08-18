@@ -1,6 +1,6 @@
 # Recipe Builder schema and migration plan
 
-Status: proposed for approval. No production database changes have been applied.
+Status: approved for migration-file implementation on 2026-08-18. No production database changes have been applied.
 
 ## Goals
 
@@ -126,6 +126,7 @@ Allocates part of a consolidated ingredient to a particular step. This preserves
 
 | Column | Type | Notes |
 | --- | --- | --- |
+| `recipe_version_id` | uuid | Required; prevents allocations across recipe versions |
 | `recipe_step_id` | uuid | Required |
 | `recipe_ingredient_id` | uuid | Required |
 | `quantity` | numeric | Positive |
