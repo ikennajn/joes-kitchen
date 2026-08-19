@@ -61,6 +61,9 @@ begin
   if (select count(*) from public.receipt_aliases where store = 'Test Store' and raw_name in ('RICE 2LB', 'BEANS CAN')) <> 2 then
     raise exception 'Confirmed aliases were not saved';
   end if;
+  if (select count(*) from public.inventory_transactions where source_receipt_id = '50000000-0000-0000-0000-000000000001' and transaction_type = 'receipt_purchase') <> 2 then
+    raise exception 'Confirmed receipt did not write the inventory ledger';
+  end if;
 end;
 $$;
 

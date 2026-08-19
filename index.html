@@ -114,9 +114,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .stock-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .stock-detail-kicker{font-size:10px;color:var(--tx2);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
 .stock-detail-name{font-size:24px;font-weight:700;letter-spacing:-.5px}
-.stock-detail-close{width:38px;height:38px;border:0;border-radius:50%;background:var(--bg);color:var(--tx);font-size:20px;cursor:pointer;flex-shrink:0}
+.stock-detail-close{width:44px;height:44px;border:0;border-radius:50%;background:var(--bg);color:var(--tx);font-size:20px;cursor:pointer;flex-shrink:0}
 .stock-level-card{padding:16px;background:var(--prl);border:1px solid #CFE8DA;border-radius:15px}
+.stock-level-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .stock-level-value{font-size:32px;font-weight:700;letter-spacing:-1px;margin-top:3px}
+.stock-trust{display:inline-flex;align-items:center;min-height:28px;padding:5px 9px;border-radius:999px;background:var(--bg);color:var(--tx2);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;text-align:center}
+.stock-trust.counted{background:var(--okl);color:var(--ok)}
+.stock-trust.receipt_updated{background:var(--prl);color:var(--pr);box-shadow:inset 0 0 0 1px var(--bd)}
+.stock-trust.estimated,.stock-trust.overdue{background:var(--wal);color:var(--wa)}
+.stock-trust.unverified{background:var(--erl);color:var(--er)}
 .stock-meter{height:7px;border-radius:999px;background:var(--bd);overflow:hidden;margin:12px 0}
 .stock-meter-fill{height:100%;border-radius:inherit;background:var(--pr)}
 .stock-level-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -139,6 +145,33 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .stock-history-date{font-size:10px;color:var(--tx2);min-width:72px}
 .stock-history-body{flex:1;min-width:0}
 .stock-history-price{font-size:12px;font-weight:700}
+.stock-edit-summary{margin-bottom:12px;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--bg)}
+.stock-edit-note{font-size:10px;line-height:1.45;color:var(--tx2)}
+.stock-adjust-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stock-adjust-actions button{min-height:72px;padding:10px;border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);text-align:left;cursor:pointer;transition:border-color .18s,background .18s}
+.stock-adjust-actions button:hover,.stock-adjust-actions button[aria-pressed="true"]{border-color:var(--pr);background:var(--prl)}
+.stock-adjust-actions strong,.stock-adjust-actions span{display:block}
+.stock-adjust-actions strong{font-size:12px}
+.stock-adjust-actions span{font-size:10px;line-height:1.35;color:var(--tx2);margin-top:4px}
+.stock-adjust-form{margin-top:9px;padding:12px;border:1px solid var(--bd);border-radius:12px;background:var(--bg)}
+.stock-adjust-intro{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:13px}
+.stock-adjust-intro button{width:44px;height:44px;border:0;border-radius:9px;background:var(--card);color:var(--tx2);font-size:18px;cursor:pointer}
+.stock-adjust-form label{display:block;margin:9px 0 5px;color:var(--tx2);font-size:10px;font-weight:700}
+.stock-adjust-form input{width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit;font-size:14px}
+.stock-adjust-form .btn-full{min-height:46px;margin-top:11px}
+.stock-adjust-actions button:focus-visible,.stock-adjust-intro button:focus-visible,.stock-adjust-form input:focus-visible,.stock-detail-close:focus-visible{outline:3px solid color-mix(in srgb,var(--pr) 40%,transparent);outline-offset:2px}
+.stock-adjust-form button:disabled,.bulk-bar button:disabled{opacity:.45;cursor:not-allowed}
+.stock-adjust-error,.bulk-error{margin-top:9px;padding:8px 10px;border-radius:8px;background:var(--erl);color:var(--er);font-size:10px;font-weight:700}
+.stock-ledger-list{overflow:hidden;border:1px solid var(--bd);border-radius:13px;background:var(--card);padding:0 12px}
+.stock-ledger-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;min-height:58px;padding:9px 0;border-bottom:1px solid var(--bd)}
+.stock-ledger-row:last-child{border-bottom:0}
+.stock-ledger-delta{min-width:66px;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+.stock-ledger-delta.positive{color:var(--ok)}
+.stock-ledger-delta.negative{color:var(--er)}
+.stock-ledger-row>span:nth-child(2){min-width:0;display:flex;flex-direction:column}
+.stock-ledger-row strong{font-size:11px}
+.stock-ledger-row small{margin-top:3px;color:var(--tx2);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stock-ledger-row time{color:var(--tx2);font-size:9px;white-space:nowrap}
 .stat-card:nth-child(1){animation:statIn .3s .04s both}
 .stat-card:nth-child(2){animation:statIn .3s .09s both}
 .stat-card:nth-child(3){animation:statIn .3s .14s both}
@@ -327,6 +360,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   .stat-grid{grid-template-columns:repeat(2,1fr)}
   .f-row{flex-wrap:wrap}
   .f-row .f-grp{min-width:calc(50% - 6px)}
+  .stock-detail-modal{max-width:calc(100vw - 20px);max-height:calc(100dvh - 20px);padding:17px;border-radius:18px}
+  .stock-detail-name{font-size:21px}
+  .stock-adjust-actions{gap:6px}
+  .stock-adjust-actions button{min-height:76px;padding:9px 8px}
+  .stock-ledger-row{grid-template-columns:70px minmax(0,1fr)}
+  .stock-ledger-row time{grid-column:2}
 }
 .recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}.recipe-card{padding:18px;border:1px solid var(--bd);background:var(--card);border-radius:16px;cursor:pointer;transition:border-color .18s ease,background .18s ease}.recipe-card:hover{border-color:var(--pr)}.recipe-card:focus-visible,.recipe-action:focus-visible{outline:3px solid color-mix(in srgb,var(--pr) 30%,transparent);outline-offset:2px}.recipe-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.recipe-name{font-size:18px;font-weight:800;line-height:1.25}.recipe-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.recipe-chip{font-size:11px;font-weight:700;color:var(--tx2);border:1px solid var(--bd);border-radius:999px;padding:5px 9px}.recipe-status{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,transparent);border-radius:999px;padding:5px 8px}.recipe-editor{position:fixed;inset:0;z-index:120;background:var(--bg);overflow:auto}.recipe-editor-shell{width:min(920px,100%);margin:0 auto;padding:20px 20px 110px}.recipe-editor-head{position:sticky;top:0;z-index:4;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 16px;border-bottom:1px solid var(--bd);margin-bottom:18px}.recipe-back,.recipe-action{min-height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit;font-size:12px;font-weight:700;padding:9px 12px;cursor:pointer}.recipe-action.primary{border-color:var(--pr);background:var(--pr);color:white}.recipe-section{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px}.recipe-section-title{font-size:15px;font-weight:800;margin-bottom:4px}.recipe-section-sub{font-size:12px;color:var(--tx2);margin-bottom:14px}.recipe-fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}.recipe-field label{display:block;font-size:11px;font-weight:700;color:var(--tx2);margin:0 0 5px}.recipe-field input,.recipe-field textarea,.recipe-field select{width:100%;min-height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit;font-size:14px;padding:10px;box-sizing:border-box}.recipe-field textarea{min-height:86px;resize:vertical}.recipe-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--bd)}.recipe-row:first-of-type{border-top:0}.recipe-row-main{flex:1;min-width:0}.recipe-row-name{font-size:13px;font-weight:750}.recipe-row-meta{font-size:11px;color:var(--tx2);margin-top:3px}.recipe-remove{width:44px;height:44px;border:0;background:transparent;color:var(--er);font-size:20px;cursor:pointer;border-radius:10px}.recipe-inline{display:grid;grid-template-columns:2fr .7fr 1fr auto;gap:8px;margin-top:12px}.recipe-process{border:1px solid var(--bd);border-radius:12px;padding:13px;margin-top:10px}.recipe-process-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.recipe-step{display:flex;gap:10px;padding:11px 0;border-top:1px solid var(--bd);margin-top:10px}.recipe-step-num{width:26px;height:26px;flex:0 0 26px;border-radius:50%;display:grid;place-items:center;background:var(--prl);color:var(--pr);font-size:11px;font-weight:800}.recipe-step-copy{font-size:13px;line-height:1.45;white-space:pre-wrap}.recipe-empty{padding:26px 14px;text-align:center;color:var(--tx2);font-size:13px;border:1px dashed var(--bd);border-radius:12px}.recipe-fab{display:none}
 @media(max-width:640px){.recipe-grid{grid-template-columns:1fr}.recipe-editor-shell{padding:8px 14px 108px}.recipe-editor-head{padding-top:max(10px,env(safe-area-inset-top))}.recipe-fields{grid-template-columns:1fr 1fr}.recipe-fields .wide{grid-column:1/-1}.recipe-inline{grid-template-columns:1fr 1fr}.recipe-inline .wide{grid-column:1/-1}.recipe-action{min-height:48px}.recipe-fab{display:block;position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:8;border:0;border-radius:999px;background:var(--pr);color:white;min-height:50px;padding:0 18px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}}
@@ -467,6 +506,8 @@ window.db={
   updateSessionReceipt:(id,fields)=>q(`session_receipts?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
   deleteSessionReceipt:(id)=>q(`session_receipts?id=eq.${id}`,{method:"DELETE"}),
   confirmReceiptReview:(receiptId,reviewItems)=>q("rpc/confirm_receipt_review",{method:"POST",body:JSON.stringify({p_receipt_id:receiptId,p_review_items:reviewItems})}),
+  getInventoryTransactions:(itemId)=>q(`inventory_transactions?inventory_item_id=eq.${itemId}&order=occurred_at.desc&limit=50`),
+  applyInventoryAdjustment:(itemId,transactionType,quantity,mode,reason,metadata={})=>q("rpc/apply_inventory_adjustment",{method:"POST",body:JSON.stringify({p_inventory_item_id:itemId,p_transaction_type:transactionType,p_quantity:quantity,p_mode:mode,p_reason:reason||null,p_metadata:metadata})}),
   getHousehold:()=>q("household_members?select=household_id,role&limit=1"),
   uploadFile: async (bucket, path, file) => {
     const membership = await window.db.getHousehold();
@@ -665,7 +706,6 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onDetails, onUpdate,
   const pct = item.par_level > 0 ? Math.min(item.current_qty / item.par_level * 100, 100) : 0;
   const status = item.current_qty === 0 ? 'out' : item.current_qty < item.par_level ? 'low' : 'ok';
   const bc = status === 'out' ? 'var(--er)' : status === 'low' ? 'var(--wa)' : 'var(--ok)';
-  const max = Math.max(item.par_level * 2, 10);
   const packSize = Number(item.pack_size || 1);
   const showPackInfo = packSize > 1;
   const packsRemaining = showPackInfo ? (item.current_qty / packSize).toFixed(1) : null;
@@ -693,8 +733,8 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onDetails, onUpdate,
       </div>
       {editing && !bulk &&
       <div className="edit-panel">
-          <button className="btn-pr" style={{ width: '100%', marginBottom: 13 }} onClick={() => onDetails(item)}>View stock details & store prices</button>
-          <div style={{ marginBottom: 12 }}>
+          <button className="btn-pr" style={{ width: '100%', marginBottom: 13 }} onClick={() => onDetails(item)}>Count, waste or adjust stock</button>
+          <div className="stock-edit-summary">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
               <label className="e-lbl">Stock Level</label>
               <span style={{ fontSize: 14, fontWeight: 700, color: bc }}>
@@ -702,20 +742,7 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onDetails, onUpdate,
                 {showPackInfo && <span style={{ fontSize: 11, color: 'var(--mu)', fontWeight: 500 }}> ({packsRemaining} packs)</span>}
               </span>
             </div>
-            <input type="range" min={0} max={max} step={packSize > 1 ? 0.5 : 1} value={item.current_qty}
-          onChange={(e) => onUpdate(item.id, 'current_qty', +e.target.value)}
-          style={{ background: `linear-gradient(to right,${bc} ${item.current_qty / max * 100}%,var(--bd) ${item.current_qty / max * 100}%)` }} />
-          
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--mu)', marginTop: 3 }}>
-              <span>0</span><span style={{ color: 'var(--pr)', fontWeight: 700 }}>Par: {item.par_level}</span><span>{max}</span>
-            </div>
-          </div>
-          <div className="e-row" style={{ marginBottom: 11 }}>
-            <label className="e-lbl">Quick</label>
-            <div className="qk-btns">
-              {[-5, -1].map((n) => <button key={n} className="qk-btn qk-m" onClick={() => onUpdate(item.id, 'current_qty', Math.max(0, item.current_qty + n))}>{n}</button>)}
-              {[1, 5].map((n) => <button key={n} className="qk-btn qk-p" onClick={() => onUpdate(item.id, 'current_qty', item.current_qty + n)}>+{n}</button>)}
-            </div>
+            <div className="stock-edit-note">Quantity changes are recorded in the stock history. Open the stock tools above to make a change.</div>
           </div>
           <div className="e-row"><label className="e-lbl">Par</label><input type="number" className="e-inp" value={item.par_level} onChange={(e) => onUpdate(item.id, 'par_level', Math.max(0, +e.target.value))} /></div>
           <div className="e-row"><label className="e-lbl">Unit</label><select className="e-inp" value={item.unit} onChange={(e) => onUpdate(item.id, 'unit', e.target.value)}>{UNITS.map((u) => <option key={u}>{u}</option>)}</select></div>
@@ -850,7 +877,12 @@ function DashboardView({ items, sessions, onNavigate, onScanReceipt, flash }) {
 }
 
 /* ─── INVENTORY ─── */
-function StockDetailModal({ item, relatedItems, purchases, loading, onClose }) {
+function StockDetailModal({ item, relatedItems, purchases, loading, transactions, transactionsLoading, onAdjust, onClose }) {
+  const [adjustType, setAdjustType] = useState(null);
+  const [adjustQty, setAdjustQty] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
+  const [adjustBusy, setAdjustBusy] = useState(false);
+  const [adjustError, setAdjustError] = useState('');
   const par = Number(item.par_level || 0);
   const current = Number(item.current_qty || 0);
   const need = Math.max(0, par - current);
@@ -864,6 +896,23 @@ function StockDetailModal({ item, relatedItems, purchases, loading, onClose }) {
     return map;
   }, {});
   const storeListings = relatedItems.length > 0 ? relatedItems : [item];
+  const verifiedAt = item.last_verified_at ? new Date(item.last_verified_at) : null;
+  const daysSinceVerified = verifiedAt ? Math.floor((Date.now() - verifiedAt.getTime()) / 86400000) : null;
+  const quantityState = daysSinceVerified != null && daysSinceVerified > 7 ? 'overdue' : (item.quantity_source || 'unverified');
+  const stateLabels = { counted:'Physically counted', receipt_updated:'Receipt updated', estimated:'Estimated', unverified:'Not verified', overdue:'Count overdue' };
+  const transactionLabels = { opening_balance:'Opening balance', receipt_purchase:'Receipt purchase', physical_count:'Physical count', waste:'Waste', manual_adjustment:'Manual adjustment', recipe_usage:'Recipe usage' };
+  const beginAdjustment = type => { setAdjustType(type); setAdjustQty(type === 'physical_count' ? String(current) : ''); setAdjustReason(''); setAdjustError(''); };
+  const submitAdjustment = async e => {
+    e.preventDefault();
+    const quantity = Number(adjustQty);
+    if (!Number.isFinite(quantity) || (adjustType !== 'manual_adjustment' && quantity < 0)) { setAdjustError('Enter a valid quantity.'); return; }
+    setAdjustBusy(true); setAdjustError('');
+    try {
+      await onAdjust(adjustType, quantity, adjustType === 'physical_count' ? 'absolute' : 'delta', adjustReason);
+      setAdjustType(null); setAdjustQty(''); setAdjustReason('');
+    } catch (error) { setAdjustError(error.message || 'Inventory adjustment failed.'); }
+    setAdjustBusy(false);
+  };
   return <div className="overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
     <section className="modal stock-detail-modal" role="dialog" aria-modal="true" aria-label={`${item.name} stock details`}>
       <div className="stock-detail-head">
@@ -871,13 +920,31 @@ function StockDetailModal({ item, relatedItems, purchases, loading, onClose }) {
         <button className="stock-detail-close" aria-label="Close stock details" onClick={onClose}>×</button>
       </div>
       <div className="stock-level-card">
-        <div className="stock-detail-label">Current stock</div><div className="stock-level-value">{current} {item.unit}</div>
+        <div className="stock-level-top"><div><div className="stock-detail-label">Current stock</div><div className="stock-level-value">{current} {item.unit}</div></div><span className={`stock-trust ${quantityState}`}>{stateLabels[quantityState] || quantityState}</span></div>
         <div className="stock-meter" role="progressbar" aria-label="Current stock compared with par" aria-valuenow={current} aria-valuemin="0" aria-valuemax={Math.max(par, current, 1)}><div className="stock-meter-fill" style={{ width: `${pct}%` }} /></div>
         <div className="stock-level-grid">
           <div><div className="stock-detail-label">Par level</div><div className="stock-detail-value">{par} {item.unit}</div></div>
           <div><div className="stock-detail-label">Reorder at</div><div className="stock-detail-value">{par} {item.unit}</div></div>
           <div><div className="stock-detail-label">Planned need</div><div className="stock-detail-value">{need} {item.unit}</div></div>
         </div>
+      </div>
+
+      <div className="stock-detail-section">
+        <div className="stock-detail-section-head"><div className="stock-detail-section-title">Update stock</div><span className="stock-detail-label">Every change is recorded</span></div>
+        <div className="stock-adjust-actions" role="group" aria-label="Inventory adjustment type">
+          <button onClick={() => beginAdjustment('physical_count')} aria-pressed={adjustType === 'physical_count'}><strong>Count</strong><span>Set what is physically here</span></button>
+          <button onClick={() => beginAdjustment('waste')} aria-pressed={adjustType === 'waste'}><strong>Waste</strong><span>Record spoilage or loss</span></button>
+          <button onClick={() => beginAdjustment('manual_adjustment')} aria-pressed={adjustType === 'manual_adjustment'}><strong>Adjust</strong><span>Add or subtract a correction</span></button>
+        </div>
+        {adjustType && <form className="stock-adjust-form" onSubmit={submitAdjustment}>
+          <div className="stock-adjust-intro"><strong>{adjustType === 'physical_count' ? 'Physical count' : adjustType === 'waste' ? 'Record waste' : 'Manual correction'}</strong><button type="button" onClick={() => setAdjustType(null)} aria-label="Cancel stock adjustment">×</button></div>
+          <label htmlFor="stock-adjust-qty">{adjustType === 'physical_count' ? `Counted quantity (${item.unit})` : adjustType === 'waste' ? `Amount wasted (${item.unit})` : `Quantity change (${item.unit})`}</label>
+          <input id="stock-adjust-qty" type="number" inputMode="decimal" step="any" min={adjustType === 'manual_adjustment' ? undefined : 0} value={adjustQty} onChange={e => setAdjustQty(e.target.value)} placeholder={adjustType === 'manual_adjustment' ? 'Use - to subtract' : '0'} required />
+          <label htmlFor="stock-adjust-reason">Reason or note</label>
+          <input id="stock-adjust-reason" value={adjustReason} onChange={e => setAdjustReason(e.target.value)} placeholder={adjustType === 'waste' ? 'Spoiled, expired, damaged…' : 'Optional note'} />
+          {adjustError && <div className="stock-adjust-error" role="alert">{adjustError}</div>}
+          <button className="btn-full" type="submit" disabled={adjustBusy}>{adjustBusy ? 'Saving…' : 'Save stock update'}</button>
+        </form>}
       </div>
 
       <div className="stock-detail-section">
@@ -913,11 +980,24 @@ function StockDetailModal({ item, relatedItems, purchases, loading, onClose }) {
           {!loading && matchingPurchases.length === 0 && <div className="stock-history-row"><div className="stock-history-body"><div className="today-row-title">No confirmed receipt history yet</div><div className="today-row-meta">Future confirmed receipts will appear here.</div></div></div>}
         </div>
       </div>
+
+      <div className="stock-detail-section">
+        <div className="stock-detail-section-head"><div className="stock-detail-section-title">Quantity history</div><span className="stock-detail-label">Append-only ledger</span></div>
+        <div className="stock-ledger-list">
+          {transactionsLoading && <div className="stock-history-row"><div className="stock-history-body">Loading quantity history…</div></div>}
+          {!transactionsLoading && (transactions || []).slice(0, 10).map(transaction => <div className="stock-ledger-row" key={transaction.id}>
+            <span className={`stock-ledger-delta ${Number(transaction.quantity_delta) >= 0 ? 'positive' : 'negative'}`}>{Number(transaction.quantity_delta) >= 0 ? '+' : ''}{Number(transaction.quantity_delta)} {transaction.unit}</span>
+            <span><strong>{transactionLabels[transaction.transaction_type] || transaction.transaction_type}</strong><small>{transaction.reason || `${transaction.quantity_before} → ${transaction.quantity_after} ${transaction.unit}`}</small></span>
+            <time>{new Date(transaction.occurred_at).toLocaleDateString()}</time>
+          </div>)}
+          {!transactionsLoading && !(transactions || []).length && <div className="stock-history-row"><div className="stock-history-body"><div className="today-row-title">No quantity history yet</div><div className="today-row-meta">The opening balance appears after the ledger migration is applied.</div></div></div>}
+        </div>
+      </div>
     </section>
   </div>;
 }
 
-function InventoryView({ items, onUpdate, onDelete, flash }) {
+function InventoryView({ items, onUpdate, onInventoryAdjust, onDelete, flash }) {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
   const [catF, setCatF] = useState('All');
@@ -930,13 +1010,49 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
   const [detailItem, setDetailItem] = useState(null);
   const [purchases, setPurchases] = useState([]);
   const [pricesLoading, setPricesLoading] = useState(false);
+  const [transactions, setTransactions] = useState([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkError, setBulkError] = useState('');
 
   const openDetails = async (item) => {
     setDetailItem(item);
-    if (purchases.length > 0) return;
-    setPricesLoading(true);
-    try { setPurchases(await db.getPurchaseLog()); } catch { flash('Could not load price history'); }
-    setPricesLoading(false);
+    setTransactions([]);
+    setTransactionsLoading(true);
+    const tasks = [
+      db.getInventoryTransactions(item.id)
+        .then(setTransactions)
+        .catch(() => setTransactions([]))
+        .finally(() => setTransactionsLoading(false)),
+    ];
+    if (purchases.length === 0) {
+      setPricesLoading(true);
+      tasks.push(db.getPurchaseLog()
+        .then(setPurchases)
+        .catch(() => flash('Could not load price history'))
+        .finally(() => setPricesLoading(false)));
+    }
+    await Promise.all(tasks);
+  };
+
+  const adjustDetailItem = async (transactionType, quantity, mode, reason) => {
+    try {
+      const result = await onInventoryAdjust(detailItem.id, transactionType, quantity, mode, reason, { source: 'stock_detail' });
+      setDetailItem(previous => ({
+        ...previous,
+        current_qty: Number(result.quantity_after),
+        quantity_source: result.quantity_source,
+        last_verified_at: transactionType === 'physical_count' ? new Date().toISOString() : previous.last_verified_at,
+      }));
+      setTransactions(await db.getInventoryTransactions(detailItem.id));
+      flash(transactionType === 'physical_count' ? 'Physical count saved' : transactionType === 'waste' ? 'Waste recorded' : 'Stock adjustment saved');
+      return result;
+    } catch (error) {
+      if (/apply_inventory_adjustment|schema cache|does not exist/i.test(error.message || '')) {
+        throw new Error('The stock ledger is not active in this environment yet.');
+      }
+      throw error;
+    }
   };
 
   const filtered = items.filter((i) => {
@@ -953,15 +1069,24 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
   }, {});
   const toggleSel = (id) => setSelected((prev) => {const n = new Set(prev);n.has(id) ? n.delete(id) : n.add(id);return n;});
   const applyBulk = async () => {
-    if (!bulkQty || !selected.size) return;
+    if (bulkQty === '' || !selected.size || bulkBusy) return;
     const qty = Number(bulkQty);
-    for (const id of selected) await onUpdate(id, 'current_qty', qty);
-    flash(`Updated ${selected.size} items → qty ${qty}`);
-    setSelected(new Set());setBulkQty('');setBulkMode(false);
+    if (!Number.isFinite(qty) || qty < 0) { setBulkError('Enter a valid counted quantity.'); return; }
+    setBulkBusy(true); setBulkError('');
+    try {
+      for (const id of selected) {
+        await onInventoryAdjust(id, 'physical_count', qty, 'absolute', 'Bulk physical count', { source: 'bulk_count' });
+      }
+      flash(`Count saved for ${selected.size} items`);
+      setSelected(new Set());setBulkQty('');setBulkMode(false);
+    } catch (error) {
+      setBulkError(/apply_inventory_adjustment|schema cache|does not exist/i.test(error.message || '') ? 'The stock ledger is not active in this environment yet.' : (error.message || 'Bulk count failed.'));
+    }
+    setBulkBusy(false);
   };
   return (
     <div className="page">
-      {detailItem && <StockDetailModal item={detailItem} relatedItems={items.filter(i => String(i.name || '').trim().toLowerCase() === String(detailItem.name || '').trim().toLowerCase())} purchases={purchases} loading={pricesLoading} onClose={() => setDetailItem(null)} />}
+      {detailItem && <StockDetailModal item={detailItem} relatedItems={items.filter(i => String(i.name || '').trim().toLowerCase() === String(detailItem.name || '').trim().toLowerCase())} purchases={purchases} loading={pricesLoading} transactions={transactions} transactionsLoading={transactionsLoading} onAdjust={adjustDetailItem} onClose={() => setDetailItem(null)} />}
       <div className="page-hdr">
         <div><div className="page-title">Stock</div><div className="page-sub">Know what you have and what needs replenishing.</div></div>
         <button className={`f-tog ${bulkMode ? 'on' : ''}`} onClick={() => {setBulkMode(!bulkMode);setSelected(new Set());}}>
@@ -975,12 +1100,13 @@ function InventoryView({ items, onUpdate, onDelete, flash }) {
       </div>
       {bulkMode &&
       <div className="bulk-bar">
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{selected.size} selected</span>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>{selected.size} selected · set the physical count</span>
           <div className="bulk-acts">
-            <input type="number" placeholder="Set qty" value={bulkQty} onChange={(e) => setBulkQty(e.target.value)} className="bk-inp" />
-            <button className="bk-btn bk-p" onClick={applyBulk} disabled={!bulkQty || !selected.size}>Apply</button>
+            <input type="number" inputMode="decimal" min="0" step="any" placeholder="Counted qty" value={bulkQty} onChange={(e) => setBulkQty(e.target.value)} className="bk-inp" />
+            <button className="bk-btn bk-p" onClick={applyBulk} disabled={bulkQty === '' || !selected.size || bulkBusy}>{bulkBusy ? 'Saving…' : 'Save count'}</button>
             <button className="bk-btn bk-g" onClick={() => setSelected(new Set(filtered.map((i) => i.id)))}>Select All</button>
           </div>
+          {bulkError && <div className="bulk-error" role="alert">{bulkError}</div>}
         </div>
       }
       <input className="inp" type="text" placeholder="Search items..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ marginBottom: 8 }} />
@@ -5293,6 +5419,18 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
     try {await db.update(id, { [f]: v });} catch {flash('Update failed');}
   }, [items, flash]);
 
+  const applyInventoryAdjustment = useCallback(async (itemId, transactionType, quantity, mode, reason, metadata = {}) => {
+    const result = await db.applyInventoryAdjustment(itemId, transactionType, quantity, mode, reason, metadata);
+    const summary = Array.isArray(result) ? result[0] : result;
+    setItems(previous => previous.map(item => item.id === itemId ? {
+      ...item,
+      current_qty: Number(summary.quantity_after),
+      quantity_source: summary.quantity_source,
+      last_verified_at: transactionType === 'physical_count' ? new Date().toISOString() : item.last_verified_at,
+    } : item));
+    return summary;
+  }, []);
+
   const deleteItem = useCallback(async (id) => {
     setItems((p) => p.filter((i) => i.id !== id));
     try {await db.del(id);flash('Removed');} catch {flash('Delete failed');}
@@ -5387,7 +5525,7 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
       <div className="main">
         <MobileHeader view={view} lowCt={lowCt} outCt={outCt} onSync={refresh} user={user} onUserClick={() => setShowUserModal(true)} />
         {view === 'dashboard' && <DashboardView items={items} sessions={sessions} onNavigate={(v) => {setView(v);}} onScanReceipt={() => openReceiptScanner()} flash={flash} />}
-        {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onDelete={deleteItem} flash={flash} />}
+        {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onInventoryAdjust={applyInventoryAdjustment} onDelete={deleteItem} flash={flash} />}
         {view === 'shopping' && <ShoppingView items={items} session={session} receipts={sessionReceipts} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onShopperNote={updateShopperNote} onScanReceipt={() => openReceiptScanner()} onResumeReceipt={openReceiptScanner} flash={flash} />}
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
         {view === 'meals' && <RecipeBuilderView items={items} flash={flash} onCreateInventoryItem={createRecipeInventoryItem} />}

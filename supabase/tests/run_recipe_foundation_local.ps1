@@ -66,6 +66,7 @@ if (-not $projectIdLine) {
 $containerName = 'supabase_db_' + $projectIdLine.Matches[0].Groups[1].Value
 $verificationPath = Join-Path $PSScriptRoot 'recipe_foundation_verification.sql'
 $receiptVerificationPath = Join-Path $PSScriptRoot 'receipt_review_verification.sql'
+$ledgerVerificationPath = Join-Path $PSScriptRoot 'inventory_ledger_verification.sql'
 
 Write-Host 'Running read-only Recipe Builder verification queries...'
 Get-Content -Raw -LiteralPath $verificationPath |
@@ -83,6 +84,15 @@ Get-Content -Raw -LiteralPath $receiptVerificationPath |
 
 if ($LASTEXITCODE -ne 0) {
   throw 'Receipt review verification failed.'
+}
+
+Write-Host 'Running transactional inventory-ledger verification...'
+Get-Content -Raw -LiteralPath $ledgerVerificationPath |
+  & $dockerExecutable exec -i $containerName `
+    psql -v ON_ERROR_STOP=1 -U postgres -d postgres
+
+if ($LASTEXITCODE -ne 0) {
+  throw 'Inventory ledger verification failed.'
 }
 
 Write-Host 'Local migration tests passed.'
