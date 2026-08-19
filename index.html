@@ -172,6 +172,25 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .stock-ledger-row strong{font-size:11px}
 .stock-ledger-row small{margin-top:3px;color:var(--tx2);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stock-ledger-row time{color:var(--tx2);font-size:9px;white-space:nowrap}
+.count-flow{position:fixed;inset:0;z-index:260;overflow:auto;background:var(--bg);color:var(--tx)}
+.count-flow-head{position:sticky;top:0;z-index:4;min-height:70px;padding:max(10px,env(safe-area-inset-top)) 16px 10px;display:grid;grid-template-columns:52px minmax(0,1fr) 72px;align-items:center;gap:8px;border-bottom:1px solid var(--bd);background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(14px)}
+.count-flow-head>button{min-width:44px;min-height:44px;border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);font:inherit;font-size:20px;font-weight:800;cursor:pointer}
+.count-flow-head>div{min-width:0;text-align:center}.count-flow-head span,.count-flow-head strong{display:block}.count-flow-head>div span{font-size:10px;color:var(--tx2);font-weight:800;text-transform:uppercase;letter-spacing:.08em}.count-flow-head>div strong{font-size:15px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.count-flow-head .count-cancel{border:0;background:transparent;color:var(--er);font-size:11px}
+.count-flow-shell{width:min(720px,100%);margin:0 auto;padding:16px 16px calc(112px + env(safe-area-inset-bottom))}
+.count-intro{display:flex;gap:12px;padding:15px;border:1px solid var(--bd);border-radius:16px;background:var(--card)}
+.count-intro>span{width:42px;height:42px;flex:0 0 42px;border-radius:12px;background:var(--prl);color:var(--pr);display:grid;place-items:center}.count-intro svg{width:20px;height:20px}.count-intro strong{display:block;font-size:14px}.count-intro p{font-size:11px;color:var(--tx2);line-height:1.5;margin-top:4px}
+.count-preview-note{margin:12px 0;padding:11px 12px;border-radius:12px;background:var(--wal);color:var(--wa);font-size:11px;line-height:1.45;font-weight:650}
+.count-section{margin-top:21px}.count-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 8px}.count-section-head strong{font-size:13px}.count-section-head span{font-size:10px;color:var(--tx2)}
+.count-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.count-type-grid button{min-height:112px;padding:14px;border:1px solid var(--bd);border-radius:15px;background:var(--card);color:var(--tx);text-align:left;cursor:pointer}.count-type-grid button.selected{border-color:var(--pr);background:var(--prl)}.count-type-grid svg{width:21px;height:21px;color:var(--pr);margin-bottom:12px}.count-type-grid strong,.count-type-grid span{display:block}.count-type-grid strong{font-size:13px}.count-type-grid span{font-size:10px;color:var(--tx2);line-height:1.35;margin-top:4px}
+.count-location-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.count-location-grid button{min-height:62px;padding:10px 12px;border:1px solid var(--bd);border-radius:13px;background:var(--card);color:var(--tx);text-align:left;cursor:pointer}.count-location-grid button.selected{border-color:var(--pr);background:var(--prl);box-shadow:inset 4px 0 0 var(--pr)}.count-location-grid span,.count-location-grid small{display:block}.count-location-grid span{font-size:12px;font-weight:750}.count-location-grid small{font-size:9px;color:var(--tx2);margin-top:4px}
+.count-saved-lists,.count-entry-list{overflow:hidden;border:1px solid var(--bd);border-radius:15px;background:var(--card)}.count-saved-lists button,.count-resume{width:100%;min-height:66px;padding:11px 13px;border:0;border-bottom:1px solid var(--bd);background:var(--card);color:var(--tx);display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;cursor:pointer}.count-saved-lists button:last-child{border-bottom:0}.count-saved-lists span,.count-saved-lists strong,.count-saved-lists small,.count-resume span,.count-resume strong,.count-resume small{display:block}.count-saved-lists strong,.count-resume strong{font-size:12px}.count-saved-lists small,.count-resume small{font-size:9px;color:var(--tx2);margin-top:4px}.count-saved-lists b,.count-resume b{color:var(--pr);font-size:11px}.count-resume{border:1px solid var(--pr);border-radius:14px;background:var(--prl)}
+.count-save-list>div:last-child{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}.count-save-list label>span{display:block;margin:0 2px 5px;font-size:10px;color:var(--tx2);font-weight:700}.count-save-list input{min-width:0;width:100%;min-height:46px;padding:10px 12px;border:1px solid var(--bd);border-radius:11px;background:var(--card);color:var(--tx);font:inherit;font-size:16px}.count-save-list button{min-height:46px;padding:0 14px;border:1px solid var(--pr);border-radius:11px;background:var(--card);color:var(--pr);font-weight:800;cursor:pointer}
+.count-error{margin-top:12px;padding:10px 12px;border-radius:11px;background:var(--erl);color:var(--er);font-size:11px;line-height:1.4;font-weight:700}
+.count-start{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom));width:100%;min-height:52px;margin-top:22px;border:0;border-radius:14px;background:var(--pr);color:#fff;font:inherit;font-size:13px;font-weight:850;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.16)}
+.count-progress{display:grid;grid-template-columns:1fr auto;gap:5px 12px;align-items:end;padding:13px 14px;border:1px solid var(--bd);border-radius:14px;background:var(--card)}.count-progress span{font-size:10px;color:var(--tx2);font-weight:700}.count-progress strong{font-size:20px}.count-progress i{grid-column:1/-1;height:6px;overflow:hidden;border-radius:99px;background:var(--bd);margin-top:5px}.count-progress b{display:block;height:100%;border-radius:inherit;background:var(--pr);transition:width .2s ease}
+.count-entry-group{margin-top:20px}.count-entry-group-head{display:flex;align-items:center;justify-content:space-between;margin:0 3px 7px}.count-entry-group-head strong{font-size:12px}.count-entry-group-head span{font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:.06em}.count-entry-row{min-height:72px;padding:11px 12px;border-bottom:1px solid var(--bd);display:grid;grid-template-columns:minmax(0,1fr) 116px;align-items:center;gap:12px}.count-entry-row:last-child{border-bottom:0}.count-entry-row.filled{background:color-mix(in srgb,var(--prl) 52%,var(--card))}.count-entry-row>span:first-child{min-width:0}.count-entry-row strong,.count-entry-row small{display:block}.count-entry-row strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.count-entry-row small{font-size:9px;color:var(--tx2);margin-top:4px}.count-entry-input{height:46px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px;padding:0 9px;border:1px solid var(--bd);border-radius:11px;background:var(--bg)}.count-entry-input input{min-width:0;width:100%;border:0;outline:0;background:transparent;color:var(--tx);font:inherit;font-size:18px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}.count-entry-input small{margin:0;font-size:9px}
+.count-notes{display:block;margin-top:20px}.count-notes>span{display:block;margin:0 2px 6px;font-size:11px;font-weight:750}.count-notes textarea{width:100%;min-height:78px;padding:11px;border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);font:inherit;font-size:16px;resize:vertical}
+.count-finish-bar{position:sticky;bottom:calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:18px;padding:7px;border:1px solid var(--bd);border-radius:15px;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px)}.count-finish-bar button{min-height:48px;border:1px solid var(--bd);border-radius:11px;background:var(--card);color:var(--tx);font:inherit;font-size:11px;font-weight:800;cursor:pointer}.count-finish-bar button.primary{border-color:var(--pr);background:var(--pr);color:#fff}.count-flow button:disabled{opacity:.45;cursor:not-allowed}.count-flow button:focus-visible,.count-flow input:focus-visible,.count-flow textarea:focus-visible{outline:3px solid color-mix(in srgb,var(--pr) 40%,transparent);outline-offset:2px}
 .stat-card:nth-child(1){animation:statIn .3s .04s both}
 .stat-card:nth-child(2){animation:statIn .3s .09s both}
 .stat-card:nth-child(3){animation:statIn .3s .14s both}
@@ -409,8 +428,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 }
 [data-theme="dark"]{color-scheme:dark;--bg:#101713;--card:#202B24;--sb:#0B110D;--pr:#62C891;--prl:#26352B;--ok:#62C891;--okl:#1C3327;--wa:#E7BD6C;--wal:#362D1D;--er:#F08D86;--erl:#3A2221;--tx:#F1F6F2;--tx2:#AEBBB2;--bd:#35463B;--mu:#8D9B91}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#101713;--card:#202B24;--sb:#0B110D;--pr:#62C891;--prl:#26352B;--ok:#62C891;--okl:#1C3327;--wa:#E7BD6C;--wal:#362D1D;--er:#F08D86;--erl:#3A2221;--tx:#F1F6F2;--tx2:#AEBBB2;--bd:#35463B;--mu:#8D9B91}}
-[data-theme="dark"] .btn-pr,[data-theme="dark"] .btn-full,[data-theme="dark"] .today-primary,[data-theme="dark"] .plan-sticky-action button,[data-theme="dark"] .bn-scan .bn-icon,[data-theme="dark"] .recipe-action.primary,[data-theme="dark"] .recipe-fab{color:#0C1B12}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn-pr,:root:not([data-theme="light"]) .btn-full,:root:not([data-theme="light"]) .today-primary,:root:not([data-theme="light"]) .plan-sticky-action button,:root:not([data-theme="light"]) .bn-scan .bn-icon,:root:not([data-theme="light"]) .recipe-action.primary,:root:not([data-theme="light"]) .recipe-fab{color:#0C1B12}}
+[data-theme="dark"] .btn-pr,[data-theme="dark"] .btn-full,[data-theme="dark"] .today-primary,[data-theme="dark"] .plan-sticky-action button,[data-theme="dark"] .bn-scan .bn-icon,[data-theme="dark"] .recipe-action.primary,[data-theme="dark"] .recipe-fab,[data-theme="dark"] .count-start,[data-theme="dark"] .count-finish-bar button.primary{color:#0C1B12}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn-pr,:root:not([data-theme="light"]) .btn-full,:root:not([data-theme="light"]) .today-primary,:root:not([data-theme="light"]) .plan-sticky-action button,:root:not([data-theme="light"]) .bn-scan .bn-icon,:root:not([data-theme="light"]) .recipe-action.primary,:root:not([data-theme="light"]) .recipe-fab,:root:not([data-theme="light"]) .count-start,:root:not([data-theme="light"]) .count-finish-bar button.primary{color:#0C1B12}}
 [data-theme="dark"] .edit-panel,[data-theme="dark"] .sh-item:hover{background:var(--card)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .edit-panel,:root:not([data-theme="light"]) .sh-item:hover{background:var(--card)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
@@ -508,6 +527,15 @@ window.db={
   confirmReceiptReview:(receiptId,reviewItems)=>q("rpc/confirm_receipt_review",{method:"POST",body:JSON.stringify({p_receipt_id:receiptId,p_review_items:reviewItems})}),
   getInventoryTransactions:(itemId)=>q(`inventory_transactions?inventory_item_id=eq.${itemId}&order=occurred_at.desc&limit=50`),
   applyInventoryAdjustment:(itemId,transactionType,quantity,mode,reason,metadata={})=>q("rpc/apply_inventory_adjustment",{method:"POST",body:JSON.stringify({p_inventory_item_id:itemId,p_transaction_type:transactionType,p_quantity:quantity,p_mode:mode,p_reason:reason||null,p_metadata:metadata})}),
+  getInventoryCountLists:()=>q("inventory_count_lists?archived_at=is.null&order=updated_at.desc"),
+  getInventoryCountListItems:()=>q("inventory_count_list_items?select=*&order=position.asc"),
+  getActiveInventoryCounts:()=>q("inventory_count_sessions?status=eq.active&order=started_at.desc"),
+  getInventoryCountEntries:(sessionId)=>q(`inventory_count_entries?count_session_id=eq.${sessionId}&order=position.asc`),
+  saveInventoryCountList:(listId,name,countType,itemIds,locations)=>q("rpc/save_inventory_count_list",{method:"POST",body:JSON.stringify({p_count_list_id:listId||null,p_name:name,p_count_type:countType,p_inventory_item_ids:itemIds,p_storage_locations:locations||[]})}),
+  startInventoryCount:(countType,listId,itemIds,locations)=>q("rpc/start_inventory_count",{method:"POST",body:JSON.stringify({p_count_type:countType,p_count_list_id:listId||null,p_inventory_item_ids:itemIds||[],p_storage_locations:locations||[]})}),
+  recordInventoryCountEntry:(sessionId,itemId,quantity)=>q("rpc/record_inventory_count_entry",{method:"POST",body:JSON.stringify({p_count_session_id:sessionId,p_inventory_item_id:itemId,p_counted_quantity:quantity})}),
+  completeInventoryCount:(sessionId,notes)=>q("rpc/complete_inventory_count",{method:"POST",body:JSON.stringify({p_count_session_id:sessionId,p_notes:notes||null})}),
+  cancelInventoryCount:(sessionId)=>q("rpc/cancel_inventory_count",{method:"POST",body:JSON.stringify({p_count_session_id:sessionId})}),
   getHousehold:()=>q("household_members?select=household_id,role&limit=1"),
   uploadFile: async (bucket, path, file) => {
     const membership = await window.db.getHousehold();
@@ -753,6 +781,7 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onDetails, onUpdate,
             <input type="number" step="0.5" className="e-inp" value={item.pack_size || 1} onChange={(e) => onUpdate(item.id, 'pack_size', Math.max(1, +e.target.value))} placeholder="1 (no pack)" />
           </div>
           <div className="e-row"><label className="e-lbl">Store</label><select className="e-inp" value={item.store} onChange={(e) => onUpdate(item.id, 'store', e.target.value)}>{STORES.map((s) => <option key={s}>{s}</option>)}</select></div>
+          <div className="e-row"><label className="e-lbl">Storage</label><input type="text" className="e-inp" value={item.storage_location || ''} onChange={(e) => onUpdate(item.id, 'storage_location', e.target.value)} onBlur={(e) => { if (!e.target.value.trim()) onUpdate(item.id, 'storage_location', 'Unassigned'); }} placeholder="Walk-in, freezer, dry storage…" /></div>
           <div className="e-row"><label className="e-lbl">Price</label><input type="number" step="0.01" className="e-inp" value={item.price} onChange={(e) => onUpdate(item.id, 'price', Math.max(0, +e.target.value))} /></div>
           <div className="e-row"><label className="e-lbl">Note</label><input type="text" className="e-inp" value={item.note || ''} onChange={(e) => onUpdate(item.id, 'note', e.target.value)} placeholder="Brand, aisle..." /></div>
           <div className="e-row" style={{ alignItems: 'flex-start' }}>
@@ -997,7 +1026,196 @@ function StockDetailModal({ item, relatedItems, purchases, loading, transactions
   </div>;
 }
 
-function InventoryView({ items, onUpdate, onInventoryAdjust, onDelete, flash }) {
+function InventoryCountFlow({ items, onComplete, onClose, flash }) {
+  const locations = [...new Set(items.map(item => item.storage_location || 'Unassigned'))].sort();
+  const [screen, setScreen] = useState('setup');
+  const [countType, setCountType] = useState('quick');
+  const [selectedLocations, setSelectedLocations] = useState(new Set(locations.slice(0, 1)));
+  const [lists, setLists] = useState([]);
+  const [listItems, setListItems] = useState([]);
+  const [activeSessions, setActiveSessions] = useState([]);
+  const [session, setSession] = useState(null);
+  const [entries, setEntries] = useState([]);
+  const [values, setValues] = useState({});
+  const [notes, setNotes] = useState('');
+  const [listName, setListName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [backendReady, setBackendReady] = useState(true);
+  const [previewOnly, setPreviewOnly] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    Promise.all([db.getInventoryCountLists(), db.getInventoryCountListItems(), db.getActiveInventoryCounts()])
+      .then(([savedLists, savedItems, active]) => {
+        if (!live) return;
+        setLists(savedLists || []); setListItems(savedItems || []); setActiveSessions(active || []);
+      })
+      .catch(() => { if (live) setBackendReady(false); })
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, []);
+
+  const isMissingMigration = message => /inventory_count|schema cache|does not exist|404/i.test(message || '');
+  const selectedItems = countType === 'weekly_full'
+    ? items
+    : items.filter(item => selectedLocations.has(item.storage_location || 'Unassigned'));
+  const countedTotal = entries.filter(entry => values[entry.inventory_item_id] !== '' && values[entry.inventory_item_id] != null).length;
+  const countRequired = session?.count_type === 'weekly_full';
+
+  const enterCountScreen = (nextSession, nextEntries, isPreview = false) => {
+    setSession(nextSession); setEntries(nextEntries);
+    setValues(Object.fromEntries(nextEntries.map(entry => [entry.inventory_item_id, entry.counted_quantity == null ? '' : String(entry.counted_quantity)])));
+    setPreviewOnly(isPreview); setScreen('count'); setError('');
+  };
+
+  const makePreviewEntries = chosen => chosen.map((item, position) => ({
+    id:`preview-${item.id}`, count_session_id:'preview', inventory_item_id:item.id,
+    expected_quantity:Number(item.current_qty || 0), counted_quantity:null,
+    unit:item.unit || 'ct', position,
+  }));
+
+  const startCount = async (savedList = null) => {
+    const chosen = savedList
+      ? listItems.filter(row => row.count_list_id === savedList.id).map(row => items.find(item => item.id === row.inventory_item_id)).filter(Boolean)
+      : selectedItems;
+    if (!chosen.length) { setError('Choose at least one storage location with inventory items.'); return; }
+    setBusy(true); setError('');
+    try {
+      const nextType = savedList?.count_type || countType;
+      const nextLocations = savedList?.storage_locations || [...selectedLocations];
+      const sessionId = await db.startInventoryCount(nextType, savedList?.id || null, savedList ? [] : chosen.map(item => item.id), nextLocations);
+      const nextEntries = await db.getInventoryCountEntries(sessionId);
+      enterCountScreen({ id:sessionId, count_type:nextType, count_list_id:savedList?.id || null, status:'active', started_at:new Date().toISOString() }, nextEntries);
+    } catch (caught) {
+      if (isMissingMigration(caught.message)) {
+        setBackendReady(false);
+        enterCountScreen({ id:'preview', count_type:savedList?.count_type || countType, status:'active', started_at:new Date().toISOString() }, makePreviewEntries(chosen), true);
+      } else setError(caught.message || 'Could not start the count.');
+    }
+    setBusy(false);
+  };
+
+  const resumeCount = async active => {
+    setBusy(true); setError('');
+    try { enterCountScreen(active, await db.getInventoryCountEntries(active.id)); }
+    catch (caught) { setError(caught.message || 'Could not resume this count.'); }
+    setBusy(false);
+  };
+
+  const toggleLocation = location => setSelectedLocations(previous => {
+    const next = new Set(previous); next.has(location) ? next.delete(location) : next.add(location); return next;
+  });
+
+  const persistEntry = async entry => {
+    const raw = values[entry.inventory_item_id];
+    if (previewOnly || raw === '' || raw == null) return;
+    const quantity = Number(raw);
+    if (!Number.isFinite(quantity) || quantity < 0) { setError('Counts must be zero or greater.'); return; }
+    try { await db.recordInventoryCountEntry(session.id, entry.inventory_item_id, quantity); }
+    catch (caught) { setError(caught.message || 'This count could not be saved.'); }
+  };
+
+  const saveList = async () => {
+    if (!listName.trim() || !selectedItems.length) return;
+    setBusy(true); setError('');
+    try {
+      const id = await db.saveInventoryCountList(null, listName.trim(), countType, selectedItems.map(item => item.id), [...selectedLocations]);
+      setLists(previous => [{ id, name:listName.trim(), count_type:countType, storage_locations:[...selectedLocations], updated_at:new Date().toISOString() }, ...previous]);
+      setListItems(previous => [...previous, ...selectedItems.map((item, position) => ({ count_list_id:id, inventory_item_id:item.id, position }))]);
+      setListName(''); flash('Reusable count list saved');
+    } catch (caught) {
+      setError(isMissingMigration(caught.message) ? 'Saved lists become available after the count-workflow migration is applied.' : (caught.message || 'Could not save the list.'));
+    }
+    setBusy(false);
+  };
+
+  const finishCount = async () => {
+    if (!countedTotal || (countRequired && countedTotal !== entries.length)) {
+      setError(countRequired ? 'Enter a count for every item before finishing the weekly count.' : 'Enter at least one physical count.'); return;
+    }
+    const changedEntries = entries.filter(entry => values[entry.inventory_item_id] !== '' && values[entry.inventory_item_id] != null);
+    if (changedEntries.some(entry => !Number.isFinite(Number(values[entry.inventory_item_id])) || Number(values[entry.inventory_item_id]) < 0)) {
+      setError('Counts must be valid numbers that are zero or greater.'); return;
+    }
+    setBusy(true); setError('');
+    try {
+      if (previewOnly) {
+        flash('Count flow preview completed — no inventory was changed'); onClose(); return;
+      }
+      await Promise.all(changedEntries.map(entry => db.recordInventoryCountEntry(session.id, entry.inventory_item_id, Number(values[entry.inventory_item_id]))));
+      const result = await db.completeInventoryCount(session.id, notes);
+      await onComplete(result); flash(`${result.counted_items} physical count${result.counted_items === 1 ? '' : 's'} saved`); onClose();
+    } catch (caught) { setError(caught.message || 'Could not complete the count.'); }
+    setBusy(false);
+  };
+
+  const saveAndExit = async () => {
+    if (previewOnly) { onClose(); return; }
+    const changedEntries = entries.filter(entry => values[entry.inventory_item_id] !== '' && values[entry.inventory_item_id] != null);
+    if (changedEntries.some(entry => !Number.isFinite(Number(values[entry.inventory_item_id])) || Number(values[entry.inventory_item_id]) < 0)) {
+      setError('Counts must be valid numbers that are zero or greater.'); return;
+    }
+    setBusy(true); setError('');
+    try {
+      await Promise.all(changedEntries.map(entry => db.recordInventoryCountEntry(session.id, entry.inventory_item_id, Number(values[entry.inventory_item_id]))));
+      flash('Count saved — resume it from Stock'); onClose();
+    } catch (caught) { setError(caught.message || 'Could not save this count.'); }
+    setBusy(false);
+  };
+
+  const cancelCount = async () => {
+    if (!confirm(previewOnly ? 'Close this preview?' : 'Cancel this count? Saved entries will remain in the cancelled record.')) return;
+    setBusy(true);
+    try { if (!previewOnly) await db.cancelInventoryCount(session.id); onClose(); }
+    catch (caught) { setError(caught.message || 'Could not cancel the count.'); }
+    setBusy(false);
+  };
+
+  const itemById = Object.fromEntries(items.map(item => [item.id, item]));
+  const groupedEntries = entries.reduce((groups, entry) => {
+    const location = itemById[entry.inventory_item_id]?.storage_location || 'Unassigned';
+    (groups[location] = groups[location] || []).push(entry); return groups;
+  }, {});
+
+  return <div className="count-flow" role="dialog" aria-modal="true" aria-label="Physical inventory count">
+    <header className="count-flow-head">
+      <button onClick={screen === 'count' ? saveAndExit : onClose} aria-label={screen === 'count' ? 'Save and exit count' : 'Close count workflow'}>×</button>
+      <div><span>{screen === 'setup' ? 'Inventory counts' : previewOnly ? 'Preview count' : session?.count_type === 'weekly_full' ? 'Weekly full count' : 'Quick count'}</span><strong>{screen === 'setup' ? 'Choose what to verify' : `${countedTotal} of ${entries.length} counted`}</strong></div>
+      {screen === 'count' ? <button className="count-cancel" onClick={cancelCount} disabled={busy}>Cancel</button> : <span />}
+    </header>
+
+    {screen === 'setup' ? <main className="count-flow-shell">
+      <div className="count-intro"><span><NavIcon name="stock" /></span><div><strong>Verify what is physically in the kitchen</strong><p>Counts update inventory only when you finish. You can exit midway and resume later.</p></div></div>
+      {!backendReady && <div className="count-preview-note">Preview mode: the screens work locally, but saved lists and inventory changes require the pending database migration.</div>}
+      {loading && <div className="count-preview-note">Loading saved counts…</div>}
+      {activeSessions.length > 0 && <section className="count-section"><div className="count-section-head"><strong>Continue a count</strong><span>{activeSessions.length} active</span></div>{activeSessions.map(active => <button className="count-resume" key={active.id} onClick={() => resumeCount(active)} disabled={busy}><span><strong>{active.count_type === 'weekly_full' ? 'Weekly full count' : 'Quick count'}</strong><small>Started {new Date(active.started_at).toLocaleString()}</small></span><b>Resume</b></button>)}</section>}
+
+      <section className="count-section"><div className="count-section-head"><strong>Count type</strong><span>Choose one</span></div><div className="count-type-grid">
+        <button className={countType === 'quick' ? 'selected' : ''} onClick={() => setCountType('quick')} aria-pressed={countType === 'quick'}><NavIcon name="stock" /><strong>Quick count</strong><span>Post-cook or one storage area</span></button>
+        <button className={countType === 'weekly_full' ? 'selected' : ''} onClick={() => { setCountType('weekly_full'); setSelectedLocations(new Set(locations)); }} aria-pressed={countType === 'weekly_full'}><NavIcon name="history" /><strong>Weekly full</strong><span>Every tracked inventory item</span></button>
+      </div></section>
+
+      {countType === 'quick' && <section className="count-section"><div className="count-section-head"><strong>Storage locations</strong><span>{selectedItems.length} items</span></div><div className="count-location-grid">{locations.map(location => <button key={location} className={selectedLocations.has(location) ? 'selected' : ''} onClick={() => toggleLocation(location)} aria-pressed={selectedLocations.has(location)}><span>{location}</span><small>{items.filter(item => (item.storage_location || 'Unassigned') === location).length} items</small></button>)}</div></section>}
+
+      {lists.length > 0 && <section className="count-section"><div className="count-section-head"><strong>Saved count lists</strong><span>Reusable</span></div><div className="count-saved-lists">{lists.map(list => <button key={list.id} onClick={() => startCount(list)} disabled={busy}><span><strong>{list.name}</strong><small>{listItems.filter(item => item.count_list_id === list.id).length} items · {list.count_type === 'weekly_full' ? 'weekly full' : 'quick'}</small></span><b>Start</b></button>)}</div></section>}
+
+      {countType === 'quick' && selectedItems.length > 0 && <section className="count-section count-save-list"><div className="count-section-head"><strong>Save this selection</strong><span>Optional</span></div><div><label><span>List name</span><input value={listName} onChange={event => setListName(event.target.value)} placeholder="e.g. Post-cook essentials" /></label><button onClick={saveList} disabled={!listName.trim() || busy}>Save list</button></div></section>}
+      {error && <div className="count-error" role="alert">{error}</div>}
+      <button className="count-start" onClick={() => startCount()} disabled={busy || !selectedItems.length}>{busy ? 'Starting…' : `Start ${countType === 'weekly_full' ? 'weekly count' : 'quick count'} · ${selectedItems.length} items`}</button>
+    </main> : <main className="count-flow-shell count-entry-shell">
+      {previewOnly && <div className="count-preview-note">Preview only — finishing will not change inventory.</div>}
+      <div className="count-progress"><span>Counted</span><strong>{Math.round((countedTotal / Math.max(entries.length, 1)) * 100)}%</strong><i><b style={{width:`${countedTotal / Math.max(entries.length, 1) * 100}%`}} /></i></div>
+      {Object.keys(groupedEntries).sort().map(location => <section className="count-entry-group" key={location}><div className="count-entry-group-head"><strong>{location}</strong><span>{groupedEntries[location].length} items</span></div><div className="count-entry-list">{groupedEntries[location].map(entry => { const item = itemById[entry.inventory_item_id] || {}; const filled = values[entry.inventory_item_id] !== '' && values[entry.inventory_item_id] != null; return <label className={`count-entry-row ${filled ? 'filled' : ''}`} key={entry.id}><span><strong>{item.name || 'Inventory item'}</strong><small>App shows {entry.expected_quantity} {entry.unit}</small></span><span className="count-entry-input"><input type="number" inputMode="decimal" min="0" step="any" value={values[entry.inventory_item_id] ?? ''} onChange={event => { setValues(previous => ({...previous,[entry.inventory_item_id]:event.target.value})); setError(''); }} onBlur={() => persistEntry(entry)} aria-label={`Physical count for ${item.name || 'inventory item'}`} placeholder="—" /><small>{entry.unit}</small></span></label>; })}</div></section>)}
+      <label className="count-notes"><span>Count note</span><textarea value={notes} onChange={event => setNotes(event.target.value)} placeholder="Optional note about this count" /></label>
+      {error && <div className="count-error" role="alert">{error}</div>}
+      <div className="count-finish-bar"><button onClick={saveAndExit} disabled={busy}>{previewOnly ? 'Exit preview' : 'Save & exit'}</button><button className="primary" onClick={finishCount} disabled={busy || !countedTotal || (countRequired && countedTotal !== entries.length)}>{busy ? 'Finishing…' : previewOnly ? 'Finish preview' : `Finish count · ${countedTotal}`}</button></div>
+    </main>}
+  </div>;
+}
+
+function InventoryView({ items, onUpdate, onInventoryAdjust, onInventoryCountComplete, onDelete, flash }) {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
   const [catF, setCatF] = useState('All');
@@ -1014,6 +1232,7 @@ function InventoryView({ items, onUpdate, onInventoryAdjust, onDelete, flash }) 
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkError, setBulkError] = useState('');
+  const [showCountFlow, setShowCountFlow] = useState(false);
 
   const openDetails = async (item) => {
     setDetailItem(item);
@@ -1086,12 +1305,11 @@ function InventoryView({ items, onUpdate, onInventoryAdjust, onDelete, flash }) 
   };
   return (
     <div className="page">
+      {showCountFlow && <InventoryCountFlow items={items} onComplete={onInventoryCountComplete} onClose={() => setShowCountFlow(false)} flash={flash} />}
       {detailItem && <StockDetailModal item={detailItem} relatedItems={items.filter(i => String(i.name || '').trim().toLowerCase() === String(detailItem.name || '').trim().toLowerCase())} purchases={purchases} loading={pricesLoading} transactions={transactions} transactionsLoading={transactionsLoading} onAdjust={adjustDetailItem} onClose={() => setDetailItem(null)} />}
       <div className="page-hdr">
         <div><div className="page-title">Stock</div><div className="page-sub">Know what you have and what needs replenishing.</div></div>
-        <button className={`f-tog ${bulkMode ? 'on' : ''}`} onClick={() => {setBulkMode(!bulkMode);setSelected(new Set());}}>
-          {bulkMode ? 'Cancel' : 'Count stock'}
-        </button>
+        <button className="f-tog" onClick={() => setShowCountFlow(true)}>Count stock</button>
       </div>
       <div className="stock-summary-strip">
         <div><strong>{items.length}</strong><span>items</span></div>
@@ -5431,6 +5649,13 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
     return summary;
   }, []);
 
+  const completeInventoryCount = useCallback(async (result) => {
+    const refreshedItems = await db.getAll();
+    setItems(refreshedItems);
+    setLastSync(new Date());
+    return result;
+  }, []);
+
   const deleteItem = useCallback(async (id) => {
     setItems((p) => p.filter((i) => i.id !== id));
     try {await db.del(id);flash('Removed');} catch {flash('Delete failed');}
@@ -5525,7 +5750,7 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
       <div className="main">
         <MobileHeader view={view} lowCt={lowCt} outCt={outCt} onSync={refresh} user={user} onUserClick={() => setShowUserModal(true)} />
         {view === 'dashboard' && <DashboardView items={items} sessions={sessions} onNavigate={(v) => {setView(v);}} onScanReceipt={() => openReceiptScanner()} flash={flash} />}
-        {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onInventoryAdjust={applyInventoryAdjustment} onDelete={deleteItem} flash={flash} />}
+        {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onInventoryAdjust={applyInventoryAdjustment} onInventoryCountComplete={completeInventoryCount} onDelete={deleteItem} flash={flash} />}
         {view === 'shopping' && <ShoppingView items={items} session={session} receipts={sessionReceipts} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onShopperNote={updateShopperNote} onScanReceipt={() => openReceiptScanner()} onResumeReceipt={openReceiptScanner} flash={flash} />}
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
         {view === 'meals' && <RecipeBuilderView items={items} flash={flash} onCreateInventoryItem={createRecipeInventoryItem} />}
