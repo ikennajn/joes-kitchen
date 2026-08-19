@@ -33,19 +33,40 @@ create table public.inventory (
 
 create table public.shopping_sessions (
   id uuid primary key default gen_random_uuid(),
-  created_at timestamptz default now()
+  started_at timestamptz default now(),
+  ended_at timestamptz,
+  total_spent numeric default 0,
+  item_count integer default 0,
+  notes_summary text default '',
+  status text default 'active',
+  driver_role text default 'shopper',
+  actual_total numeric default 0,
+  receipt_count integer default 0,
+  start_miles numeric,
+  end_miles numeric,
+  driver_name text
 );
 
 create table public.session_notes (
   id uuid primary key default gen_random_uuid(),
-  session_id uuid references public.shopping_sessions(id) on delete cascade
+  session_id uuid references public.shopping_sessions(id) on delete cascade,
+  item_name text,
+  store text,
+  note text,
+  created_at timestamptz default now()
 );
 
 create table public.purchase_log (
   id uuid primary key default gen_random_uuid(),
   session_id uuid,
   item_id uuid,
-  created_at timestamptz default now()
+  item_name text not null,
+  category text,
+  store text,
+  unit text,
+  qty numeric default 1,
+  price numeric default 0,
+  purchased_at timestamptz default now()
 );
 
 create table public.rider_payments (
@@ -56,7 +77,13 @@ create table public.rider_payments (
 create table public.receipt_aliases (
   id uuid primary key default gen_random_uuid(),
   inventory_id uuid references public.inventory(id) on delete set null,
-  alias text
+  store text not null,
+  raw_name text not null,
+  inventory_name text,
+  add_config jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique (store, raw_name)
 );
 
 create table public.meals (
@@ -79,13 +106,23 @@ create table public.meal_ingredients (
 create table public.shop_quantities (
   session_id uuid not null references public.shopping_sessions(id) on delete cascade,
   item_id uuid not null references public.inventory(id) on delete cascade,
-  quantity numeric default 1,
+  qty numeric not null default 1,
   primary key (session_id, item_id)
 );
 
 create table public.session_receipts (
   id uuid primary key default gen_random_uuid(),
-  session_id uuid references public.shopping_sessions(id) on delete cascade
+  session_id uuid not null references public.shopping_sessions(id) on delete cascade,
+  store_guess text,
+  total numeric default 0,
+  item_count integer default 0,
+  photo_url text,
+  uploaded_at timestamptz default now(),
+  raw_items jsonb,
+  subtotal numeric,
+  tax numeric,
+  linked_purchase_ids jsonb default '[]'::jsonb,
+  is_manual boolean default false
 );
 
 insert into storage.buckets (id, name, public)
