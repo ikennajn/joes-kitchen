@@ -67,6 +67,98 @@ begin
 end;
 $$;
 
+-- Repeated OCR lines must create one canonical item, purchase row, and ledger
+-- row per product while preserving the combined package quantity and spend.
+insert into public.session_receipts (
+  id, session_id, status, store_guess, review_items, raw_items, item_count, total
+) values (
+  '50000000-0000-0000-0000-000000000003',
+  '40000000-0000-0000-0000-000000000001',
+  'needs_review', 'Test Store', '[]'::jsonb, '[]'::jsonb, 6, 48.00
+);
+
+select public.confirm_receipt_review(
+  '50000000-0000-0000-0000-000000000003',
+  jsonb_build_array(
+    jsonb_build_object('action', 'add', 'name', 'Grouped Sauce', 'raw', 'GROUPED SAUCE', 'qty', 1, 'price', 9.00, 'addName', 'Grouped Sauce', 'addCategory', 'Pantry', 'addStore', 'Test Store', 'addUnit', 'ct', 'addPackSize', 1),
+    jsonb_build_object('action', 'add', 'name', 'Grouped Sauce', 'raw', 'GROUPED SAUCE', 'qty', 1, 'price', 9.00, 'addName', 'Grouped Sauce', 'addCategory', 'Pantry', 'addStore', 'Test Store', 'addUnit', 'ct', 'addPackSize', 1),
+    jsonb_build_object('action', 'add', 'name', 'Grouped Sauce', 'raw', 'GROUPED SAUCE', 'qty', 1, 'price', 9.00, 'addName', 'Grouped Sauce', 'addCategory', 'Pantry', 'addStore', 'Test Store', 'addUnit', 'ct', 'addPackSize', 1),
+    jsonb_build_object('action', 'add', 'name', 'Grouped Seasoning', 'raw', 'GROUPED SEASONING', 'qty', 1, 'price', 7.00, 'addName', 'Grouped Seasoning', 'addCategory', 'Pantry', 'addStore', 'Test Store', 'addUnit', 'ct', 'addPackSize', 1),
+    jsonb_build_object('action', 'add', 'name', 'Grouped Seasoning', 'raw', 'GROUPED SEASONING', 'qty', 1, 'price', 7.00, 'addName', 'Grouped Seasoning', 'addCategory', 'Pantry', 'addStore', 'Test Store', 'addUnit', 'ct', 'addPackSize', 1),
+    jsonb_build_object('action', 'add', 'name', 'Grouped Seasoning', 'raw', 'GROUPED SEASONING', 'qty', 1, 'price', 7.00, 'addName', 'Grouped Seasoning', 'addCategory', 'Pantry', 'addStore', 'Test Store', 'addUnit', 'ct', 'addPackSize', 1)
+  )
+);
+
+do $$
+begin
+  if (select count(*) from public.inventory where name = 'Grouped Sauce') <> 1 then
+    raise exception 'Repeated sauce lines created duplicate inventory items';
+  end if;
+  if (select current_qty from public.inventory where name = 'Grouped Sauce') <> 3 then
+    raise exception 'Repeated sauce quantity was not consolidated';
+  end if;
+  if (select count(*) from public.inventory where name = 'Grouped Seasoning') <> 1 then
+    raise exception 'Repeated seasoning lines created duplicate inventory items';
+  end if;
+  if (select current_qty from public.inventory where name = 'Grouped Seasoning') <> 3 then
+    raise exception 'Repeated seasoning quantity was not consolidated';
+  end if;
+  if (select count(*) from public.purchase_log where session_id = '40000000-0000-0000-0000-000000000001' and item_name in ('Grouped Sauce', 'Grouped Seasoning')) <> 2 then
+    raise exception 'Repeated lines did not consolidate to two purchase rows';
+  end if;
+  if exists (
+    select 1 from public.purchase_log
+    where session_id = '40000000-0000-0000-0000-000000000001'
+      and item_name in ('Grouped Sauce', 'Grouped Seasoning')
+      and qty <> 3
+  ) then raise exception 'Consolidated purchase quantity is incorrect'; end if;
+  if (select count(*) from public.inventory_transactions where source_receipt_id = '50000000-0000-0000-0000-000000000003' and transaction_type = 'receipt_purchase') <> 2 then
+    raise exception 'Repeated lines did not consolidate to two ledger rows';
+  end if;
+  if not exists (
+    select 1 from public.session_receipts
+    where id = '50000000-0000-0000-0000-000000000003'
+      and status = 'confirmed' and jsonb_array_length(linked_purchase_ids) = 2
+  ) then raise exception 'Grouped receipt did not link two purchases'; end if;
+end;
+$$;
+
+-- A later create request with the same normalized name must reuse the
+-- canonical item instead of creating another one.
+insert into public.session_receipts (
+  id, session_id, status, store_guess, review_items, raw_items, item_count, total
+) values (
+  '50000000-0000-0000-0000-000000000004',
+  '40000000-0000-0000-0000-000000000001',
+  'needs_review', 'Test Store', '[]'::jsonb, '[]'::jsonb, 2, 20.00
+);
+
+do $$
+declare result jsonb;
+begin
+  select public.confirm_receipt_review(
+    '50000000-0000-0000-0000-000000000004',
+    jsonb_build_array(
+      jsonb_build_object('action', 'add', 'name', 'Grouped Sauce', 'raw', 'GROUPED SAUCE LARGE', 'qty', 1, 'price', 10.00, 'addName', '  Grouped   Sauce  ', 'addCategory', 'Pantry', 'addStore', 'Test Store', 'addUnit', 'ct', 'addPackSize', 1),
+      jsonb_build_object('action', 'add', 'name', 'Grouped Sauce', 'raw', 'GROUPED SAUCE LARGE', 'qty', 1, 'price', 10.00, 'addName', 'Grouped Sauce', 'addCategory', 'Pantry', 'addStore', 'Test Store', 'addUnit', 'ct', 'addPackSize', 1)
+    )
+  ) into result;
+
+  if (result->>'reused')::integer <> 1 then
+    raise exception 'Existing canonical item was not reported as reused';
+  end if;
+  if (select count(*) from public.inventory where name = 'Grouped Sauce') <> 1 then
+    raise exception 'Later create request duplicated the canonical item';
+  end if;
+  if (select current_qty from public.inventory where name = 'Grouped Sauce') <> 5 then
+    raise exception 'Reused canonical item did not receive combined quantity';
+  end if;
+  if (select count(*) from public.inventory_transactions where source_receipt_id = '50000000-0000-0000-0000-000000000004') <> 1 then
+    raise exception 'Reused item did not consolidate to one ledger row';
+  end if;
+end;
+$$;
+
 -- An unresolved line must fail and roll back the whole attempted confirmation.
 insert into public.session_receipts (
   id, session_id, status, store_guess, review_items, raw_items, item_count, total
