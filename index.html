@@ -30,7 +30,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 @keyframes statIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes rowIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
 @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
-.app{display:flex;min-height:100vh;min-height:100dvh}
+.app{display:flex;min-width:0;min-height:100vh;min-height:100dvh}
 .sidebar{width:var(--sw);background:var(--sb);position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100}
 .sb-logo{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.07);transition:background .18s}
 .sb-logo:hover{background:rgba(255,255,255,.03)}
@@ -51,7 +51,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .u-av{width:30px;height:30px;border-radius:50%;background:var(--pr);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
 .u-name{font-size:13px;font-weight:600;color:#F5E6D3}
 .u-sub{font-size:10px;color:var(--mu)}
-.main{margin-left:var(--sw);flex:1;min-height:100vh;padding-bottom:24px}
+.main{margin-left:var(--sw);flex:1;min-width:0;max-width:calc(100vw - var(--sw));min-height:100vh;padding-bottom:24px}
 .mob-hdr{display:none;background:rgba(246,247,244,.94);backdrop-filter:blur(14px);padding:12px 16px;position:sticky;top:0;z-index:100;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd)}
 .mob-hdr h1{font-size:16px;font-weight:750;color:var(--tx);letter-spacing:-.25px}
 .mob-hdr-r{display:flex;gap:6px;align-items:center}
@@ -79,7 +79,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .mobile-sheet-item svg{width:20px;height:20px;color:var(--pr)}
 .mobile-sheet-close{width:100%;min-height:44px;margin-top:8px;border:none;border-radius:13px;background:var(--bg);color:var(--tx2);font-weight:700;cursor:pointer}
 .bn-item:focus-visible,.mobile-sheet-item:focus-visible,.mobile-sheet-close:focus-visible{outline:3px solid rgba(36,122,82,.3);outline-offset:2px}
-.page{padding:24px;max-width:860px;animation:pageIn .25s cubic-bezier(.4,0,.2,1)}
+.page{width:100%;min-width:0;max-width:860px;padding:24px;animation:pageIn .25s cubic-bezier(.4,0,.2,1)}
 .today-head{margin-bottom:18px}
 .today-eyebrow{font-size:11px;color:var(--tx2);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
 .today-title{font-size:28px;font-weight:700;letter-spacing:-.8px;line-height:1.12}
@@ -422,6 +422,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .receipt-inbox{margin:0 0 14px;border:1px solid var(--bd);border-radius:15px;background:var(--card);overflow:hidden}.receipt-inbox-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;border-bottom:1px solid var(--bd)}.receipt-inbox-head>div{display:flex;flex-direction:column}.receipt-inbox-head>div span{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);font-weight:800}.receipt-inbox-head>div strong{font-size:14px;margin-top:3px}.receipt-inbox-head>span{padding:5px 8px;border-radius:999px;font-size:9px;font-weight:800;white-space:nowrap}.receipt-inbox-head .complete{background:var(--okl);color:var(--ok)}.receipt-inbox-head .needs-review{background:var(--wal);color:var(--wa)}.receipt-inbox-row{width:100%;min-height:66px;padding:10px 12px;border:0;border-bottom:1px solid var(--bd);background:var(--card);color:var(--tx);display:flex;align-items:center;gap:10px;text-align:left;cursor:pointer;transition:background .18s ease}.receipt-inbox-row:last-child{border-bottom:0}.receipt-inbox-row:hover,.receipt-inbox-row:focus-visible{background:var(--prl)}.receipt-inbox-icon{width:38px;height:38px;flex:0 0 38px;border-radius:10px;background:var(--wal);color:var(--wa);display:grid;place-items:center}.receipt-inbox-icon svg{width:18px;height:18px}.receipt-inbox-copy{display:flex;flex:1;min-width:0;flex-direction:column}.receipt-inbox-copy strong{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.receipt-inbox-copy small{font-size:10px;color:var(--tx2);margin-top:3px}.receipt-inbox-total{font-size:12px;font-weight:800}.receipt-inbox-chevron{font-size:21px;color:var(--mu)}
 .receipt-review-modal{max-width:520px;max-height:92vh;overflow-y:auto}.receipt-review-alert{display:flex;flex-direction:column;gap:3px;margin-bottom:12px;padding:10px 12px;border-radius:10px;background:var(--wal);color:var(--wa)}.receipt-review-alert.error{background:var(--erl);color:var(--er)}.receipt-review-alert strong{font-size:12px}.receipt-review-alert span{font-size:10px;line-height:1.45}.receipt-review-actions{display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1.7fr);gap:8px}.receipt-review-actions .btn-gh,.receipt-review-actions .btn-full{min-height:48px}.receipt-review-helper{margin-top:8px;color:var(--wa);font-size:10px;text-align:center}.receipt-void{display:block;min-height:44px;margin:8px auto 0;padding:8px 12px;border:0;background:transparent;color:var(--er);font:inherit;font-size:11px;font-weight:750;cursor:pointer}
 .receipt-group-badge{display:inline-flex;align-items:center;width:fit-content;max-width:100%;min-height:24px;margin-top:5px;padding:3px 8px;border-radius:999px;background:var(--prl);color:var(--pr);font-size:10px;font-weight:750;line-height:1.2;text-align:left;white-space:normal}.receipt-line-cost{display:flex;flex:0 0 auto;align-items:flex-end;flex-direction:column;gap:5px;margin-left:8px}.receipt-line-cost>strong{color:var(--pr);font-size:13px}.receipt-qty-control{display:flex;align-items:center;gap:6px;color:var(--tx2);font-size:10px;font-weight:700}.receipt-qty-control input{width:66px;min-height:44px;padding:7px 8px;border:1px solid var(--bd);border-radius:7px;background:var(--card);color:var(--tx);font:inherit;font-size:16px;text-align:right}.receipt-existing-match{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid color-mix(in srgb,var(--wa) 45%,var(--bd));border-radius:8px;background:var(--wal);color:var(--wa)}.receipt-existing-match span{min-width:0;font-size:11px;line-height:1.35}.receipt-existing-match button{flex:0 0 auto;min-height:44px;padding:7px 10px;border:1px solid currentColor;border-radius:7px;background:transparent;color:inherit;font:inherit;font-size:10px;font-weight:800;cursor:pointer;touch-action:manipulation}.receipt-existing-match button:focus-visible{outline:3px solid var(--pr);outline-offset:2px}
+.inventory-page-actions{display:flex;align-items:center;gap:8px}.inventory-add-trigger{min-height:44px;padding:9px 13px;border:1px solid var(--pr);border-radius:10px;background:var(--pr);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-size:12px;font-weight:800;cursor:pointer}.inventory-add-trigger svg{width:17px;height:17px}.inventory-add-trigger:focus-visible{outline:3px solid color-mix(in srgb,var(--pr) 40%,transparent);outline-offset:2px}.inventory-add-modal{width:min(520px,100%);max-width:520px;max-height:min(720px,calc(100dvh - 32px));padding:0;overflow:hidden;display:flex;flex-direction:column}.inventory-add-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 18px 14px;border-bottom:1px solid var(--bd)}.inventory-add-head>div{min-width:0}.inventory-add-head h2{font-size:20px;line-height:1.2}.inventory-add-head p{margin-top:4px;color:var(--tx2);font-size:12px;line-height:1.4}.inventory-add-close{width:44px;height:44px;flex:0 0 44px;border:0;border-radius:11px;background:var(--bg);color:var(--tx);display:grid;place-items:center;cursor:pointer}.inventory-add-close svg{width:20px;height:20px}.inventory-add-body{min-width:0;padding:16px 18px 20px;overflow-y:auto;overscroll-behavior:contain}.inventory-add-receipt{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;padding:12px;border:1px solid var(--bd);border-radius:13px;background:var(--prl)}.inventory-add-receipt>div{min-width:0}.inventory-add-receipt strong{display:block;font-size:13px}.inventory-add-receipt span{display:block;margin-top:3px;color:var(--tx2);font-size:11px;line-height:1.4}.inventory-add-receipt button{min-height:44px;flex:0 0 auto}.inventory-add-error{margin-bottom:12px;padding:10px 12px;border-radius:10px;background:var(--erl);color:var(--er);font-size:12px;font-weight:700}.inventory-add-modal :focus-visible{outline:3px solid color-mix(in srgb,var(--pr) 40%,transparent);outline-offset:2px}
 @media(max-width:640px){.receipt-review-modal{width:calc(100% - 20px);max-height:86dvh;padding:16px;border-radius:17px}.receipt-review-actions{position:sticky;bottom:-16px;margin:0 -16px -16px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--card) 94%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--bd)}.receipt-inbox-row{min-height:70px}.receipt-inbox-total{font-size:11px}}
 .theme-setting{margin-top:12px;padding:14px 8px 4px}.theme-setting>div:first-child{display:flex;flex-direction:column}.theme-setting strong{font-size:13px}.theme-setting span{font-size:10px;color:var(--tx2);margin-top:3px}.theme-options{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:10px;padding:3px;border-radius:11px;background:var(--bg)}.theme-options button{min-height:40px;border:0;border-radius:9px;background:transparent;color:var(--tx2);font:inherit;font-size:11px;font-weight:700;text-transform:capitalize;cursor:pointer}.theme-options button[aria-pressed="true"]{background:var(--card);color:var(--pr)}
 .recipe-library-summary{display:grid;grid-template-columns:repeat(3,1fr);padding:14px;background:var(--prl);border-radius:16px;margin-bottom:22px}.recipe-library-summary>div{display:flex;flex-direction:column;padding:2px 10px;border-right:1px solid var(--bd)}.recipe-library-summary>div:last-child{border-right:0}.recipe-library-summary strong{font-size:22px}.recipe-library-summary span{font-size:10px;color:var(--tx2);margin-top:3px}.recipe-library-head{display:flex;justify-content:space-between;align-items:center;margin:0 2px 8px}.recipe-library-head strong{font-size:14px}.recipe-library-head span{font-size:10px;color:var(--tx2)}.recipe-card-icon,.recipe-card-chevron{display:none}.recipe-description{font-size:12px;color:var(--tx2);margin-top:7px;line-height:1.45}.recipe-card-body{min-width:0;flex:1}
@@ -429,17 +430,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .step-allocations{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px}.step-allocation{min-height:30px;padding:4px 4px 4px 9px;border-radius:999px;background:var(--prl);color:var(--pr);font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:4px}.step-allocation button{width:24px;height:24px;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer}.step-add-ingredient{min-height:32px;padding:4px 10px;border:1px dashed var(--bd);border-radius:999px;background:transparent;color:var(--tx2);font-size:10px;font-weight:700;cursor:pointer}.step-allocation-form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-top:10px;padding:12px;border-radius:12px;background:var(--bg)}
 @media(max-width:768px){
   :root{--bg:#F8FAF8;--card:#FFFFFF;--pr:#176B43;--prl:#EEF5EF;--tx:#18221C;--tx2:#657169;--bd:#DBE4DD;--wa:#98691A;--er:#AD3B36}
+  html,body,#root,.app,.main{width:100%;max-width:100%;min-width:0;overflow-x:clip}
   body{font-size:16px;background:var(--bg)}
-  .main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+  input,select,textarea{max-width:100%;font-size:16px!important}
+  .main{margin-left:0;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
   .mob-hdr{min-height:72px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:color-mix(in srgb,var(--bg) 94%,transparent);box-shadow:none}
   .mob-hdr h1{font-size:22px;font-weight:700;line-height:1.05;letter-spacing:-.55px}
-  .mob-hdr-r{gap:2px}.page{padding:20px 16px 28px}
+  .mob-hdr-r{gap:2px}.page{width:100%;max-width:100%;min-width:0;padding:20px 16px 28px}
   .bot-nav{min-height:78px;padding:6px 8px max(8px,env(safe-area-inset-bottom));background:color-mix(in srgb,var(--bg) 95%,transparent);box-shadow:none}
   .bn-inner{height:64px}.bn-item{min-height:58px;font-size:9px;font-weight:600;gap:4px;border-radius:10px}.bn-icon{width:20px;height:20px}.bn-scan{width:auto;height:64px;min-height:64px;margin:0;background:transparent;color:var(--mu);box-shadow:none}.bn-scan:hover,.bn-scan.active{background:transparent;color:var(--pr);transform:none}.bn-scan .bn-icon{box-sizing:content-box;width:21px;height:21px;padding:11px;border-radius:50%;margin-top:-24px;background:var(--pr);color:#fff;border:4px solid var(--bg);box-shadow:none}.bn-scan span{margin-top:-5px}.bn-dot{top:2px}
   .mobile-sheet{left:12px;right:12px;padding:10px 12px 14px;border-radius:20px}.mobile-sheet-grid{grid-template-columns:1fr;gap:0;border:1px solid var(--bd);border-radius:14px;overflow:hidden}.mobile-sheet-item{min-height:56px;border:0;border-bottom:1px solid var(--bd);border-radius:0;padding:12px 14px;background:var(--card);font-size:14px}.mobile-sheet-item:last-child{border-bottom:0}.mobile-sheet-head{text-transform:none;letter-spacing:0;font-size:20px;color:var(--tx)}
   .today-head{margin-bottom:20px}.today-eyebrow{display:none}.today-title{font-size:30px}.today-sub{font-size:14px;line-height:1.5}.today-hero{padding:19px;border-radius:17px;background:var(--prl);border-color:transparent}.today-hero-count{font-size:36px}.today-primary{min-height:52px;border-radius:12px}.today-section{margin-top:22px}.today-section-title{font-size:15px}.today-list,.today-receipt{border-radius:15px}.today-row{padding:14px 13px;min-height:64px}.today-row-title{font-size:14px}.today-row-meta{font-size:12px}.today-row-icon{width:40px;height:40px;border-radius:11px}
   .today-snapshot button{min-height:82px}.today-snapshot span{font-size:11px}.today-actions button{min-height:124px}.today-actions strong{font-size:14px}.today-actions small{font-size:11px;line-height:1.35}
   .page-hdr{align-items:center!important;margin-bottom:20px!important}.page-title{font-size:28px}.page-sub{font-size:14px}.card,.item-row{border-radius:14px}.item-row{margin-bottom:8px}.item-main{padding:14px}.item-name{font-size:15px}.item-qty{font-size:13px}.inp,.sel,.e-inp{min-height:48px;border-radius:11px;font-size:16px}.btn-pr,.btn-gh,.btn-outline,.btn-full{min-height:48px;border-radius:11px}
+  .inventory-page-header{flex-wrap:wrap}.inventory-page-actions{width:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch}.inventory-page-actions button{width:100%;min-width:0}.inventory-add-modal{width:calc(100% - 24px);max-height:calc(100dvh - 24px);border-radius:18px}.inventory-add-head{padding:16px 16px 13px}.inventory-add-body{padding:14px 16px calc(18px + env(safe-area-inset-bottom))}.inventory-add-receipt{align-items:stretch;flex-direction:column}.inventory-add-receipt button{width:100%}.filter-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px!important}.filter-row .filter-sel{width:100%;min-width:0}.filter-row>.f-tog{width:100%}.inventory-group-toggle{grid-column:1/-1;width:100%;margin-left:0!important}.inventory-group-toggle button{min-height:44px;flex:1}.stock-summary-strip,.stock-mobile-group,.stock-mobile-card,.stock-mobile-row,.plan-overview,.plan-tabs,.plan-store,.plan-store-list,.plan-item,.plan-cart-list,.plan-cart-item{min-width:0;max-width:100%}.plan-item>*{min-width:0}.plan-item-price{max-width:84px}.plan-item-controls{min-width:0}
   .recipe-grid{gap:0;border:1px solid var(--bd);border-radius:15px;overflow:hidden}.recipe-card{padding:14px 12px;border:0;border-bottom:1px solid var(--bd);border-radius:0;background:var(--card);display:flex;align-items:center;gap:12px}.recipe-card:last-child{border-bottom:0}.recipe-card:active{background:var(--prl)}.recipe-card-icon{width:42px;height:42px;flex:0 0 42px;border-radius:11px;background:var(--prl);color:var(--pr);display:grid;place-items:center}.recipe-card-icon svg{width:20px;height:20px}.recipe-card-chevron{display:block;font-size:22px;color:var(--mu)}.recipe-name{font-size:16px}.recipe-description{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.recipe-card .recipe-meta{margin-top:9px;gap:5px}.recipe-chip{padding:4px 7px;background:var(--bg);border-color:transparent;font-size:9px}.recipe-status{padding:5px 7px}.recipe-library-summary strong{font-size:24px}.recipe-editor{background:var(--bg)}.recipe-editor-shell{padding:0 16px calc(106px + env(safe-area-inset-bottom))}.recipe-editor-head{margin:0 -16px 18px;padding:calc(10px + env(safe-area-inset-top)) 16px 12px;background:color-mix(in srgb,var(--bg) 95%,transparent)}.recipe-section{padding:17px;border-radius:15px;margin-bottom:12px}.recipe-section-title{font-size:17px}.recipe-section-sub{font-size:13px;line-height:1.45}.recipe-field label{font-size:12px}.recipe-field input,.recipe-field textarea,.recipe-field select{min-height:48px;font-size:16px}.recipe-row{min-height:62px}.recipe-row-name{font-size:14px}.recipe-row-meta{font-size:12px;line-height:1.4}.recipe-process{border-radius:13px}.recipe-step{padding:14px 0}.recipe-step-copy{font-size:14px}.recipe-fab{bottom:calc(94px + env(safe-area-inset-bottom));min-height:52px;border-radius:14px;padding:0 20px;box-shadow:0 8px 24px rgba(23,107,67,.2)}
   .stock-desktop-results{display:none}.stock-mobile-results{display:block}.stock-summary-strip{margin-top:-2px}.stock-mobile-group{margin-top:20px}.stock-mobile-group-head{display:flex;justify-content:space-between;align-items:center;margin:0 3px 7px;color:var(--tx2);font-size:11px;text-transform:uppercase;letter-spacing:.07em}.stock-mobile-group-head span:last-child{min-width:23px;height:23px;border-radius:999px;background:var(--prl);color:var(--pr);display:grid;place-items:center;font-weight:700}.stock-mobile-card{background:var(--card);border:1px solid var(--bd);border-radius:15px;overflow:hidden}.stock-mobile-row{width:100%;min-height:82px;padding:12px;border:0;border-bottom:1px solid var(--bd);background:var(--card);color:var(--tx);display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer}.stock-mobile-row:last-child{border-bottom:0}.stock-mobile-row:active{background:var(--prl)}.stock-state{width:40px;height:40px;flex:0 0 40px;border-radius:11px;background:var(--prl);color:var(--pr);display:grid;place-items:center}.stock-state.low{background:var(--wal);color:var(--wa)}.stock-state.out{background:var(--erl);color:var(--er)}.stock-state svg{width:19px;height:19px}.stock-mobile-body{flex:1;min-width:0;display:flex;flex-direction:column}.stock-mobile-body strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stock-mobile-body small{font-size:11px;color:var(--tx2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stock-mobile-meter{height:4px;background:var(--bd);border-radius:99px;margin-top:8px;overflow:hidden}.stock-mobile-meter i{display:block;height:100%;background:var(--pr);border-radius:inherit}.stock-mobile-badge{font-size:9px;font-weight:800;text-transform:uppercase;white-space:nowrap;color:var(--ok)}.stock-mobile-badge.low{color:var(--wa)}.stock-mobile-badge.out{color:var(--er)}.stock-chevron{font-size:22px;color:var(--mu)}.stock-select{width:24px;height:24px;flex:0 0 24px;border:2px solid var(--bd);border-radius:7px}.stock-select.selected{background:var(--pr);border-color:var(--pr);box-shadow:inset 0 0 0 5px var(--card)}
   .sess-banner{border-radius:15px;padding:14px;border-color:transparent;box-shadow:none}.sess-top{margin-bottom:8px}.sess-meta{font-size:11px}.plan-overview{padding:18px;margin-top:2px}.plan-overview-copy strong{font-size:29px}.plan-overview-copy small{font-size:12px}.plan-tabs{position:sticky;top:72px;z-index:6}.chips{margin:2px -16px 13px;padding:0 16px 4px}.chip{min-height:40px!important;padding:7px 13px;background:var(--card)}.chip.on{background:var(--pr);border-color:var(--pr);color:#fff;box-shadow:none}.stH{margin-top:20px;border:0;padding:0 2px 2px}.stH h3{color:var(--tx)!important;font-size:12px!important;text-transform:uppercase;letter-spacing:.06em}.sh-item{min-height:74px;padding:13px;border-radius:14px;margin-bottom:7px;align-items:center}.sh-check{width:26px;height:26px;border-radius:8px;margin-top:0}.sh-name{font-size:14px}.sh-sub,.sh-warn{font-size:11px}.sh-right{margin-left:auto}.sh-right button{width:36px!important;height:36px!important}.sh-pills{width:100%;padding-left:37px}.sh-pill{min-height:36px}.plan-sticky-action{display:block;position:sticky;bottom:calc(84px + env(safe-area-inset-bottom));z-index:7;margin:20px -2px 0;padding-top:8px;background:linear-gradient(transparent,var(--bg) 24%)}.plan-sticky-action button{width:100%;min-height:52px;border:0;border-radius:13px;background:var(--pr);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;cursor:pointer}.plan-sticky-action svg{width:20px;height:20px}
@@ -784,7 +788,7 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onDetails, onUpdate,
           <button className="btn-pr" style={{ width: '100%', marginBottom: 13 }} onClick={() => onDetails(item)}>Count, waste or adjust stock</button>
           <div className="stock-edit-summary">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-              <label className="e-lbl">Stock Level</label>
+              <label className="e-lbl">Inventory level</label>
               <span style={{ fontSize: 14, fontWeight: 700, color: bc }}>
                 {item.current_qty} {item.unit}
                 {showPackInfo && <span style={{ fontSize: 11, color: 'var(--mu)', fontWeight: 500 }}> ({packsRemaining} packs)</span>}
@@ -880,7 +884,7 @@ function DashboardView({ items, sessions, onNavigate, onScanReceipt, flash }) {
       </div>
 
       <section className="today-section">
-        <div className="today-section-head"><div className="today-section-title">Inventory attention</div><button className="today-link" onClick={() => onNavigate('inventory')}>View stock</button></div>
+        <div className="today-section-head"><div className="today-section-title">Inventory attention</div><button className="today-link" onClick={() => onNavigate('inventory')}>View inventory</button></div>
         <div className="today-list">
           <div className="today-row">
             <div className="today-row-icon warn"><NavIcon name="stock" /></div>
@@ -1180,7 +1184,7 @@ function InventoryCountFlow({ items, onComplete, onClose, flash }) {
     setBusy(true); setError('');
     try {
       await Promise.all(changedEntries.map(entry => db.recordInventoryCountEntry(session.id, entry.inventory_item_id, Number(values[entry.inventory_item_id]))));
-      flash('Count saved — resume it from Stock'); onClose();
+      flash('Count saved — resume it from Inventory'); onClose();
     } catch (caught) { setError(caught.message || 'Could not save this count.'); }
     setBusy(false);
   };
@@ -1235,7 +1239,7 @@ function InventoryCountFlow({ items, onComplete, onClose, flash }) {
   </div>;
 }
 
-function InventoryView({ items, onUpdate, onInventoryAdjust, onInventoryCountComplete, onDelete, flash }) {
+function InventoryView({ items, onUpdate, onInventoryAdjust, onInventoryCountComplete, onAdd, addBusy, onScanReceipt, onDelete, flash }) {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
   const [catF, setCatF] = useState('All');
@@ -1253,6 +1257,8 @@ function InventoryView({ items, onUpdate, onInventoryAdjust, onInventoryCountCom
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkError, setBulkError] = useState('');
   const [showCountFlow, setShowCountFlow] = useState(false);
+  const [showAddItem, setShowAddItem] = useState(false);
+  const closeAddItem = useCallback(() => setShowAddItem(false), []);
 
   const openDetails = async (item) => {
     setDetailItem(item);
@@ -1284,7 +1290,7 @@ function InventoryView({ items, onUpdate, onInventoryAdjust, onInventoryCountCom
         last_verified_at: transactionType === 'physical_count' ? new Date().toISOString() : previous.last_verified_at,
       }));
       setTransactions(await db.getInventoryTransactions(detailItem.id));
-      flash(transactionType === 'physical_count' ? 'Physical count saved' : transactionType === 'waste' ? 'Waste recorded' : 'Stock adjustment saved');
+      flash(transactionType === 'physical_count' ? 'Physical count saved' : transactionType === 'waste' ? 'Waste recorded' : 'Inventory adjustment saved');
       return result;
     } catch (error) {
       if (/apply_inventory_adjustment|schema cache|does not exist/i.test(error.message || '')) {
@@ -1326,10 +1332,14 @@ function InventoryView({ items, onUpdate, onInventoryAdjust, onInventoryCountCom
   return (
     <div className="page">
       {showCountFlow && <InventoryCountFlow items={items} onComplete={onInventoryCountComplete} onClose={() => setShowCountFlow(false)} flash={flash} />}
+      {showAddItem && <AddItemModal onAdd={onAdd} busy={addBusy} onScanReceipt={onScanReceipt} onClose={closeAddItem} />}
       {detailItem && <StockDetailModal item={detailItem} relatedItems={items.filter(i => String(i.name || '').trim().toLowerCase() === String(detailItem.name || '').trim().toLowerCase())} purchases={purchases} loading={pricesLoading} transactions={transactions} transactionsLoading={transactionsLoading} onAdjust={adjustDetailItem} onClose={() => setDetailItem(null)} />}
-      <div className="page-hdr">
-        <div><div className="page-title">Stock</div><div className="page-sub">Know what you have and what needs replenishing.</div></div>
-        <button className="f-tog" onClick={() => setShowCountFlow(true)}>Count stock</button>
+      <div className="page-hdr inventory-page-header">
+        <div><div className="page-title">Inventory</div><div className="page-sub">Know what you have and what needs replenishing.</div></div>
+        <div className="inventory-page-actions">
+          <button className="inventory-add-trigger" onClick={() => setShowAddItem(true)}><NavIcon name="add" />Add item</button>
+          <button className="f-tog" onClick={() => setShowCountFlow(true)}>Count inventory</button>
+        </div>
       </div>
       <div className="stock-summary-strip">
         <div><strong>{items.length}</strong><span>items</span></div>
@@ -1358,7 +1368,7 @@ function InventoryView({ items, onUpdate, onInventoryAdjust, onInventoryCountCom
           {STORES.map((s) => <option key={s}>{s}</option>)}
         </select>
         <button className={`f-tog ${lowOnly ? 'on' : ''}`} onClick={() => setLowOnly(!lowOnly)}>Low Only</button>
-        <div style={{ display: 'flex', gap: 3, background: 'var(--bg)', padding: 3, borderRadius: 8, marginLeft: 'auto' }}>
+        <div className="inventory-group-toggle" style={{ display: 'flex', gap: 3, background: 'var(--bg)', padding: 3, borderRadius: 8, marginLeft: 'auto' }}>
           {[['category','By Category'],['store','By Store']].map(([k,l]) => (
             <button key={k} onClick={() => setGroupBy(k)} style={{
               padding: '5px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer', border: 'none',
@@ -1816,7 +1826,7 @@ function ShoppingView({ items, session, receipts, onCheck, onStartSession, onEnd
       }
       <div className="page-hdr">
         <div>
-          <div className="page-title">Shopping plan</div>
+          <div className="page-title">Shop</div>
           <div className="page-sub">Generated from stock levels. Cart checks never change inventory.</div>
         </div>
         {!session && <button className="btn-pr" onClick={() => setShowStart(true)}>Start run</button>}
@@ -2746,7 +2756,7 @@ function AnalyticsView({ items, sessions }) {
         );
       })()}
 
-      {/* Dead Stock */}
+      {/* Unused inventory */}
       {(() => {
         const deadStock = items.filter(it => {
           const hist = itemHistory[it.name];
@@ -2757,7 +2767,7 @@ function AnalyticsView({ items, sessions }) {
         if (!deadStock.length) return null;
         return (
           <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Dead Stock</div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 3 }}>Unused inventory</div>
             <div style={{ fontSize: 12, color: 'var(--tx2)', marginBottom: 14 }}>At or above par but not purchased in 60+ days — consider reducing par</div>
             {deadStock.slice(0,8).map(it => {
               const hist = itemHistory[it.name];
@@ -3778,39 +3788,63 @@ function RecipeBuilderView({ items, flash, onCreateInventoryItem }) {
 }
 
 /* ─── ADD ITEM ─── */
-function AddView({ onAdd, busy, flash, onScanReceipt }) {
+function AddItemModal({ onAdd, busy, onScanReceipt, onClose }) {
   const [ni, setNi] = useState({ name: '', category: 'Other', store: 'Other', unit: 'ct', current_qty: 0, par_level: 1, price: 0, note: '' });
-  const handleAdd = async () => {await onAdd(ni);setNi({ name: '', category: 'Other', store: 'Other', unit: 'ct', current_qty: 0, par_level: 1, price: 0, note: '' });};
+  const [error, setError] = useState('');
+  const closeRef = useRef(null);
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const onKeyDown = event => { if (event.key === 'Escape') onClose(); };
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKeyDown);
+    closeRef.current?.focus();
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', onKeyDown); };
+  }, [onClose]);
+  const handleAdd = async event => {
+    event.preventDefault();
+    if (!ni.name.trim() || busy) return;
+    setError('');
+    const created = await onAdd(ni);
+    if (!created) { setError('The item could not be added. Check your connection and try again.'); return; }
+    onClose();
+  };
   return (
-    <div className="page">
-      <div className="page-hdr"><div><div className="page-title">Add Item</div><div className="page-sub">Add a new inventory item</div></div></div>
-      <div className="card" style={{ padding: 16, marginBottom: 16, background: 'var(--prl)', border: '1px solid var(--bd)' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Add by receipt</div>
-        <p style={{ fontSize: 11, color: 'var(--tx2)', marginBottom: 10 }}>Scan a receipt and add multiple items at once instead of typing them in.</p>
-        <button className="btn-pr" style={{ width: '100%' }} onClick={onScanReceipt}>Scan Receipt</button>
-      </div>
-      <div className="f-grp">
-        <label className="f-lbl">Item Name *</label>
-        <input className="inp" type="text" value={ni.name} onChange={(e) => setNi({ ...ni, name: e.target.value })} placeholder="e.g. Egusi Seeds" />
-      </div>
-      <div className="f-grp">
-        <label className="f-lbl">Category</label>
-        <select className="inp sel" value={ni.category} onChange={(e) => setNi({ ...ni, category: e.target.value })}>{CATS.map((c) => <option key={c}>{c}</option>)}</select>
-      </div>
-      <div className="f-grp">
-        <label className="f-lbl">Store</label>
-        <select className="inp sel" value={ni.store} onChange={(e) => setNi({ ...ni, store: e.target.value })}>{STORES.map((s) => <option key={s}>{s}</option>)}</select>
-      </div>
-      <div className="f-row">
-        <div className="f-grp"><label className="f-lbl">Unit</label><select className="inp sel" value={ni.unit} onChange={(e) => setNi({ ...ni, unit: e.target.value })}>{UNITS.map((u) => <option key={u}>{u}</option>)}</select></div>
-        <div className="f-grp"><label className="f-lbl">Par Level</label><input className="inp" type="number" value={ni.par_level} onChange={(e) => setNi({ ...ni, par_level: Math.max(0, +e.target.value) })} /></div>
-      </div>
-      <div className="f-row">
-        <div className="f-grp"><label className="f-lbl">Qty on Hand</label><input className="inp" type="number" value={ni.current_qty} onChange={(e) => setNi({ ...ni, current_qty: Math.max(0, +e.target.value) })} /></div>
-        <div className="f-grp"><label className="f-lbl">Price ($)</label><input className="inp" type="number" step="0.01" value={ni.price} onChange={(e) => setNi({ ...ni, price: Math.max(0, +e.target.value) })} /></div>
-      </div>
-      <div className="f-grp"><label className="f-lbl">Notes</label><input className="inp" type="text" value={ni.note} onChange={(e) => setNi({ ...ni, note: e.target.value })} placeholder="Brand, specs, aisle..." /></div>
-      <button className="btn-full" onClick={handleAdd} disabled={!ni.name.trim() || busy}>{busy ? 'Saving…' : 'Add to Inventory'}</button>
+    <div className="overlay" onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="modal inventory-add-modal" role="dialog" aria-modal="true" aria-labelledby="inventory-add-title">
+        <div className="inventory-add-head">
+          <div><h2 id="inventory-add-title">Add inventory item</h2><p>Create one item now or scan a receipt to add purchases.</p></div>
+          <button ref={closeRef} className="inventory-add-close" type="button" aria-label="Close add item" onClick={onClose}><NavIcon name="close" /></button>
+        </div>
+        <form className="inventory-add-body" onSubmit={handleAdd}>
+          <div className="inventory-add-receipt">
+            <div><strong>Add from a receipt</strong><span>Scan and review multiple purchased items instead of typing each one.</span></div>
+            <button className="btn-gh" type="button" onClick={() => { onClose(); onScanReceipt(); }}>Scan receipt</button>
+          </div>
+          {error && <div className="inventory-add-error" role="alert">{error}</div>}
+          <div className="f-grp">
+            <label className="f-lbl" htmlFor="new-inventory-name">Item name *</label>
+            <input id="new-inventory-name" className="inp" type="text" value={ni.name} onChange={(e) => setNi({ ...ni, name: e.target.value })} placeholder="e.g. Egusi Seeds" required />
+          </div>
+          <div className="f-grp">
+            <label className="f-lbl" htmlFor="new-inventory-category">Category</label>
+            <select id="new-inventory-category" className="inp sel" value={ni.category} onChange={(e) => setNi({ ...ni, category: e.target.value })}>{CATS.map((c) => <option key={c}>{c}</option>)}</select>
+          </div>
+          <div className="f-grp">
+            <label className="f-lbl" htmlFor="new-inventory-store">Preferred store</label>
+            <select id="new-inventory-store" className="inp sel" value={ni.store} onChange={(e) => setNi({ ...ni, store: e.target.value })}>{STORES.map((s) => <option key={s}>{s}</option>)}</select>
+          </div>
+          <div className="f-row">
+            <div className="f-grp"><label className="f-lbl" htmlFor="new-inventory-unit">Unit</label><select id="new-inventory-unit" className="inp sel" value={ni.unit} onChange={(e) => setNi({ ...ni, unit: e.target.value })}>{UNITS.map((u) => <option key={u}>{u}</option>)}</select></div>
+            <div className="f-grp"><label className="f-lbl" htmlFor="new-inventory-par">Par level</label><input id="new-inventory-par" className="inp" type="number" inputMode="decimal" min="0" step="any" value={ni.par_level} onChange={(e) => setNi({ ...ni, par_level: Math.max(0, +e.target.value) })} /></div>
+          </div>
+          <div className="f-row">
+            <div className="f-grp"><label className="f-lbl" htmlFor="new-inventory-qty">Quantity on hand</label><input id="new-inventory-qty" className="inp" type="number" inputMode="decimal" min="0" step="any" value={ni.current_qty} onChange={(e) => setNi({ ...ni, current_qty: Math.max(0, +e.target.value) })} /></div>
+            <div className="f-grp"><label className="f-lbl" htmlFor="new-inventory-price">Current price ($)</label><input id="new-inventory-price" className="inp" type="number" inputMode="decimal" min="0" step="0.01" value={ni.price} onChange={(e) => setNi({ ...ni, price: Math.max(0, +e.target.value) })} /></div>
+          </div>
+          <div className="f-grp"><label className="f-lbl" htmlFor="new-inventory-note">Notes</label><input id="new-inventory-note" className="inp" type="text" value={ni.note} onChange={(e) => setNi({ ...ni, note: e.target.value })} placeholder="Brand, specs, aisle…" /></div>
+          <button className="btn-full" type="submit" disabled={!ni.name.trim() || busy}>{busy ? 'Saving…' : 'Add to inventory'}</button>
+        </form>
+      </section>
     </div>);
 
 }
@@ -4884,11 +4918,10 @@ function HistoryView({ sessions, onSessionUpdate, inventoryItems, onInventoryUpd
 const TABS = [
 { k: 'dashboard', l: 'Dashboard', i: '' },
 { k: 'inventory', l: 'Inventory', i: '' },
-{ k: 'shopping', l: 'Shopping', i: '' },
+{ k: 'shopping', l: 'Shop', i: '' },
 { k: 'analytics', l: 'Analytics', i: '' },
 { k: 'meals', l: 'Recipes', i: '' },
-{ k: 'history', l: 'History', i: '' },
-{ k: 'add', l: 'Add Item', i: '' }];
+{ k: 'history', l: 'History', i: '' }];
 
 function NavIcon({ name, className = '' }) {
   const paths = {
@@ -4936,9 +4969,9 @@ function Sidebar({ view, setView, user, outCt, onSync, syncing, lastSync, onUser
 function BottomNav({ view, setView, outCt, onScan, onMore, moreOpen }) {
   const items = [
     { k: 'dashboard', label: 'Today', icon: 'home' },
-    { k: 'shopping', label: 'Plan', icon: 'cart' },
+    { k: 'shopping', label: 'Shop', icon: 'cart' },
     { k: 'scan', label: 'Scan', icon: 'scan', action: onScan },
-    { k: 'inventory', label: 'Stock', icon: 'stock' },
+    { k: 'inventory', label: 'Inventory', icon: 'stock' },
     { k: 'more', label: 'More', icon: 'more', action: onMore },
   ];
   return (
@@ -4967,7 +5000,6 @@ function MobileMoreSheet({ onClose, onNavigate, onSync, onSignOut, theme, onThem
     { view: 'meals', label: 'Recipes', icon: 'meal' },
     { view: 'analytics', label: 'Stats', icon: 'chart' },
     { view: 'history', label: 'Log', icon: 'history' },
-    { view: 'add', label: 'Add item', icon: 'add' },
   ];
   return <div className="mobile-sheet-backdrop" role="presentation" onClick={onClose}>
     <section className="mobile-sheet" role="dialog" aria-modal="true" aria-label="More tools" onClick={e => e.stopPropagation()}>
@@ -4989,7 +5021,7 @@ function MobileMoreSheet({ onClose, onNavigate, onSync, onSignOut, theme, onThem
   </div>;
 }
 function MobileHeader({ view, lowCt, outCt, onSync, user, onUserClick }) {
-  const titles = { dashboard: 'Today', shopping: 'Plan', inventory: 'Stock', analytics: 'Stats', meals: 'Recipes', history: 'Log', add: 'Add item' };
+  const titles = { dashboard: 'Today', shopping: 'Shop', inventory: 'Inventory', analytics: 'Stats', meals: 'Recipes', history: 'Log' };
   return (
     <div className="mob-hdr">
       <div className="mob-title-block">
@@ -5773,11 +5805,15 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
   }, [flash]);
 
   const addItem = useCallback(async (ni) => {
-    if (!ni.name.trim()) return;
+    if (!ni.name.trim()) return null;
     setSyncing(true);
-    try {const ins = await db.insert({ ...ni, name: ni.name.trim() });setItems((p) => [...p, ...ins].sort((a, b) => a.name.localeCompare(b.name)));setView('inventory');flash('Added!');}
-    catch {flash('Failed to add');}
-    setSyncing(false);
+    try {
+      const ins = await db.insert({ ...ni, name: ni.name.trim() });
+      setItems((p) => [...p, ...ins].sort((a, b) => a.name.localeCompare(b.name)));
+      flash('Item added to inventory');
+      return ins[0] || null;
+    } catch { flash('Failed to add'); return null; }
+    finally { setSyncing(false); }
   }, [flash]);
 
   const startSession = useCallback(async () => {
@@ -5866,11 +5902,10 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
       <div className="main">
         <MobileHeader view={view} lowCt={lowCt} outCt={outCt} onSync={refresh} user={user} onUserClick={() => setShowUserModal(true)} />
         {view === 'dashboard' && <DashboardView items={items} sessions={sessions} onNavigate={(v) => {setView(v);}} onScanReceipt={() => openReceiptScanner()} flash={flash} />}
-        {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onInventoryAdjust={applyInventoryAdjustment} onInventoryCountComplete={completeInventoryCount} onDelete={deleteItem} flash={flash} />}
+        {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onInventoryAdjust={applyInventoryAdjustment} onInventoryCountComplete={completeInventoryCount} onAdd={addItem} addBusy={syncing} onScanReceipt={() => openReceiptScanner()} onDelete={deleteItem} flash={flash} />}
         {view === 'shopping' && <ShoppingView items={items} session={session} receipts={sessionReceipts} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onShopperNote={updateShopperNote} onScanReceipt={() => openReceiptScanner()} onResumeReceipt={openReceiptScanner} flash={flash} />}
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
         {view === 'meals' && <RecipeBuilderView items={items} flash={flash} onCreateInventoryItem={createRecipeInventoryItem} />}
-        {view === 'add' && <AddView onAdd={addItem} busy={syncing} flash={flash} onScanReceipt={() => openReceiptScanner()} />}
         {view === 'history' && <HistoryView sessions={sessions} inventoryItems={items} onSessionUpdate={(sid, fields) => setSessions(p => p.map(s => s.id === sid ? { ...s, ...fields } : s))} onInventoryUpdate={(itemId, fields) => setItems(p => p.map(i => i.id === itemId ? { ...i, ...fields } : i))} />}
       </div>
       <BottomNav view={view} setView={setView} outCt={outCt} onScan={() => openReceiptScanner()} onMore={() => setShowMobileMore(true)} moreOpen={showMobileMore} />
