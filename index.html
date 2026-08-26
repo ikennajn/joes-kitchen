@@ -148,8 +148,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .stock-history-price{font-size:12px;font-weight:700}
 .stock-edit-summary{margin-bottom:12px;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--bg)}
 .stock-edit-note{font-size:10px;line-height:1.45;color:var(--tx2)}
-.stock-adjust-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.stock-adjust-actions button{min-height:72px;padding:10px;border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);text-align:left;cursor:pointer;transition:border-color .18s,background .18s}
+.stock-adjust-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stock-adjust-actions button{min-height:78px;padding:12px;border:2px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);text-align:left;cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s}
 .stock-adjust-actions button:hover,.stock-adjust-actions button[aria-pressed="true"]{border-color:var(--pr);background:var(--prl)}
 .stock-adjust-actions strong,.stock-adjust-actions span{display:block}
 .stock-adjust-actions strong{font-size:12px}
@@ -159,6 +159,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .stock-adjust-intro button{width:44px;height:44px;border:0;border-radius:9px;background:var(--card);color:var(--tx2);font-size:18px;cursor:pointer}
 .stock-adjust-form label{display:block;margin:9px 0 5px;color:var(--tx2);font-size:10px;font-weight:700}
 .stock-adjust-form input{width:100%;min-height:44px;padding:9px 11px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:inherit;font-size:14px}
+.stock-individual-count{margin-top:12px;padding:11px;border:1px solid var(--bd);border-radius:11px;background:var(--prl)}
+.stock-individual-count strong{display:block;font-size:15px;color:var(--pr);font-variant-numeric:tabular-nums}
+.stock-individual-count span{display:block;margin-top:3px;color:var(--tx2);font-size:10px}
+.stock-piece-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.6fr);gap:8px}
+.stock-piece-note{margin-top:6px;color:var(--tx2);font-size:10px;line-height:1.45}
+.run-cancel-note{margin:12px 0;padding:11px 12px;border:1px solid color-mix(in srgb,var(--er) 35%,var(--bd));border-radius:11px;background:var(--erl);color:var(--tx2);font-size:11px;line-height:1.5}
+.btn-danger{width:100%;min-height:48px;border:1px solid var(--er);border-radius:11px;background:transparent;color:var(--er);font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.btn-danger:hover{background:var(--erl)}.btn-danger:disabled{opacity:.45;cursor:not-allowed}
+.receipt-meta-fields{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:8px;margin-bottom:12px;padding:11px;border:1px solid var(--bd);border-radius:11px;background:var(--bg)}
+.receipt-meta-fields label{display:block;color:var(--tx2);font-size:10px;font-weight:750}
+.receipt-meta-fields input{width:100%;min-height:44px;margin-top:5px;box-sizing:border-box;border:1px solid var(--bd);border-radius:9px;background:var(--card);color:var(--tx);font:inherit;font-size:16px;padding:8px 10px}
 .stock-adjust-form .btn-full{min-height:46px;margin-top:11px}
 .stock-adjust-actions button:focus-visible,.stock-adjust-intro button:focus-visible,.stock-adjust-form input:focus-visible,.stock-detail-close:focus-visible{outline:3px solid color-mix(in srgb,var(--pr) 40%,transparent);outline-offset:2px}
 .stock-adjust-form button:disabled,.bulk-bar button:disabled{opacity:.45;cursor:not-allowed}
@@ -382,8 +393,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   .f-row .f-grp{min-width:calc(50% - 6px)}
   .stock-detail-modal{max-width:calc(100vw - 20px);max-height:calc(100dvh - 20px);padding:17px;border-radius:18px}
   .stock-detail-name{font-size:21px}
-  .stock-adjust-actions{gap:6px}
-  .stock-adjust-actions button{min-height:76px;padding:9px 8px}
+  .stock-adjust-actions{gap:8px}
+  .stock-adjust-actions button{min-height:80px;padding:10px}
+  .receipt-meta-fields{grid-template-columns:1fr}
   .stock-ledger-row{grid-template-columns:70px minmax(0,1fr)}
   .stock-ledger-row time{grid-column:2}
 }
@@ -497,6 +509,7 @@ window.db={
   createSession:(d)=>q("shopping_sessions",{method:"POST",body:JSON.stringify({status:"active",...d})}),
   update_session:(id,fields)=>q(`shopping_sessions?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(fields)}),
   endSession:(id,d)=>q(`shopping_sessions?id=eq.${id}`,{method:"PATCH",body:JSON.stringify({...d,status:"completed",ended_at:new Date().toISOString()})}),
+  cancelShoppingRun:(id)=>q("rpc/cancel_shopping_run",{method:"POST",body:JSON.stringify({p_session_id:id})}),
   getSessions:()=>q("shopping_sessions?order=started_at.desc&limit=30"),
   archiveNote:n=>q("session_notes",{method:"POST",body:JSON.stringify(n)}),
   getSessionNotes:sid=>q(`session_notes?session_id=eq.${sid}&order=created_at.asc`),
@@ -784,6 +797,7 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onDetails, onUpdate,
           </div>
           <div className="item-meta">
             <span className="item-qty">{item.current_qty}/{item.par_level} {item.unit}</span>
+            {item.individual_count != null && <span className="store-tag">{item.individual_count} {item.individual_unit || 'pieces'}</span>}
             {showPackInfo && <span className="store-tag" style={{ background: '#fef3c7', color: '#92400e' }}>{packsRemaining} packs</span>}
             {item.store && item.store !== 'Other' && <span className="store-tag">{item.store}</span>}
             {item.note && <span className="item-note">{item.note}</span>}
@@ -793,7 +807,7 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onDetails, onUpdate,
       </div>
       {editing && !bulk &&
       <div className="edit-panel">
-          <button className="btn-pr" style={{ width: '100%', marginBottom: 13 }} onClick={() => onDetails(item)}>Count, waste or adjust stock</button>
+          <button className="btn-pr" style={{ width: '100%', marginBottom: 13 }} onClick={() => onDetails(item)}>Count or record waste</button>
           <div className="stock-edit-summary">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
               <label className="e-lbl">Inventory level</label>
@@ -842,16 +856,6 @@ function ItemRow({ item, editing, bulk, selected, onToggle, onDetails, onUpdate,
                 className="btn-outline" style={{ fontSize: 12, padding: '6px 10px', width: '100%' }}>
                 {item.photo_url ? 'Replace photo' : 'Add photo'}
               </button>
-            </div>
-          </div>
-          <div className="e-row" style={{ alignItems: 'flex-start' }}>
-            <label className="e-lbl">Multi-store</label>
-            <div style={{ flex: 1 }}>
-              <button onClick={() => onUpdate(item.id, '__duplicate__', null)}
-                className="btn-outline" style={{ fontSize: 12, padding: '6px 10px', width: '100%' }}>
-                Add this item at another store
-              </button>
-              <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 4 }}>Creates a copy you can assign to a different store with its own price.</div>
             </div>
           </div>
           <button className="del-btn" onClick={() => onDelete(item.id)}>Remove Item</button>
@@ -942,6 +946,8 @@ function StockDetailModal({ item, relatedItems, purchases, loading, transactions
   const [adjustType, setAdjustType] = useState(null);
   const [adjustQty, setAdjustQty] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
+  const [individualQty, setIndividualQty] = useState('');
+  const [individualUnit, setIndividualUnit] = useState(item.individual_unit || 'pieces');
   const [adjustBusy, setAdjustBusy] = useState(false);
   const [adjustError, setAdjustError] = useState('');
   const par = Number(item.par_level || 0);
@@ -956,21 +962,40 @@ function StockDetailModal({ item, relatedItems, purchases, loading, transactions
     if (!map[store]) map[store] = purchase;
     return map;
   }, {});
-  const storeListings = relatedItems.length > 0 ? relatedItems : [item];
+  const observedStoreListings = Object.values(latestByStore).map(purchase => ({
+    ...item,
+    id: `observed-${purchase.store || 'unknown'}`,
+    store: purchase.store || 'Unknown store',
+    price: purchase.price,
+  }));
+  const storeListings = observedStoreListings.length > 0 ? observedStoreListings : (relatedItems.length > 0 ? relatedItems : [item]);
   const verifiedAt = item.last_verified_at ? new Date(item.last_verified_at) : null;
   const daysSinceVerified = verifiedAt ? Math.floor((Date.now() - verifiedAt.getTime()) / 86400000) : null;
   const quantityState = daysSinceVerified != null && daysSinceVerified > 7 ? 'overdue' : (item.quantity_source || 'unverified');
   const stateLabels = { counted:'Physically counted', receipt_updated:'Receipt updated', estimated:'Estimated', unverified:'Not verified', overdue:'Count overdue' };
   const transactionLabels = { opening_balance:'Opening balance', receipt_purchase:'Receipt purchase', physical_count:'Physical count', waste:'Waste', manual_adjustment:'Manual adjustment', recipe_usage:'Recipe usage' };
-  const beginAdjustment = type => { setAdjustType(type); setAdjustQty(type === 'physical_count' ? String(current) : ''); setAdjustReason(''); setAdjustError(''); };
+  const beginAdjustment = type => {
+    setAdjustType(type);
+    setAdjustQty(type === 'physical_count' ? String(current) : '');
+    setIndividualQty(type === 'physical_count' && item.individual_count != null ? String(item.individual_count) : '');
+    setIndividualUnit(item.individual_unit || 'pieces');
+    setAdjustReason(''); setAdjustError('');
+  };
   const submitAdjustment = async e => {
     e.preventDefault();
-    const quantity = Number(adjustQty);
-    if (!Number.isFinite(quantity) || (adjustType !== 'manual_adjustment' && quantity < 0)) { setAdjustError('Enter a valid quantity.'); return; }
+    const hasPrimary = adjustQty !== '';
+    const hasIndividual = individualQty !== '';
+    const quantity = hasPrimary ? Number(adjustQty) : null;
+    const individual = hasIndividual ? Number(individualQty) : null;
+    if ((!hasPrimary && !hasIndividual) || (hasPrimary && (!Number.isFinite(quantity) || quantity < 0))) { setAdjustError('Enter a primary quantity or an individual piece count.'); return; }
+    if (hasIndividual && (!Number.isInteger(individual) || individual < 0)) { setAdjustError('Individual pieces must be a whole number of zero or more.'); return; }
     setAdjustBusy(true); setAdjustError('');
     try {
-      await onAdjust(adjustType, quantity, adjustType === 'physical_count' ? 'absolute' : 'delta', adjustReason);
-      setAdjustType(null); setAdjustQty(''); setAdjustReason('');
+      const metadata = { source: 'stock_detail' };
+      if (hasIndividual) metadata[adjustType === 'physical_count' ? 'individual_count' : 'individual_waste'] = individual;
+      if (hasIndividual) metadata.individual_unit = individualUnit.trim() || 'pieces';
+      await onAdjust(adjustType, quantity, adjustType === 'physical_count' ? 'absolute' : 'delta', adjustReason, metadata);
+      setAdjustType(null); setAdjustQty(''); setIndividualQty(''); setAdjustReason('');
     } catch (error) { setAdjustError(error.message || 'Inventory adjustment failed.'); }
     setAdjustBusy(false);
   };
@@ -982,6 +1007,7 @@ function StockDetailModal({ item, relatedItems, purchases, loading, transactions
       </div>
       <div className="stock-level-card">
         <div className="stock-level-top"><div><div className="stock-detail-label">Current stock</div><div className="stock-level-value">{current} {item.unit}</div></div><span className={`stock-trust ${quantityState}`}>{stateLabels[quantityState] || quantityState}</span></div>
+        {item.individual_count != null && <div className="stock-individual-count"><strong>{item.individual_count} {item.individual_unit || 'pieces'} remaining</strong><span>Direct physical count · kept separate from {item.unit}</span></div>}
         <div className="stock-meter" role="progressbar" aria-label="Current stock compared with par" aria-valuenow={current} aria-valuemin="0" aria-valuemax={Math.max(par, current, 1)}><div className="stock-meter-fill" style={{ width: `${pct}%` }} /></div>
         <div className="stock-level-grid">
           <div><div className="stock-detail-label">Par level</div><div className="stock-detail-value">{par} {item.unit}</div></div>
@@ -995,12 +1021,16 @@ function StockDetailModal({ item, relatedItems, purchases, loading, transactions
         <div className="stock-adjust-actions" role="group" aria-label="Inventory adjustment type">
           <button onClick={() => beginAdjustment('physical_count')} aria-pressed={adjustType === 'physical_count'}><strong>Count</strong><span>Set what is physically here</span></button>
           <button onClick={() => beginAdjustment('waste')} aria-pressed={adjustType === 'waste'}><strong>Waste</strong><span>Record spoilage or loss</span></button>
-          <button onClick={() => beginAdjustment('manual_adjustment')} aria-pressed={adjustType === 'manual_adjustment'}><strong>Adjust</strong><span>Add or subtract a correction</span></button>
         </div>
         {adjustType && <form className="stock-adjust-form" onSubmit={submitAdjustment}>
-          <div className="stock-adjust-intro"><strong>{adjustType === 'physical_count' ? 'Physical count' : adjustType === 'waste' ? 'Record waste' : 'Manual correction'}</strong><button type="button" onClick={() => setAdjustType(null)} aria-label="Cancel stock adjustment">×</button></div>
-          <label htmlFor="stock-adjust-qty">{adjustType === 'physical_count' ? `Counted quantity (${item.unit})` : adjustType === 'waste' ? `Amount wasted (${item.unit})` : `Quantity change (${item.unit})`}</label>
-          <input id="stock-adjust-qty" type="number" inputMode="decimal" step="any" min={adjustType === 'manual_adjustment' ? undefined : 0} value={adjustQty} onChange={e => setAdjustQty(e.target.value)} placeholder={adjustType === 'manual_adjustment' ? 'Use - to subtract' : '0'} required />
+          <div className="stock-adjust-intro"><strong>{adjustType === 'physical_count' ? 'Physical count' : 'Record waste'}</strong><button type="button" onClick={() => setAdjustType(null)} aria-label="Cancel stock update">×</button></div>
+          <label htmlFor="stock-adjust-qty">{adjustType === 'physical_count' ? `Counted quantity (${item.unit})` : `Amount wasted (${item.unit})`} · optional when recording pieces</label>
+          <input id="stock-adjust-qty" type="number" inputMode="decimal" step="any" min="0" value={adjustQty} onChange={e => setAdjustQty(e.target.value)} placeholder={`Amount in ${item.unit}`} />
+          <div className="stock-piece-fields">
+            <div><label htmlFor="stock-individual-qty">{adjustType === 'physical_count' ? 'Individual pieces remaining' : 'Individual pieces wasted'}</label><input id="stock-individual-qty" type="number" inputMode="numeric" step="1" min="0" value={individualQty} onChange={e => setIndividualQty(e.target.value)} placeholder="Optional" /></div>
+            <div><label htmlFor="stock-individual-unit">Piece label</label><input id="stock-individual-unit" value={individualUnit} onChange={e => setIndividualUnit(e.target.value)} placeholder="pieces" /></div>
+          </div>
+          <div className="stock-piece-note">Piece counts are recorded separately. The app will not guess a conversion between pieces and {item.unit}.</div>
           <label htmlFor="stock-adjust-reason">Reason or note</label>
           <input id="stock-adjust-reason" value={adjustReason} onChange={e => setAdjustReason(e.target.value)} placeholder={adjustType === 'waste' ? 'Spoiled, expired, damaged…' : 'Optional note'} />
           {adjustError && <div className="stock-adjust-error" role="alert">{adjustError}</div>}
@@ -1288,13 +1318,16 @@ function InventoryView({ items, onUpdate, onInventoryAdjust, onInventoryCountCom
     await Promise.all(tasks);
   };
 
-  const adjustDetailItem = async (transactionType, quantity, mode, reason) => {
+  const adjustDetailItem = async (transactionType, quantity, mode, reason, metadata = {}) => {
     try {
-      const result = await onInventoryAdjust(detailItem.id, transactionType, quantity, mode, reason, { source: 'stock_detail' });
+      const result = await onInventoryAdjust(detailItem.id, transactionType, quantity, mode, reason, metadata);
       setDetailItem(previous => ({
         ...previous,
         current_qty: Number(result.quantity_after),
         quantity_source: result.quantity_source,
+        individual_count: result.individual_count,
+        individual_unit: result.individual_unit || previous.individual_unit,
+        individual_counted_at: metadata.individual_count != null ? new Date().toISOString() : previous.individual_counted_at,
         last_verified_at: transactionType === 'physical_count' ? new Date().toISOString() : previous.last_verified_at,
       }));
       setTransactions(await db.getInventoryTransactions(detailItem.id));
@@ -1398,7 +1431,7 @@ function InventoryView({ items, onUpdate, onInventoryAdjust, onInventoryCountCom
               return <button className="stock-mobile-row" key={item.id} onClick={() => bulkMode ? toggleSel(item.id) : openDetails(item)} aria-label={`${item.name}, ${qty} ${item.unit || 'units'} on hand, par ${par}`}>
                 {bulkMode && <span className={`stock-select ${selected.has(item.id) ? 'selected' : ''}`} aria-hidden="true" />}
                 <span className={`stock-state ${state}`}><NavIcon name="stock" /></span>
-                <span className="stock-mobile-body"><strong>{item.name}</strong><small>{item.store || 'No preferred store'} · {qty} {item.unit || ''} of {par} par</small><span className="stock-mobile-meter"><i style={{width:`${pct}%`}} /></span></span>
+                <span className="stock-mobile-body"><strong>{item.name}</strong><small>{item.store || 'No preferred store'} · {qty} {item.unit || ''} of {par} par{item.individual_count != null ? ` · ${item.individual_count} ${item.individual_unit || 'pieces'}` : ''}</small><span className="stock-mobile-meter"><i style={{width:`${pct}%`}} /></span></span>
                 <span className={`stock-mobile-badge ${state}`}>{state === 'good' ? 'In stock' : state}</span>
                 <span className="stock-chevron">›</span>
               </button>;
@@ -1452,11 +1485,12 @@ function InventoryView({ items, onUpdate, onInventoryAdjust, onInventoryCountCom
 }
 
 /* ─── SHOPPING ─── */
-function ShoppingView({ items, session, receipts, onCheck, onStartSession, onEndSession, onShopperNote, onScanReceipt, onResumeReceipt, flash }) {
+function ShoppingView({ items, session, receipts, onCheck, onStartSession, onEndSession, onCancelSession, onShopperNote, onScanReceipt, onResumeReceipt, flash }) {
   const [storeF, setStoreF] = useState('All');
   const [expandNote, setExpandNote] = useState(null);
   const [showStart, setShowStart] = useState(false);
   const [showEnd, setShowEnd] = useState(false);
+  const [cancelBusy, setCancelBusy] = useState(false);
   const [elapsed, setElapsed] = useState('');
   const [planTab, setPlanTab] = useState('planned');
   const timerRef = useRef(null);
@@ -1527,6 +1561,16 @@ function ShoppingView({ items, session, receipts, onCheck, onStartSession, onEnd
     }
     await onEndSession();
     setShowEnd(false);
+  };
+
+  const handleCancel = async () => {
+    const pendingText = reviewReceipts.length ? ` ${reviewReceipts.length} unfinished receipt${reviewReceipts.length === 1 ? '' : 's'} will be voided.` : '';
+    const confirmedText = confirmedReceipts.length ? ` ${confirmedReceipts.length} confirmed receipt${confirmedReceipts.length === 1 ? '' : 's'} and their purchases will be kept.` : '';
+    if (!confirm(`Cancel this shopping run?${pendingText}${confirmedText} Inventory will not be changed by cart checks.`)) return;
+    setCancelBusy(true);
+    try { await onCancelSession(); setShowEnd(false); }
+    catch (error) { flash(error.message || 'Shopping run could not be cancelled.'); }
+    finally { setCancelBusy(false); }
   };
 
   // ── Smart Route / Price Compare ──
@@ -1815,6 +1859,8 @@ function ShoppingView({ items, session, receipts, onCheck, onStartSession, onEnd
               <button className="btn-gh" onClick={() => setShowEnd(false)}>Keep Shopping</button>
               <button className="btn-pr" style={{ flex: 1 }} onClick={handleEnd}>{reviewReceipts.length ? `Review ${reviewReceipts.length} receipt${reviewReceipts.length === 1 ? '' : 's'}` : 'Finish run'}</button>
             </div>
+            <div className="run-cancel-note">Cancel removes cart intent and voids unfinished receipt drafts. Any receipt already confirmed remains in inventory and purchase history.</div>
+            <button className="btn-danger" onClick={handleCancel} disabled={cancelBusy}>{cancelBusy ? 'Cancelling…' : `Cancel run${reviewReceipts.length ? ` and void ${reviewReceipts.length} receipt${reviewReceipts.length === 1 ? '' : 's'}` : ''}`}</button>
           </div>
         </div>
       }
@@ -1854,7 +1900,7 @@ function ShoppingView({ items, session, receipts, onCheck, onStartSession, onEnd
           const label = receipt.status === 'failed' ? 'Processing failed' : receipt.status === 'draft' ? 'Processing draft' : 'Ready to review';
           return <button key={receipt.id} className="receipt-inbox-row" onClick={() => onResumeReceipt(receipt)}>
             <span className="receipt-inbox-icon" aria-hidden="true"><NavIcon name="scan" /></span>
-            <span className="receipt-inbox-copy"><strong>{receipt.store_guess || 'Store receipt'}</strong><small>{label} · {lineCount} line{lineCount === 1 ? '' : 's'}</small></span>
+            <span className="receipt-inbox-copy"><strong>{receipt.store_guess || 'Store receipt'}</strong><small>{receipt.purchase_date ? `${new Date(`${receipt.purchase_date}T12:00:00`).toLocaleDateString()} · ` : ''}{label} · {lineCount} line{lineCount === 1 ? '' : 's'}</small></span>
             {Number(receipt.total || 0) > 0 && <span className="receipt-inbox-total">${Number(receipt.total).toFixed(2)}</span>}
             <span className="receipt-inbox-chevron" aria-hidden="true">›</span>
           </button>;
@@ -4394,6 +4440,7 @@ function SessionReceipts({ session, sessionId, estimatedTotal, onTotalChange, in
     const inserted = await db.insertSessionReceipt({
       session_id: sessionId,
       store_guess: parsed.store_guess || null,
+      purchase_date: /^\d{4}-\d{2}-\d{2}$/.test(parsed.purchase_date || '') ? parsed.purchase_date : localDateInputValue(),
       subtotal,
       tax,
       total,
@@ -5236,6 +5283,24 @@ const normalizeReceiptItemName = (value) => String(value || '')
   .trim()
   .replace(/\s+/g, ' ');
 
+const localDateInputValue = (value = new Date()) => {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+};
+
+const canonicalReceiptName = (value, store) => {
+  const original = String(value || '').replace(/\s+/g, ' ').trim();
+  const storeName = String(store || '').replace(/\s+/g, ' ').trim();
+  if (!original || !storeName) return original;
+  const escaped = storeName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return original
+    .replace(new RegExp(`^${escaped}(?:\\s*[-–—:|]\\s*|\\s+)`, 'i'), '')
+    .replace(new RegExp(`(?:\\s*[-–—:|]\\s*|\\s+)${escaped}$`, 'i'), '')
+    .trim() || original;
+};
+
 const consolidateReceiptLines = (receiptLines) => {
   const groups = new Map();
   for (const source of (Array.isArray(receiptLines) ? receiptLines : [])) {
@@ -5244,7 +5309,7 @@ const consolidateReceiptLines = (receiptLines) => {
     const price = Number(line.price) || 0;
     const decisionKey = [
       line.action || '', line.inventoryId || '', line.addName || '', line.addCategory || '',
-      line.addStore || '', line.addUnit || '', line.addPackSize || '', line.applyPrice ? '1' : '0',
+      line.addUnit || '', line.addPackSize || '', line.applyPrice ? '1' : '0',
     ].join('|').toLowerCase();
     const key = `${normalizedName}|${price.toFixed(4)}|${decisionKey}`;
     const sourceRawLines = Array.isArray(line.rawLines) && line.rawLines.length
@@ -5276,6 +5341,8 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
   const [imageDataUrl, setImageDataUrl] = useState(null);
   const [error, setError] = useState(draft?.processing_error || '');
   const [parsed, setParsed] = useState(draft ? { store_guess: draft.store_guess, total: draft.total } : null);
+  const [receiptStore, setReceiptStore] = useState(draft?.store_guess || '');
+  const [purchaseDate, setPurchaseDate] = useState(draft?.purchase_date || localDateInputValue());
   const [receiptId, setReceiptId] = useState(draft?.id || null);
   const [saving, setSaving] = useState(false);
   // Each review group may represent several identical OCR lines. The group
@@ -5345,13 +5412,14 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
       const photoUrl = await db.uploadFile('receipts', path, imageBlob);
       if (workingReceiptId) {
         await db.updateSessionReceipt(workingReceiptId, {
-          status: 'draft', photo_url: photoUrl, processing_error: null,
+          status: 'draft', photo_url: photoUrl, purchase_date: purchaseDate, processing_error: null,
         });
       } else {
         const inserted = await db.insertSessionReceipt({
           session_id: session.id,
           status: 'draft',
           photo_url: photoUrl,
+          purchase_date: purchaseDate,
           review_items: [],
           raw_items: [],
           item_count: 0,
@@ -5378,6 +5446,9 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
       }
       setParsed(data);
       const store = data.store_guess || '';
+      setReceiptStore(store);
+      const detectedPurchaseDate = /^\d{4}-\d{2}-\d{2}$/.test(data.purchase_date || '') ? data.purchase_date : purchaseDate;
+      setPurchaseDate(detectedPurchaseDate);
 
       // Combine exact repeated products before asking for a decision. Price is
       // part of the key so similarly named but differently priced packages
@@ -5408,9 +5479,8 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
           priceDiffers,
           currentPrice,
           // add-new fields pre-filled from alias config or defaults
-          addName: alias?.addConfig?.name || li.name,
+          addName: canonicalReceiptName(alias?.addConfig?.name || li.name, store),
           addCategory: alias?.addConfig?.category || 'Other',
-          addStore: alias?.addConfig?.store || store || 'Other',
           addUnit: alias?.addConfig?.unit || 'ct',
           addPackSize: alias?.addConfig?.packSize || 1,
         };
@@ -5421,6 +5491,7 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
       await db.updateSessionReceipt(workingReceiptId, {
         status: 'needs_review',
         store_guess: store || null,
+        purchase_date: detectedPurchaseDate,
         subtotal,
         tax,
         total,
@@ -5452,7 +5523,7 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
     if (!receiptId) return;
     setSaving(true);
     try {
-      await db.updateSessionReceipt(receiptId, { status: 'needs_review', review_items: lines, processing_error: null });
+      await db.updateSessionReceipt(receiptId, { status: 'needs_review', store_guess: receiptStore.trim() || null, purchase_date: purchaseDate, review_items: lines, processing_error: null });
       await onDraftSaved?.(session?.id);
       flash?.('Receipt saved for later');
       onClose();
@@ -5462,7 +5533,7 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
 
   const closeWithSave = async () => {
     if (step === 'review' && receiptId) {
-      try { await db.updateSessionReceipt(receiptId, { status: 'needs_review', review_items: lines }); } catch {}
+      try { await db.updateSessionReceipt(receiptId, { status: 'needs_review', store_guess: receiptStore.trim() || null, purchase_date: purchaseDate, review_items: lines }); } catch {}
       onDraftSaved?.(session?.id);
     }
     onClose();
@@ -5481,7 +5552,7 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
     setSaving(false);
   };
 
-  const storeGuess = parsed?.store_guess || '';
+  const storeGuess = receiptStore.trim();
   const activeCount = lines.filter(l => l.action === 'match' || l.action === 'add').length;
   const activePackageCount = lines
     .filter(l => l.action === 'match' || l.action === 'add')
@@ -5517,6 +5588,9 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
         {/* Capture */}
         {step === 'capture' && (
           <div>
+            <div className="receipt-meta-fields">
+              <label htmlFor="receipt-purchase-date-capture">Receipt date<input id="receipt-purchase-date-capture" type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} required /></label>
+            </div>
             <div style={{ background: 'var(--bg)', borderRadius: 12, padding: 24, textAlign: 'center', marginBottom: 14, border: '2px dashed var(--bd)' }}>
               <p style={{ fontSize: 13, color: 'var(--tx2)', marginBottom: 14 }}>Take a photo or upload a receipt image</p>
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleFile(e.target.files?.[0])} />
@@ -5553,6 +5627,10 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
         {/* Review */}
         {step === 'review' && (
           <div>
+            <div className="receipt-meta-fields">
+              <label htmlFor="receipt-store">Store<input id="receipt-store" value={receiptStore} onChange={e => setReceiptStore(e.target.value)} placeholder="Where was this purchased?" /></label>
+              <label htmlFor="receipt-purchase-date">Purchase date<input id="receipt-purchase-date" type="date" value={purchaseDate} onChange={e => setPurchaseDate(e.target.value)} required /></label>
+            </div>
             {error && <div className="receipt-review-alert error" role="alert"><strong>Receipt not confirmed</strong><span>{error}</span></div>}
             {unresolvedCount > 0 && <div className="receipt-review-alert" role="status"><strong>{unresolvedCount} item{unresolvedCount === 1 ? '' : 's'} need a decision</strong><span>Match an inventory item, create a new item, or ignore the item. Nothing is created automatically.</span></div>}
             <div style={{ maxHeight: '62vh', overflowY: 'auto', marginBottom: 14, paddingRight: 2 }}>
@@ -5606,7 +5684,7 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
                         <select id={`receipt-match-${idx}`} value={l.inventoryId || ''} onChange={e => setLine(idx, { inventoryId: e.target.value })} style={sel}>
                           <option value="">— select item —</option>
                           {[...items].sort((a,b) => a.name.localeCompare(b.name)).map(it => (
-                            <option key={it.id} value={it.id}>{it.name} · {it.store}</option>
+                            <option key={it.id} value={it.id}>{it.name} · {it.category || 'Other'}</option>
                           ))}
                         </select>
                         {matchedItem && (
@@ -5634,8 +5712,9 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
                     {l.action === 'add' && (
                       <div style={{ display: 'grid', gap: 8 }}>
                         <div>
-                          <label htmlFor={`receipt-name-${idx}`} style={lbl}>Name in inventory</label>
-                          <input id={`receipt-name-${idx}`} value={l.addName} onChange={e => setLine(idx, { addName: e.target.value })} style={inp} />
+                            <label htmlFor={`receipt-name-${idx}`} style={lbl}>Canonical inventory item</label>
+                            <input id={`receipt-name-${idx}`} value={l.addName} onChange={e => setLine(idx, { addName: e.target.value })} style={inp} />
+                            <div style={{fontSize:10,color:'var(--tx2)',marginTop:4}}>Use the product name only. Store and price stay attached to this receipt.</div>
                         </div>
                         {existingNamedItem && (
                           <div className="receipt-existing-match" role="status">
@@ -5660,12 +5739,7 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
                               {window.CATS.map(c => <option key={c}>{c}</option>)}
                             </select>
                           </div>
-                          <div>
-                            <label htmlFor={`receipt-store-${idx}`} style={lbl}>Store</label>
-                            <select id={`receipt-store-${idx}`} value={l.addStore} onChange={e => setLine(idx, { addStore: e.target.value })} style={sel}>
-                              {window.STORES.map(s => <option key={s}>{s}</option>)}
-                            </select>
-                          </div>
+                          <div><label style={lbl}>Receipt store</label><div style={{minHeight:44,padding:'10px',border:'1px solid var(--bd)',borderRadius:6,fontSize:12,color:'var(--tx2)'}}>{storeGuess || 'Enter the store above'}</div></div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                           <div>
@@ -5689,8 +5763,8 @@ function ReceiptScanner({ items, session, draft, onClose, onConfirm, onDraftSave
             <div className="receipt-review-actions">
               <button className="btn-gh" onClick={saveDraft} disabled={saving}>{saving ? 'Saving…' : 'Save for later'}</button>
               <button className="btn-full"
-                onClick={async () => { setSaving(true); setError(''); try { await onConfirm(lines, storeGuess, receiptId); } catch (e) { setError(e.message || 'Receipt could not be confirmed.'); } finally { setSaving(false); } }}
-                disabled={saving || unresolvedCount > 0 || missingMatch}>
+                onClick={async () => { setSaving(true); setError(''); try { if (!storeGuess) throw new Error('Enter the store for this receipt.'); if (!purchaseDate) throw new Error('Choose the purchase date.'); await db.updateSessionReceipt(receiptId, { store_guess: storeGuess, purchase_date: purchaseDate, review_items: lines }); await onConfirm(lines, storeGuess, receiptId); } catch (e) { setError(e.message || 'Receipt could not be confirmed.'); } finally { setSaving(false); } }}
+                disabled={saving || unresolvedCount > 0 || missingMatch || !storeGuess || !purchaseDate}>
                 {saving ? 'Confirming…' : activeCount ? `Confirm ${activeCount} item${activeCount !== 1 ? 's' : ''} · ${activePackageCount} package${activePackageCount !== 1 ? 's' : ''}` : 'Confirm receipt'}
               </button>
             </div>
@@ -5850,29 +5924,6 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
   }, [flash]);
 
   const updateItem = useCallback(async (id, f, v) => {
-    // Special action: duplicate this item to another store
-    if (f === '__duplicate__') {
-      const orig = items.find(i => i.id === id);
-      if (!orig) return;
-      const copy = {
-        name: orig.name,
-        category: orig.category,
-        store: 'Other',
-        unit: orig.unit,
-        current_qty: 0,
-        par_level: orig.par_level,
-        price: 0,
-        note: '',
-        pack_size: orig.pack_size || 1,
-        photo_url: orig.photo_url || null,
-      };
-      try {
-        const ins = await db.insert(copy);
-        setItems((p) => [...p, ...ins].sort((a, b) => a.name.localeCompare(b.name)));
-        flash(`Duplicate created — set the new store and price`);
-      } catch { flash('Duplicate failed'); }
-      return;
-    }
     setItems((p) => p.map((i) => i.id === id ? { ...i, [f]: v } : i));
     try {await db.update(id, { [f]: v });} catch {flash('Update failed');}
   }, [items, flash]);
@@ -5884,6 +5935,9 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
       ...item,
       current_qty: Number(summary.quantity_after),
       quantity_source: summary.quantity_source,
+      individual_count: summary.individual_count,
+      individual_unit: summary.individual_unit || item.individual_unit,
+      individual_counted_at: metadata.individual_count != null ? new Date().toISOString() : item.individual_counted_at,
       last_verified_at: transactionType === 'physical_count' ? new Date().toISOString() : item.last_verified_at,
     } : item));
     return summary;
@@ -5959,6 +6013,17 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
     refresh();
   }, [session, items, flash, refresh]);
 
+  const cancelSession = useCallback(async () => {
+    if (!session) return;
+    const result = await db.cancelShoppingRun(session.id);
+    const summary = Array.isArray(result) ? result[0] : result;
+    setItems(previous => previous.map(item => item.session_id === session.id ? { ...item, checked_at: null, session_id: null, shopper_note: '' } : item));
+    setSessionReceipts(previous => previous.map(receipt => receipt.session_id === session.id && ['draft', 'needs_review', 'failed'].includes(receipt.status) ? { ...receipt, status: 'voided' } : receipt));
+    setSession(null);
+    flash(`Run cancelled · ${Number(summary?.voided_receipts || 0)} receipt${Number(summary?.voided_receipts || 0) === 1 ? '' : 's'} voided`);
+    await refresh();
+  }, [session, flash, refresh]);
+
   const updateShopperNote = useCallback(async (id, note) => {
     setItems((p) => p.map((i) => i.id === id ? { ...i, shopper_note: note } : i));
     try {await db.update(id, { shopper_note: note });} catch {}
@@ -6000,7 +6065,7 @@ function App({ authUser, onSignOut, theme, onThemeChange }) {
         <MobileHeader view={view} lowCt={lowCt} outCt={outCt} onSync={refresh} user={user} onUserClick={() => setShowUserModal(true)} />
         {view === 'dashboard' && <DashboardView items={items} sessions={sessions} onNavigate={(v) => {setView(v);}} onScanReceipt={() => openReceiptScanner()} flash={flash} />}
         {view === 'inventory' && <InventoryView items={items} onUpdate={updateItem} onInventoryAdjust={applyInventoryAdjustment} onInventoryCountComplete={completeInventoryCount} onAdd={addItem} addBusy={syncing} onScanReceipt={() => openReceiptScanner()} onDelete={deleteItem} flash={flash} />}
-        {view === 'shopping' && <ShoppingView items={items} session={session} receipts={sessionReceipts} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onShopperNote={updateShopperNote} onScanReceipt={() => openReceiptScanner()} onResumeReceipt={openReceiptScanner} flash={flash} />}
+        {view === 'shopping' && <ShoppingView items={items} session={session} receipts={sessionReceipts} onCheck={checkItem} onStartSession={startSession} onEndSession={endSession} onCancelSession={cancelSession} onShopperNote={updateShopperNote} onScanReceipt={() => openReceiptScanner()} onResumeReceipt={openReceiptScanner} flash={flash} />}
         {view === 'analytics' && <AnalyticsView items={items} sessions={sessions} />}
         {view === 'meals' && <RecipeBuilderView items={items} flash={flash} onCreateInventoryItem={createRecipeInventoryItem} />}
         {view === 'history' && <HistoryView sessions={sessions} inventoryItems={items} onSessionUpdate={(sid, fields) => setSessions(p => p.map(s => s.id === sid ? { ...s, ...fields } : s))} onInventoryUpdate={(itemId, fields) => setItems(p => p.map(i => i.id === itemId ? { ...i, ...fields } : i))} />}
