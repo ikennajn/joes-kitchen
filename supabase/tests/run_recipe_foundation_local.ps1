@@ -25,6 +25,22 @@ if ($dockerVersionExitCode -ne 0 -or -not $dockerServerVersion) {
 }
 Write-Host "Docker engine ready: $dockerServerVersion"
 
+# Supabase identifies the local stack by project_id, not by whether the
+# workdir still exists. Stop an older disposable stack before deleting and
+# recreating its files so `start` cannot silently reuse an outdated database.
+if (-not (Test-Path $testRoot)) {
+  New-Item -ItemType Directory -Force -Path $testRoot | Out-Null
+  & $supabaseExecutable init --workdir $testRoot
+  if ($LASTEXITCODE -ne 0) {
+    throw 'Could not initialize disposable state for stale-stack cleanup.'
+  }
+}
+Write-Host 'Stopping any stale disposable Supabase stack...'
+$originalErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+& $supabaseExecutable stop --workdir $testRoot --no-backup
+$ErrorActionPreference = $originalErrorActionPreference
+
 if (Test-Path $testRoot) {
   $resolvedTestRoot = (Resolve-Path -LiteralPath $testRoot).Path
   if (
@@ -68,6 +84,7 @@ $verificationPath = Join-Path $PSScriptRoot 'recipe_foundation_verification.sql'
 $receiptVerificationPath = Join-Path $PSScriptRoot 'receipt_review_verification.sql'
 $ledgerVerificationPath = Join-Path $PSScriptRoot 'inventory_ledger_verification.sql'
 $countVerificationPath = Join-Path $PSScriptRoot 'inventory_count_verification.sql'
+$shoppingFlowVerificationPath = Join-Path $PSScriptRoot 'shopping_receipt_inventory_flow_verification.sql'
 
 Write-Host 'Running read-only Recipe Builder verification queries...'
 Get-Content -Raw -LiteralPath $verificationPath |
@@ -103,6 +120,15 @@ Get-Content -Raw -LiteralPath $countVerificationPath |
 
 if ($LASTEXITCODE -ne 0) {
   throw 'Inventory count verification failed.'
+}
+
+Write-Host 'Running transactional shopping/receipt/inventory-flow verification...'
+Get-Content -Raw -LiteralPath $shoppingFlowVerificationPath |
+  & $dockerExecutable exec -i $containerName `
+    psql -v ON_ERROR_STOP=1 -U postgres -d postgres
+
+if ($LASTEXITCODE -ne 0) {
+  throw 'Shopping/receipt/inventory-flow verification failed.'
 }
 
 Write-Host 'Local migration tests passed.'

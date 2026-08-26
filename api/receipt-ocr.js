@@ -247,7 +247,7 @@ async function processRequest(body) {
       if (!image) return { status: 400, data: { error: 'Missing image' } };
       // images may be a single base64 string OR an array (multi-photo receipt)
       const images = Array.isArray(body.images) && body.images.length ? body.images : [image];
-      const system = `Receipt parser. Reply ONLY with JSON: {"store_guess":"<Restaurant Depot|Costco|QFC|Walmart|Trader Joe's|US Chef Store|Plaza Latina|Imrans|African Store|Other>","subtotal":<number|null>,"tax":<number|null>,"total":<number|null>,"items":[{"name":"<clean name>","qty":<n>,"price":<unit price>,"raw":"<raw text>"}]}
+      const system = `Receipt parser. Reply ONLY with JSON: {"store_guess":"<Restaurant Depot|Costco|QFC|Walmart|Trader Joe's|US Chef Store|Plaza Latina|Imrans|African Store|Other>","purchase_date":"<YYYY-MM-DD|null; date printed on receipt>","subtotal":<number|null>,"tax":<number|null>,"total":<number|null>,"items":[{"name":"<clean name>","qty":<n>,"price":<unit price>,"raw":"<raw text>"}]}
 Clean abbreviations. Skip taxes/fees from items list. subtotal = sum of food/goods before tax. tax = total tax/fees. total = final amount paid. null if unsure.${images.length > 1 ? ' Multiple images are pages of ONE receipt — merge them into a single result.' : ''}`;
       const userContent = [];
       images.forEach((img, idx) => {
